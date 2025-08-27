@@ -1,0 +1,12 @@
+/public/images/
+  - craa-token.png         (CRAA token logo)
+  - logo.png              (main CrazyCube logo)
+  - blue-cube.png         (blue sad cube with pizza)
+  - purple-cowboy.png     (purple cowboy cube)
+  - pink-cube.png         (pink cube with eyelashes)
+  - green-cool.png        (green cool cube)
+  - pink-party.png        (pink party cube)
+  - worm-hat.png          (cube with hat and worm)
+  - ice-cream.png         (cube with ice cream)
+  - boombox.png           (boombox for animation)
+  - background.png        (background image if needed)
