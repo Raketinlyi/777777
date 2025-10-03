@@ -4,16 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm run clean:deploy && next build",
     "build:analyze": "ANALYZE=true npm run build",
     "export": "next export",
     "start": "next start",
     "test": "echo \"✅ Security tests passed - no tests configured yet\" && exit 0",
     "lint": "next lint && eslint \"{app,components,lib,pages,scripts}/**/*.{js,ts,tsx}\"",
     "lint:fix": "next lint --fix && eslint \"{app,components,lib,pages,scripts}/**/*.{js,ts,tsx}\" --fix",
+    "clean:deploy": "node scripts/prepare-netlify-build.mjs",
     "clean:logs": "node scripts/remove-console-logs.js",
     "check:deploy": "node scripts/pre-deploy-check.js",
-    "check:security": "npm audit --production",
+    "check:security": "npm audit --omit=dev --audit-level=high",
     "check:security:full": "npm audit && npm run lint",
     "security:check": "node scripts/security-check.js",
     "security:critical": "node scripts/critical-security-audit.js",
@@ -27,8 +28,8 @@
     "ci:build": "npm run build",
     "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,tsx,json,md}\"",
-    "upgrade:contract": "hardhat run scripts/upgrade-contract.js --network apechain",
-    "verify:security": "hardhat run scripts/verify-security.js --network apechain"
+    "upgrade:contract": "hardhat run scripts/upgrade-contract.js --network monadTestnet",
+    "verify:security": "hardhat run scripts/verify-security.js --network monadTestnet"
   },
   "overrides": {
     "lit": "^3.1.0"
@@ -70,6 +71,7 @@
     "@types/three": "^0.177.0",
     "@web3modal/siwe": "^5.1.11",
     "@web3modal/wagmi": "^5.1.11",
+    "alchemy-sdk": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
@@ -125,13 +127,14 @@
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.14",
     "@nomicfoundation/hardhat-viem": "^2.0.6",
-    "@openzeppelin/contracts": "^4.9.0",
+    "@openzeppelin/contracts": "^4.9.6",
     "@openzeppelin/contracts-upgradeable": "^4.9.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@types/graphql-depth-limit": "^1.1.6",
     "@types/graphql-validation-complexity": "^0.4.4",
-    "@types/node": "^22",
-    "@types/react": "^18",
+    "@types/node": "24.3.0",
+    "@types/react": "^18.3.24",
     "@types/react-dom": "^18",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
@@ -156,7 +159,7 @@
     "tailwindcss": "^3.4.17",
     "terser-webpack-plugin": "^5.3.10",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "5.9.2"
   },
   "type": "module"
 }
