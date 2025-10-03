@@ -81,6 +81,14 @@ typechain-types/
 private/
 secrets/
 
+# Security: files with secrets/API keys (DO NOT COMMIT)
+netlify-env-import.txt
+FIX_NOW.txt
+SECURITY_AUDIT_2025.md
+*secret*.txt
+*keys*.txt
+*-secrets.md
+
 # Build artifacts
 .vercel
 .netlify
