@@ -9,6 +9,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import crazyOctagonCoreAbi from '@/lib/abi/generated/crazyOctagonCoreAbi.json';
 import crazyOctagonReaderAbi from '@/lib/abi/generated/crazyOctagonReaderAbi.json';
+import { monadChain } from '@/config/chains';
+import { coreContractConfig } from '@/lib/contracts';
 import { onGlobalRefresh } from '@/lib/refreshBus';
 
 export interface BurnReward {
@@ -51,8 +53,8 @@ const JITTER_MS = 2_000;
 const CACHE_TTL_MS = 60_000;
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-const CORE_ADDRESS = process.env.NEXT_PUBLIC_CORE_PROXY as `0x${string}`;
-const READER_ADDRESS = process.env.NEXT_PUBLIC_READER_ADDRESS as `0x${string}`;
+const CORE_ADDRESS = coreContractConfig.address;
+const READER_ADDRESS = monadChain.contracts.reader.address;
 // Production subgraph endpoints (priority order)
 const PRODUCTION_SUBGRAPH_URLS = [
   'https://api.studio.thegraph.com/query/121684/octaa/v0.0.4',
