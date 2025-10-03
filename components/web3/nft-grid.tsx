@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { NFTCard } from './nft-card';
 import { Button } from '@/components/ui/button';
-import { useAlchemyNfts } from '@/hooks/useAlchemyNfts';
+import { useAlchemyNftsQuery } from '@/hooks/useAlchemyNftsQuery';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import type { NFT } from '@/types/nft';
@@ -17,7 +17,7 @@ interface NFTGridProps {
     delay: number;
     onSelect?: (nft: NFT) => void;
     selectable?: boolean;
-  }) => JSX.Element;
+  }) => React.ReactElement;
 }
 
 export function NFTGrid({
@@ -26,7 +26,7 @@ export function NFTGrid({
   maxDisplay,
   CardComponent,
 }: NFTGridProps) {
-  const { nfts, isLoading, error } = useAlchemyNfts();
+  const { data: nfts = [], isLoading, error } = useAlchemyNftsQuery();
   const [showAll, setShowAll] = useState(false);
 
   // Determine how many NFTs to show

@@ -1,95 +1,102 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Loader2,
   SatelliteDish,
   Star,
-  RefreshCw,
-  Zap,
   Clock,
-  Coins,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
 } from 'lucide-react';
-import { useCrazyCubeGame, type NFTGameData } from '@/hooks/useCrazyCubeGame';
+import { useCrazyOctagonGame, type NFTGameData } from '@/hooks/useCrazyOctagonGame';
 import { useToast } from '@/hooks/use-toast';
-import { createPublicClient, http } from 'viem';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
 import type { NFT } from '@/types/nft';
-import {
-  useAccount,
-  usePublicClient,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  useSwitchChain,
-  useChainId,
-} from 'wagmi';
-import { parseEther, formatEther } from 'viem';
-import { useMobile } from '@/hooks/use-mobile';
+import { useChainId } from 'wagmi';
+import { formatEther } from 'viem';
+import { useContractGlobalData } from '@/hooks/useContractBatch';
+// import { useMobile } from '@/hooks/use-mobile';
 import { getColor, getLabel } from '@/lib/rarity';
 import CoinBurst from '@/components/CoinBurst';
 import { useTranslation } from 'react-i18next';
-import { usePerformanceContext } from '@/hooks/use-performance-context';
-import { useNetwork } from '@/hooks/use-network';
+import { useMonadGuard } from '@/hooks/use-monad-guard';
 import { cn } from '@/lib/utils';
 import { SECURITY_CONFIG, validateChainId, validateContractAddress } from '@/config/security';
 import DOMPurify from 'isomorphic-dompurify';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Use address from config instead of hardcoding
-const GAME_ADDR = apeChain.contracts.gameProxy.address;
-const CRAA_ADDR = apeChain.contracts.crazyToken.address;
-const CHAIN_ID = apeChain.id;
+const GAME_ADDR = monadChain.contracts.gameProxy.address;
+// const CRAA_ADDR = monadChain.contracts.crazyToken.address;
+// const CHAIN_ID = monadChain.id;
 
 // Helper function to format numbers
-const formatNumber = (num: number) => {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-  return num.toString();
-};
+// const formatNumber = (num: number) => {
+//   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+//   if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+//   return num.toString();
+// };
 
 interface NFTPingCardProps {
   nft: NFT;
   index?: number;
   onActionComplete?: () => void;
+  tooltipsEnabled?: boolean;
 }
 
 function NFTPingCardComponent({
   nft,
   index = 0,
   onActionComplete,
+  tooltipsEnabled = true,
 }: NFTPingCardProps) {
   const tokenIdDec = nft.tokenId.toString();
   // Removed isLiteMode - always show full effects
   const { getNFTGameData, pingNFT, isConnected, pingInterval } =
-    useCrazyCubeGame();
+    useCrazyOctagonGame();
   const { toast } = useToast();
   const [gameData, setGameData] = useState<NFTGameData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // removed unused loading state to satisfy linter and reduce noise
   const [isProcessing, setIsProcessing] = useState(false);
-  const [earnings, setEarnings] = useState<any>(null);
+  const [earnings, setEarnings] = useState<
+    | null
+    | {
+        sharePerPingWeiFormatted?: string;
+        rarityBps?: string;
+        multiplierBps?: string;
+        rarity?: number;
+        basePerHour?: bigint;
+        totalPerHour?: bigint;
+        basePerDay?: bigint;
+        totalPerDay?: bigint;
+        bonusPercent?: number;
+        rarityPercent?: number;
+        streakPercent?: number;
+        basePerPing?: bigint;
+        bonusPerPing?: bigint;
+        totalPerPing?: bigint;
+      }
+  >(null);
   const { t } = useTranslation();
   const chainId = useChainId();
-  const { switchChain } = useSwitchChain();
-  const { isApeChain, requireApeChain } = useNetwork();
-  const { isMobile } = useMobile();
+  // Use Monad Guard instead of ApeChain
+  const { isMonadChain, requireMonadChain } = useMonadGuard();
+  // const { isMobile } = useMobile();
 
-  // Show warning if not on ApeChain
-  useEffect(() => {
-    if (!isApeChain && isConnected) {
-      toast({
-        title: 'Wrong Network',
-        description: 'Please switch to ApeChain to interact with CrazyCube!',
-        variant: 'destructive',
-      });
-    }
-  }, [isApeChain, isConnected, toast]);
+  // Show warning if not on Monad Testnet - removed as useMonadGuard handles this
+  // useEffect(() => {
+  //   if (!isMonadChain && isConnected) {
+  //     toast({
+  //       title: 'Wrong Network',
+  //       description: 'Please switch to Monad Testnet to interact with CrazyCube!',
+  //       variant: 'destructive',
+  //     });
+  //   }
+  // }, [isMonadChain, isConnected, toast]);
 
   // Fetch game data on mount
   useEffect(() => {
@@ -99,7 +106,7 @@ function NFTPingCardComponent({
       try {
         const gd = await getNFTGameData(tokenIdDec);
         if (!cancelled) setGameData(gd);
-      } catch (e) {}
+  } catch {}
     };
     load();
     return () => {
@@ -107,130 +114,54 @@ function NFTPingCardComponent({
     };
   }, [tokenIdDec, getNFTGameData]);
 
-  // Fetch earnings and multiplier
-  // ------------------------------------------------------
-  // Existing effect renamed
+  // Use batched global data hook - much more efficient!
+  const { data: globalData } = useContractGlobalData();
+
+  // Calculate earnings from global data + gameData
   useEffect(() => {
-    let ignore = false;
-    const fetchData = async () => {
-      if (!tokenIdDec) return;
-      try {
-        setLoading(true);
-        const client = createPublicClient({
-          chain: apeChain,
-          transport: http(),
-        });
-        const MINI_ABI = [
-          {
-            name: 'sharePerPing',
-            type: 'function',
-            stateMutability: 'view',
-            inputs: [],
-            outputs: [{ type: 'uint256' }],
-          },
-          {
-            name: 'rarityBonusBps',
-            type: 'function',
-            stateMutability: 'view',
-            inputs: [{ type: 'uint8' }],
-            outputs: [{ type: 'uint256' }],
-          },
-          {
-            name: 'currentMultiplierBps',
-            type: 'function',
-            stateMutability: 'view',
-            inputs: [{ type: 'uint256' }],
-            outputs: [{ type: 'uint256' }],
-          },
-        ] as const;
+    if (!globalData || !gameData) return;
 
-        const rarity = gameData?.rarity ?? 0;
+    const rarity = gameData.rarity ?? 0;
+    const sharePerPingWei = globalData.sharePerPing;
+    const rarityBps = globalData.rarityBonuses[rarity as 1 | 2 | 3 | 4 | 5 | 6] ?? 0n;
+    
+    // Get dynamic bonus from gameData (streak multiplier)
+    const dynBonus = BigInt(gameData.dynBonusBps ?? 0);
+    const multiplierBps = 10000n + dynBonus;
 
-        const [sharePerPingWei, rarityBps, multiplierBps] = await Promise.all([
-          client.readContract({
-            address: GAME_ADDR,
-            abi: MINI_ABI,
-            functionName: 'sharePerPing',
-          }) as Promise<bigint>,
-          client.readContract({
-            address: GAME_ADDR,
-            abi: MINI_ABI,
-            functionName: 'rarityBonusBps',
-            args: [rarity],
-          }) as Promise<bigint>,
-          client.readContract({
-            address: GAME_ADDR,
-            abi: MINI_ABI,
-            functionName: 'currentMultiplierBps',
-            args: [BigInt(tokenIdDec)],
-          }) as Promise<bigint>,
-        ]);
+    // Calculate rewards
+    const basePerPingWei = sharePerPingWei;
+    const withRarityWeiPing = basePerPingWei + (basePerPingWei * rarityBps) / 10000n;
+    const totalPerPingWei = (withRarityWeiPing * multiplierBps) / 10000n;
 
-        if (!ignore)
-          setEarnings({
-            sharePerPingWeiFormatted: formatEther(sharePerPingWei),
-            rarityBps: rarityBps.toString(),
-            multiplierBps: multiplierBps.toString(),
-            rarity,
-          });
+    // Daily and hourly calculations
+    const basePerDayWei = basePerPingWei;
+    const totalPerDayWei = (basePerPingWei * (10000n + rarityBps)) / 10000n;
+    const basePerHourWei = basePerDayWei / 24n;
+    const totalPerHourWei = totalPerDayWei / 24n;
 
-        // Rewards per ping (base) – already in wei
-        const basePerPingWei = sharePerPingWei;
+    // Convert to percentages
+    const rarityPercent = Number(rarityBps) / 100;
+    const streakPercent = (Number(multiplierBps) - 10000) / 100;
+    const bonusPercent = rarityPercent + streakPercent;
 
-        // Total reward per ping with rarity bonus
-        const withRarityWei =
-          basePerPingWei + (basePerPingWei * rarityBps) / 10000n;
-        const totalPerPingWei = (withRarityWei * multiplierBps) / 10000n;
-
-        // Rewards per hour – depends on ping interval (contract value; default to 24h)
-        const safeInterval = pingInterval || 86400;
-        
-        // Calculate periods per hour (for 24h interval, this will be 1/24)
-        const periodsPerHour = safeInterval >= 3600 ? 
-          BigInt(Math.floor(3600 / safeInterval)) : 
-          BigInt(Math.floor(3600 / safeInterval));
-        
-        // For 24h interval, calculate daily rewards directly
-        const basePerDayWei = basePerPingWei;
-        const totalPerDayWei = (basePerPingWei * (10000n + rarityBps)) / 10000n;
-        
-        // Calculate hourly rewards (daily / 24)
-        const basePerHourWei = basePerDayWei / 24n;
-        const totalPerHourWei = totalPerDayWei / 24n;
-
-        // Convert bonus from basis points (bps) to a human-friendly percent value
-        const rarityPercent = Number(rarityBps) / 100;
-        const streakPercent = (Number(multiplierBps) - 10000) / 100;
-        const bonusPercent = rarityPercent + streakPercent;
-
-        if (!ignore)
-          setEarnings({
-            basePerHour: basePerHourWei,
-            totalPerHour: totalPerHourWei,
-            basePerDay: basePerDayWei,
-            totalPerDay: totalPerDayWei,
-            bonusPercent,
-            rarityPercent,
-            streakPercent,
-            basePerPing: basePerPingWei,
-            bonusPerPing: totalPerPingWei - basePerPingWei,
-            totalPerPing: totalPerPingWei,
-          });
-      } catch (err) {
-          // Remove console.error for production security
-          // console.error("Error fetching earnings:", err);
-          setEarnings(null);
-        }
-        finally {
-
-        if (!ignore) setLoading(false);
-      }
-    };
-    fetchData();
-    return () => {
-      ignore = true;
-    };
-  }, [tokenIdDec, getNFTGameData, pingInterval, gameData]);
+    setEarnings({
+      sharePerPingWeiFormatted: formatEther(sharePerPingWei),
+      rarityBps: rarityBps.toString(),
+      multiplierBps: multiplierBps.toString(),
+      rarity,
+      basePerHour: basePerHourWei,
+      totalPerHour: totalPerHourWei,
+      basePerDay: basePerDayWei,
+      totalPerDay: totalPerDayWei,
+      bonusPercent,
+      rarityPercent,
+      streakPercent,
+      basePerPing: basePerPingWei,
+      bonusPerPing: totalPerPingWei - basePerPingWei,
+      totalPerPing: totalPerPingWei,
+    });
+  }, [globalData, gameData]);
 
   // Derived status – convert bigint values (from contract) to number for UI calculations
   const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000));
@@ -265,7 +196,7 @@ function NFTPingCardComponent({
     return `${s}s`;
   };
 
-  const handlePing = requireApeChain(async () => {
+  const handlePing = requireMonadChain(async () => {
     if (!isConnected) {
       toast({
         title: t('wallet.notConnected', 'Wallet not connected'),
@@ -276,10 +207,9 @@ function NFTPingCardComponent({
 
     // CRITICAL: Validate chainId to prevent network spoofing
     if (!validateChainId(chainId)) {
-
       toast({
         title: t('wallet.wrongNetwork', 'Wrong Network'),
-        description: t('wallet.switchToApeChain', 'Please switch to ApeChain network'),
+        description: t('wallet.switchToMonadChain', 'Please switch to Monad Testnet'),
         variant: 'destructive',
       });
       return;
@@ -305,10 +235,11 @@ function NFTPingCardComponent({
       const updated = await getNFTGameData(tokenIdDec);
       setGameData(updated);
       if (onActionComplete) onActionComplete();
-    } catch (e: any) {
+    } catch (e: unknown) {
       // CRITICAL: XSS Protection - sanitize error message
-      const sanitizedMessage = e?.message 
-        ? DOMPurify.sanitize(e.message, { 
+  const errMsg = typeof e === 'object' && e && 'message' in e ? (e as { message?: string }).message : undefined;
+      const sanitizedMessage = errMsg
+        ? DOMPurify.sanitize(errMsg as string, { 
             ALLOWED_TAGS: [], 
             ALLOWED_ATTR: [] 
           })
@@ -333,8 +264,33 @@ function NFTPingCardComponent({
     }).format(craAmount);
   };
 
+  // More precise CRAA formatting for tooltips (default 6 fraction digits)
+  const formatCRADisplayFull = (wei: bigint, fractionDigits = 6): string => {
+    const craAmount = parseFloat(formatEther(wei));
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(craAmount);
+  };
+
+  // Percent formatting helper with fixed decimals
+  const formatPercent = (val: number | undefined, digits = 1): string => {
+    if (typeof val !== 'number' || Number.isNaN(val)) return '0.0%';
+    const sign = val >= 0 ? '' : '';
+    return `${sign}${val.toFixed(digits)}%`;
+  };
+
+  // Thousands separator for plain numbers (e.g., locked CRAA/raw)
+  const formatWithSeparators = (val: number | string): string => {
+    const num = typeof val === 'string' ? Number(val) : val;
+    if (!Number.isFinite(num)) return String(val);
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 6,
+    }).format(num);
+  };
+
   // Format CRAA amounts with T/B/M/K suffixes
-  const formatCRAA = (amount: string | number) => {
+  const formatOCTAA = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
     if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
@@ -343,31 +299,70 @@ function NFTPingCardComponent({
     return num.toFixed(2);
   };
 
-  const highlightClass = 'font-mono tabular-nums text-cyan-50';
+  // Helper: optionally wrap with tooltip
+  const withTooltip = (trigger: React.ReactElement, content: React.ReactNode) => {
+    if (!tooltipsEnabled) return trigger;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+        <TooltipContent side='top' className='max-w-[240px] text-xs leading-snug'>
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
+
+  // const highlightClass = 'font-mono tabular-nums text-purple-50';
 
   // Calculate CRAA accumulated and available to collect with the next ping
   // Show pending for all activated NFTs, even in cooldown
-  const pendingPeriods =
-    isActivated && pingInterval > 0
-      ? Math.floor((nowSec - lastPingTimeSec) / pingInterval)
-      : 0;
+  // const pendingPeriods =
+  //   isActivated && pingInterval > 0
+  //     ? Math.floor((nowSec - lastPingTimeSec) / pingInterval)
+  //     : 0;
 
   // Calculate partial pending for NFTs in cooldown (show accumulated even if period not complete)
   const partialPendingWei =
-    earnings && isActivated && pingInterval > 0
+    earnings && earnings.totalPerPing && isActivated && pingInterval > 0
       ? (earnings.totalPerPing * BigInt(nowSec - lastPingTimeSec)) /
         BigInt(pingInterval)
       : 0n;
 
-  const pendingWei = earnings
-    ? earnings.totalPerPing * BigInt(pendingPeriods)
-    : 0n;
+  // const pendingWei = earnings
+  //   ? earnings.totalPerPing * BigInt(pendingPeriods)
+  //   : 0n;
 
   // Use partial pending for all activated NFTs to show real-time accumulation
   const displayPendingWei = partialPendingWei;
 
-  // Get locked CRAA amount from gameData
-  const lockedCRAA = gameData ? Number(gameData.lockedCRAA) : 0;
+  // Inject magical animations CSS
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes twinkle {
+        0%, 100% { opacity: 0.3; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.2); }
+      }
+      @keyframes float-particle-0 {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        25% { transform: translateY(-8px) translateX(4px); }
+        50% { transform: translateY(-4px) translateX(-2px); }
+        75% { transform: translateY(-12px) translateX(3px); }
+      }
+      @keyframes float-particle-1 {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        33% { transform: translateY(-6px) translateX(-3px); }
+        66% { transform: translateY(-10px) translateX(5px); }
+      }
+    `;
+    if (!document.querySelector('#nft-card-animations')) {
+      style.id = 'nft-card-animations';
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // Get locked OCTAA amount from gameData
+  const lockedOcta = gameData ? Number(gameData.lockedOcta) : 0;
 
   // Calculate time accumulation information
   const timeSinceLastPing = isActivated ? nowSec - lastPingTimeSec : 0;
@@ -400,208 +395,410 @@ function NFTPingCardComponent({
   // Gray filter only if NFT cannot be pinged yet
   const hasActiveCooldown = !pingReady;
 
+  // Dynamic card styling based on state
+  const getCardTheme = () => {
+    if (!isActivated) {
+      // Inactive NFTs - warm orange/amber theme
+      return {
+        cardClass: 'bg-gradient-to-br from-amber-950/80 via-orange-900/60 to-amber-950/80 border-amber-500/40 hover:border-amber-400/70 hover:shadow-[0_20px_40px_rgba(251,191,36,0.15)]',
+        accentBar: 'bg-gradient-to-r from-amber-400/70 via-orange-400/70 to-amber-500/70',
+        cornerGlow: 'bg-amber-400/15'
+      };
+    } else if (pingReady) {
+      // Ready to ping - vibrant green/emerald theme
+      return {
+        cardClass: 'bg-gradient-to-br from-emerald-950/80 via-green-900/60 to-emerald-950/80 border-emerald-500/40 hover:border-emerald-400/70 hover:shadow-[0_20px_40px_rgba(16,185,129,0.15)]',
+        accentBar: 'bg-gradient-to-r from-emerald-400/70 via-green-400/70 to-emerald-500/70',
+        cornerGlow: 'bg-emerald-400/15'
+      };
+    } else {
+      // Cooldown - dark gray theme with minimal color
+      return {
+        cardClass: 'bg-gradient-to-br from-gray-900/90 via-slate-800/80 to-gray-900/90 border-gray-600/30 hover:border-gray-500/50 hover:shadow-[0_20px_40px_rgba(107,114,128,0.1)]',
+        accentBar: 'bg-gradient-to-r from-gray-500/50 via-slate-400/50 to-gray-500/50',
+        cornerGlow: 'bg-gray-400/10'
+      };
+    }
+  };
+
+  const cardTheme = getCardTheme();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className='group w-full max-w-[280px] mx-auto'
+      className='group w-full max-w-[300px] mx-auto'
     >
       <Card
         className={cn(
-          'bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-2 rounded-xl transition-all duration-300 hover:scale-105',
-          hasActiveCooldown
-            ? 'opacity-60 grayscale'
-            : 'border-slate-700 hover:border-orange-500/50'
+          'flex flex-col relative overflow-hidden border-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-[0_12px_25px_rgba(0,0,0,0.35)] backdrop-blur-md',
+          cardTheme.cardClass,
+          hasActiveCooldown && 'opacity-85 saturate-50 brightness-75'
         )}
       >
+        {/* Tooltips rendered inline; provider optional */}
+        {/* Glassmorphism overlay */}
+        <div className='absolute inset-0 bg-white/5 backdrop-blur-sm' />
+        
+        {/* Magical aura effect for ready cards - removed spinning */}
+        {pingReady && (
+          <div className='absolute inset-0 pointer-events-none'>
+            <div 
+              className='absolute inset-2 rounded-lg opacity-50'
+              style={{
+                background: 'radial-gradient(circle at center, #10B98120, transparent)',
+                animation: 'pulse 3s ease-in-out infinite',
+              }}
+            />
+          </div>
+        )}
+        
+        {/* Sparkle effects for special states */}
+        {!isActivated && (
+          <div className='absolute inset-0 pointer-events-none overflow-hidden rounded-xl'>
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className='absolute w-1 h-1 bg-amber-300 rounded-full opacity-80'
+                style={{
+                  left: `${20 + i * 15}%`,
+                  top: `${10 + (i % 2) * 80}%`,
+                  animation: `twinkle ${2 + i * 0.5}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.3}s`,
+                  filter: 'blur(0.5px)',
+                  boxShadow: '0 0 6px #FBBF24',
+                }}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Top accent bar with theme colors */}
+        <div className={cn('pointer-events-none absolute inset-x-0 top-0 h-[3px]', cardTheme.accentBar)} />
+        
+        {/* Themed corner glow */}
+        <div className={cn('pointer-events-none absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl', cardTheme.cornerGlow)} />
+        
+        {/* Bottom subtle glow */}
+        <div className={cn('pointer-events-none absolute -bottom-8 -left-8 w-24 h-24 rounded-full blur-2xl opacity-30', cardTheme.cornerGlow)} />
+        
+        {/* Floating energy particles for activated cards */}
+        {isActivated && (
+          <div className='absolute inset-0 pointer-events-none overflow-hidden rounded-xl'>
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className='absolute w-0.5 h-0.5 rounded-full opacity-60'
+                style={{
+                  left: `${15 + i * 20}%`,
+                  top: `${20 + i * 15}%`,
+                  background: pingReady ? '#10B981' : '#06B6D4',
+                  animation: `float-particle-${i % 2} ${3 + i}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.8}s`,
+                  filter: 'blur(0.5px)',
+                  boxShadow: `0 0 4px ${pingReady ? '#10B981' : '#06B6D4'}`,
+                }}
+              />
+            ))}
+          </div>
+        )}
         {/* Make the card a flex column to push the button to the bottom */}
-        <div className='flex flex-col h-full'>
+        <div className='flex flex-col h-full relative z-10'>
           <CardHeader className='pb-2'>
-            <div className='aspect-square rounded-lg overflow-hidden relative w-full shadow-lg max-w-[80px] mx-auto'>
+            <div className='aspect-square rounded-lg overflow-hidden relative w-full shadow-lg max-w-[140px] mx-auto ring-2 ring-white/20'>
               {nft.image ? (
                 <Image
                   src={nft.image}
                   alt={`CrazyCube #${tokenIdDec}`}
-                  width={80}
-                  height={80}
-                  sizes='80px'
+                  width={140}
+                  height={140}
+                  sizes='140px'
                   className='w-full h-full object-cover'
                   priority={index < 6}
                   loading={index < 6 ? 'eager' : 'lazy'}
                 />
               ) : (
-                <div className='w-full h-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center' />
+                <div className='w-full h-full bg-gradient-to-br from-[#C4B5FD] to-[#93C5FD] flex items-center justify-center' />
               )}
               {gameData && (
                 <>
                   {/* Rarity badge at very top-left */}
                   <Badge
-                    className={`absolute top-1 left-1 ${getColor(gameData.rarity)} text-white text-[7px] px-0.5 py-0 rounded shadow`}
+                    className={`absolute top-1 left-1 ${getColor(gameData.rarity)} text-white text-[8px] px-1 py-0 rounded shadow-lg`}
                   >
                     {getLabel(gameData.rarity)}
                   </Badge>
                   {!isActivated && (
-                    <div className='absolute bottom-1 left-1 bg-orange-600/80 text-[8px] text-white px-0.5 rounded'>
+                    <div className='absolute bottom-1 left-1 bg-orange-500/90 text-[9px] text-white px-1.5 py-0.5 rounded shadow-lg backdrop-blur-sm'>
                       Activate
                     </div>
                   )}
                   {/* Stars: vertical column on the right side of the image */}
-                  <div className='absolute top-1 right-1 flex flex-col gap-[2px] bg-black/60 rounded px-0.5 py-0.5'>
-                    {Array.from({
-                      length: Math.min(6, gameData.rarity || 1),
-                    }).map((_, idx) => (
-                      <Star key={idx} className='w-2 h-2 text-sky-400' />
-                    ))}
+                  <div className='absolute top-1 right-1 flex flex-col gap-[2px] bg-black/40 backdrop-blur-sm rounded px-0.5 py-0.5'>
+                    {(() => {
+                      const total = Math.max(1, Math.min(6, gameData.initialStars || gameData.rarity || 1));
+                      const filled = Math.max(0, Math.min(total, gameData.currentStars || 0));
+                      return Array.from({ length: total }).map((_, idx) => {
+                        const isFilled = idx < filled;
+                        return (
+                          <Star
+                            key={idx}
+                            className={cn(
+                              'w-2.5 h-2.5 drop-shadow-sm',
+                              'text-yellow-300'
+                            )}
+                            // Fill remaining stars; outline for spent ones
+                            fill={isFilled ? 'currentColor' : 'none'}
+                          />
+                        );
+                      });
+                    })()}
                   </div>
+                  {/* Gender badge (on-chain) */}
+                  {typeof gameData.gender === 'number' && (
+                    <div
+                      className={cn(
+                        'absolute bottom-1 right-1 text-[11px] font-bold px-1.5 py-0.5 rounded shadow-lg backdrop-blur-sm',
+                        gameData.gender === 1
+                          ? 'bg-blue-600/70 text-blue-100'
+                          : gameData.gender === 2
+                          ? 'bg-pink-600/70 text-pink-100'
+                          : 'bg-gray-600/70 text-gray-100'
+                      )}
+                      title='On-chain gender (fetched directly from contract)'
+                      aria-label='On-chain gender (fetched directly from contract)'
+                    >
+                      {gameData.gender === 1 ? '♂' : gameData.gender === 2 ? '♀' : '∅'}
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
             <div className='mt-1 text-center'>
-              <h3 className='font-semibold text-cyan-100 text-xs mb-0.5'>
+              <h3 className='font-semibold text-white text-xs mb-0.5 drop-shadow-sm'>
                 #{tokenIdDec}
               </h3>
               {pingReady ? (
                 <div className='flex items-center justify-center gap-1 text-[9px]'>
-                  <div className='w-1.5 h-1.5 rounded-full bg-green-400'></div>
-                  <span className='text-green-300 font-medium'>
-                    {t('sections.ping.readyToPing', 'Ready to Ping')}
+                  <div className='w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm animate-pulse'></div>
+                  <span className='text-emerald-200 font-medium drop-shadow-sm'>
+                    {t('ping.readyToPing', 'Ready to Ping')}
                   </span>
                 </div>
               ) : (
-                <div className='flex items-center justify-center gap-1 text-[9px] text-orange-300'>
-                  <Clock className='w-2.5 h-2.5' />
-                  <span>{formatDuration(timeLeft)} left</span>
+                <div className='flex items-center justify-center gap-1 text-[9px] text-amber-200'>
+                  <Clock className='w-2.5 h-2.5 drop-shadow-sm' />
+                  <span className='drop-shadow-sm'>{formatDuration(timeLeft)} left</span>
                 </div>
               )}
               {/* Auto-refresh indicator */}
               <div className='flex items-center justify-center mt-1'>
-                <div className='w-0.5 h-0.5 rounded-full bg-blue-400 animate-pulse'></div>
-                <span className='text-[7px] text-blue-300 ml-1'>
+                <div className='w-0.5 h-0.5 rounded-full bg-white/60 animate-pulse'></div>
+                <span className='text-[7px] text-white/70 ml-1 drop-shadow-sm'>
                   {t('sections.ping.live', 'Live')}
                 </span>
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className='flex-1 pt-0 pb-2 px-2 text-[9px] space-y-0.5'>
-            <div className='flex justify-between items-center text-cyan-300 min-w-0 gap-2'>
+          <CardContent className='flex-grow pt-1 pb-2 px-3 text-[10px] space-y-1 relative z-10'>
+            <div className='flex justify-between items-center text-white/80 min-w-0 gap-2'>
               <span>{t('sections.ping.basePerHour', 'Base/h')}</span>
-              <span className='font-mono font-semibold text-cyan-100 ml-2 text-right truncate max-w-[60%]'>
-                {earnings ? formatCRADisplay(earnings.basePerHour) : '...'}
-              </span>
+              {withTooltip(
+                <span
+                  className='tabular-nums font-mono font-black text-[10px] text-blue-200 ml-2 text-right truncate max-w-[60%] drop-shadow-lg bg-blue-600/25 px-2 py-1 rounded-md shadow-[0_0_8px_rgba(59,130,246,0.3)]'
+                  title={earnings ? `${formatCRADisplayFull(earnings?.basePerHour ?? 0n)} CRAA/h` : undefined}
+                  aria-label={earnings ? `${formatCRADisplayFull(earnings?.basePerHour ?? 0n)} CRAA per hour` : undefined}
+                >
+                  {earnings ? formatCRADisplay(earnings?.basePerHour ?? 0n) : '...'}
+                </span>,
+                t('tooltips.basePerHour', 'Base CRAA accrued per hour (before bonuses).')
+              )}
             </div>
-            <div className='flex justify-between items-center text-yellow-300 min-w-0 gap-2'>
-              <span>{t('sections.ping.rarity', 'Rarity')}</span>
-              <span className='font-mono font-semibold text-yellow-100 ml-2 text-right truncate max-w-[60%]'>
-                +{earnings ? earnings.rarityPercent.toFixed(1) : 0}%
-              </span>
+            {/* Gender (on-chain) */}
+            <div className='flex justify-between items-center min-w-0 gap-2'>
+              <span>{t('ping.gender', 'Gender')}</span>
+              {withTooltip(
+                <span
+                  className={cn(
+                    'tabular-nums font-mono font-black text-[10px] ml-2 text-right truncate max-w-[60%] drop-shadow-lg px-2 py-1 rounded-md',
+                    gameData?.gender === 1
+                      ? 'text-blue-100 bg-blue-600/25 shadow-[0_0_8px_rgba(59,130,246,0.4)]'
+                      : gameData?.gender === 2
+                      ? 'text-pink-100 bg-pink-600/25 shadow-[0_0_8px_rgba(236,72,153,0.4)]'
+                      : 'text-gray-200 bg-gray-600/25 shadow-[0_0_8px_rgba(107,114,128,0.3)]'
+                  )}
+                  title='On-chain: value read directly from game contract'
+                  aria-label='On-chain: value read directly from game contract'
+                >
+                  {gameData?.gender === 1 ? '♂ Male' : gameData?.gender === 2 ? '♀ Female' : 'Unknown'}
+                </span>,
+                'Data is fetched on-chain directly from the game contract'
+              )}
             </div>
-            <div className='flex justify-between items-center text-orange-300 min-w-0 gap-2'>
-              <span>
-                {earnings && earnings.streakPercent >= 0
-                  ? t('sections.ping.streak', 'Streak')
-                  : t('sections.ping.penalty', 'Penalty')}
-              </span>
-              <span className='font-mono font-semibold text-orange-100 ml-2 text-right truncate max-w-[60%]'>
-                {earnings && earnings.streakPercent >= 0 ? '+' : ''}
-                {earnings ? earnings.streakPercent.toFixed(1) : 0}%
-              </span>
+            <div className='flex justify-between items-center text-amber-200 min-w-0 gap-2'>
+              <span>{t('ping.rarity', 'Rarity')}</span>
+              {withTooltip(
+                <span
+                  className='tabular-nums font-mono font-black text-[10px] text-amber-100 ml-2 text-right truncate max-w-[60%] drop-shadow-lg bg-amber-600/25 px-2 py-1 rounded-md shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                  title={earnings ? `${formatPercent(earnings?.rarityPercent, 2)} rarity` : undefined}
+                  aria-label={earnings ? `${formatPercent(earnings?.rarityPercent, 2)} rarity` : undefined}
+                >
+                  +{earnings ? (earnings?.rarityPercent?.toFixed(1) ?? '0') : 0}%
+                </span>,
+                t('tooltips.rarity', 'Bonus from NFT rarity (basis points converted to %).')
+              )}
             </div>
-            <div className='flex justify-between items-center text-amber-300 min-w-0 gap-2'>
-              <span>{t('sections.ping.totalBonus', 'Total Bonus')}</span>
-              <span className='font-mono font-semibold text-amber-100 ml-2 text-right truncate max-w-[60%]'>
-                {earnings && earnings.bonusPercent >= 0 ? '+' : ''}
-                {earnings ? earnings.bonusPercent.toFixed(1) : 0}%
-              </span>
+            <div className='flex justify-between items-center text-white/80 min-w-0 gap-2'>
+                <span>
+                  {(earnings?.streakPercent ?? 0) >= 0
+                    ? t('ping.streak', 'Streak')
+                    : t('ping.penalty', 'Penalty')}
+                </span>
+              {withTooltip(
+              <span className={cn(
+                'tabular-nums font-mono font-black text-[10px] ml-2 text-right truncate max-w-[60%] drop-shadow-lg px-2 py-1 rounded-md',
+                (earnings?.streakPercent ?? 0) >= 0 
+                  ? 'text-green-200 bg-green-600/25 shadow-[0_0_8px_rgba(34,197,94,0.4)]' 
+                  : 'text-red-200 bg-red-600/25 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+              )}
+                title={earnings ? `${formatPercent(earnings?.streakPercent, 2)} streak` : undefined}
+                aria-label={earnings ? `${formatPercent(earnings?.streakPercent, 2)} streak` : undefined}
+              >
+                {(earnings?.streakPercent ?? 0) >= 0 ? '+' : ''}
+                {earnings ? (earnings?.streakPercent?.toFixed(1) ?? '0') : 0}%
+              </span>,
+              t('tooltips.streak', 'Experience streak bonus/penalty based on regular pinging.')
+              )}
             </div>
-            <div className='flex justify-between items-center text-emerald-300 font-semibold min-w-0 gap-2'>
-              <span>24h</span>
-              <span className='font-mono text-emerald-100 ml-2 text-right truncate max-w-[60%]'>
-                {earnings ? formatCRADisplay(earnings.totalPerDay) : '...'}
-              </span>
+            <div className='flex justify-between items-center text-white/80 min-w-0 gap-2'>
+              <span>{t('ping.totalBonus', 'Total Bonus')}</span>
+              {withTooltip(
+              <span className={cn(
+                'tabular-nums font-mono font-black text-[10px] ml-2 text-right truncate max-w-[60%] drop-shadow-lg px-2 py-1 rounded-md',
+                (earnings?.bonusPercent ?? 0) >= 0 
+                  ? 'text-purple-200 bg-purple-600/25 shadow-[0_0_8px_rgba(147,51,234,0.4)]' 
+                  : 'text-red-200 bg-red-600/25 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+              )}
+                title={earnings ? `${formatPercent(earnings?.bonusPercent, 2)} total` : undefined}
+                aria-label={earnings ? `${formatPercent(earnings?.bonusPercent, 2)} total` : undefined}
+              >
+                {(earnings?.bonusPercent ?? 0) >= 0 ? '+' : ''}
+                {earnings ? (earnings?.bonusPercent?.toFixed(1) ?? '0') : 0}%
+              </span>,
+              t('tooltips.totalBonus', 'Total bonus applied (rarity + streak).')
+              )}
             </div>
-            <div className='flex justify-between items-center text-lime-300 font-semibold min-w-0 gap-2'>
-              <span>{t('sections.ping.pending', 'Pending')}</span>
+            <div className='flex justify-between items-center text-yellow-200 font-semibold min-w-0 gap-2'>
+              <span>{t('ping.24h', '24h')}</span>
+              {withTooltip(
+                <span
+                  className='tabular-nums font-mono font-black text-[11px] text-yellow-100 ml-2 text-right truncate max-w-[60%] drop-shadow-lg bg-yellow-600/25 px-2 py-1 rounded-md shadow-[0_0_10px_rgba(234,179,8,0.5)]'
+                  title={earnings ? `${formatCRADisplayFull(earnings?.totalPerDay ?? 0n)} CRAA/24h` : undefined}
+                  aria-label={earnings ? `${formatCRADisplayFull(earnings?.totalPerDay ?? 0n)} CRAA per 24 hours` : undefined}
+                >
+                  {earnings ? formatCRADisplay(earnings?.totalPerDay ?? 0n) : '...'}
+                </span>,
+                t('tooltips.day24', 'Projected CRAA in 24 hours with current bonuses.')
+              )}
+            </div>
+            <div className='flex justify-between items-center text-lime-200 font-semibold min-w-0 gap-2'>
+              <span>{t('ping.pending', 'Pending')}</span>
+              {withTooltip(
               <span
                 className={cn(
-                  'font-mono ml-2 text-right truncate max-w-[60%]',
+                  'tabular-nums font-mono font-black text-[11px] ml-2 text-right truncate max-w-[60%] drop-shadow-lg px-2 py-1 rounded-md',
                   isActivated &&
                     parseFloat(
                       formatCRADisplay(displayPendingWei)
                     ) > 0
-                    ? 'text-lime-300 font-bold bg-lime-900/30 px-1 rounded animate-pulse'
+                    ? 'text-lime-100 bg-lime-500/35 animate-pulse backdrop-blur-sm shadow-[0_0_12px_rgba(132,204,22,0.6)]'
                     : isActivated
-                    ? 'text-lime-200 animate-pulse'
-                    : 'text-lime-100'
+                    ? 'text-lime-200 bg-lime-600/20 animate-pulse shadow-[0_0_8px_rgba(132,204,22,0.3)]'
+                    : 'text-lime-100 bg-lime-600/20 shadow-[0_0_6px_rgba(132,204,22,0.2)]'
                 )}
+                title={`${formatCRADisplayFull(displayPendingWei)} CRAA pending`}
+                aria-label={`${formatCRADisplayFull(displayPendingWei)} CRAA pending`}
               >
                 {earnings
                   ? formatCRADisplay(displayPendingWei)
                   : '0.00'}
-              </span>
+              </span>,
+              t('tooltips.pending', 'Accrued since last ping. Will be collected on next ping.')
+              )}
             </div>
             {/* Time accumulation info - show for all activated NFTs */}
-            {isActivated && (
-              <div className='flex justify-between items-center text-blue-300 text-[9px] min-w-0 gap-2'>
+            {isActivated ? (
+              <div className='flex justify-between items-center text-white/70 text-[9px] min-w-0 gap-2'>
                 <span>⏰ {t('sections.ping.accumulated', 'Accumulated')}</span>
-                <span className='font-mono text-blue-100 ml-2 text-right truncate max-w-[60%]'>
+                <span className='font-mono font-black text-[10px] text-indigo-200 ml-2 text-right truncate max-w-[60%] drop-shadow-lg bg-indigo-600/25 px-2 py-1 rounded-md shadow-[0_0_8px_rgba(99,102,241,0.3)]'>
                   {formatTimeAccumulation(timeSinceLastPing)}
+                </span>
+              </div>
+            ) : (
+              <div className='flex justify-between items-center text-gray-400 text-[9px] min-w-0 gap-2'>
+                <span>&nbsp;</span>
+                <span className='font-mono font-black text-[10px] text-gray-300 ml-2 text-right truncate max-w-[60%] bg-gray-600/25 px-2 py-1 rounded-md shadow-[0_0_8px_rgba(107,114,128,0.2)]'>
+                  Not Activated
                 </span>
               </div>
             )}
             {/* Time until next ping - only show if not ready */}
             {!pingReady && (
-              <div className='flex justify-between items-center text-orange-300 text-[9px] min-w-0 gap-2'>
+              <div className='flex justify-between items-center text-amber-200 text-[9px] min-w-0 gap-2'>
                 <span>⏳ {t('sections.ping.nextPing', 'Next Ping')}</span>
-                <span className='font-mono text-orange-100 ml-2 text-right truncate max-w-[60%]'>
+                <span className='tabular-nums font-mono font-black text-[10px] text-orange-200 ml-2 text-right truncate max-w-[60%] drop-shadow-lg bg-orange-600/25 px-2 py-1 rounded-md shadow-[0_0_8px_rgba(251,146,60,0.4)]'>
                   {formatTimeUntilPing(timeUntilNextPing)}
                 </span>
               </div>
             )}
-            <div className='flex justify-between items-center text-purple-300 font-semibold min-w-0 gap-2'>
-              <span>{t('sections.ping.lockedCRAA', 'Locked CRAA')}</span>
+            <div className='flex justify-between items-center text-white/80 font-semibold min-w-0 gap-2'>
+              <span>{t('ping.lockedOcta', 'Locked OCTAA')}</span>
+              {withTooltip(
               <span
                 className={cn(
-                  'font-mono ml-2 text-right truncate max-w-[60%]',
-                  hasActiveCooldown && parseFloat(lockedCRAA.toString()) > 0
-                    ? 'text-purple-300 font-bold bg-purple-900/30 px-1 rounded animate-pulse'
-                    : 'text-purple-100'
+                  'tabular-nums font-mono font-black text-[10px] ml-2 text-right truncate max-w-[60%] drop-shadow-lg px-2 py-1 rounded-md text-black',
+                  hasActiveCooldown && parseFloat(lockedOcta.toString()) > 0
+                    ? 'bg-pink-600/25 animate-pulse backdrop-blur-sm shadow-[0_0_8px_rgba(236,72,153,0.4)]'
+                    : 'bg-pink-600/20 shadow-[0_0_6px_rgba(236,72,153,0.2)]'
                 )}
+                title={`${formatWithSeparators(lockedOcta)} OCTAA locked`}
+                aria-label={`${formatWithSeparators(lockedOcta)} OCTAA locked`}
               >
-                {formatCRAA(lockedCRAA)}
-              </span>
+                <span className='font-black text-black'>
+                  {formatOCTAA(lockedOcta)}
+                </span>
+              </span>,
+              t('tooltips.lockedOcta', 'OCTA temporarily locked by game mechanics (e.g., pending burn/breed).')
+              )}
             </div>
             {/* Status line for ready NFTs to match cooldown NFT line count */}
             {pingReady && (
-              <div className='flex justify-between items-center text-indigo-300 text-[9px] min-w-0 gap-2'>
-                <span>{t('sections.ping.status', 'Status')}</span>
-                <span className='font-mono text-indigo-100 ml-2 text-right truncate max-w-[60%]'>
-                  {t('sections.ping.active', 'Active')}
+              <div className='flex justify-between items-center text-white/70 text-[9px] min-w-0 gap-2'>
+                <span>{t('ping.status', 'Status')}</span>
+                <span className='font-mono font-black text-[10px] text-emerald-200 ml-2 text-right truncate max-w-[60%] drop-shadow-lg bg-emerald-600/25 px-2 py-1 rounded-md shadow-[0_0_8px_rgba(16,185,129,0.4)]'>
+                  {t('ping.active', 'Active')}
                 </span>
-              </div>
-            )}
-            {/* Extra line for non-activated NFTs to keep card heights equal */}
-            {!isActivated && (
-              <div className='flex justify-between items-center text-gray-400 text-[9px] min-w-0 gap-2'>
-                <span>&nbsp;</span>
-                <span className='font-mono text-gray-300 ml-2 text-right truncate max-w-[60%]'>—</span>
               </div>
             )}
           </CardContent>
 
           {/* Ping button */}
-          <div className='px-2 pb-2'>
+          <div className='px-2 pb-2 relative z-10'>
             <CoinBurst key={String(nft.tokenId)} total={18} duration={0.8}>
               <Button
                 variant={pingReady ? 'default' : 'outline'}
                 size='sm'
-                className={
+                className={cn(
+                  'w-full h-7 text-xs font-semibold transition-all duration-300',
                   pingReady
-                    ? 'w-full h-7 text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500'
-                    : 'w-full h-7 text-xs border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10'
-                }
+                    ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:from-emerald-400 hover:to-green-500 hover:shadow-[0_0_25px_rgba(16,185,129,0.5)]'
+                    : !isActivated
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:from-amber-400 hover:to-orange-500 border-0'
+                    : 'border-gray-500/40 bg-gray-800/40 text-gray-300 hover:bg-gray-700/50 hover:border-gray-400/60 backdrop-blur-sm'
+                )}
                 onClick={handlePing}
                 disabled={isProcessing || !pingReady}
               >
@@ -614,7 +811,7 @@ function NFTPingCardComponent({
                   <>
                     <SatelliteDish className='mr-2 h-4 w-4' />{' '}
                     {isActivated
-                      ? t('sections.ping.button', 'Ping')
+                      ? t('ping.ping', 'Ping')
                       : t('sections.ping.activate', 'Activate')}
                   </>
                 )}
@@ -633,3 +830,4 @@ export default React.memo(NFTPingCardComponent, (prev, next) => {
     prev.nft.rewardBalance === next.nft.rewardBalance
   );
 });
+

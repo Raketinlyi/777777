@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { formatEther, parseEther } from 'viem';
-import { BurnedNftInfo, useClaimReward } from '@/hooks/useBurnedNfts';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,19 +14,42 @@ import { Countdown } from '@/components/Countdown';
 import { motion } from 'framer-motion';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useClaimBurnReward } from '@/hooks/useClaimBurnReward';
+
+interface BurnRecord {
+  owner: `0x${string}`;
+  totalAmount: bigint;
+  claimAvailableTime: bigint;
+  graveyardReleaseTime: bigint;
+  claimed: boolean;
+  waitPeriod: number;
+}
+
+interface BurnSplit {
+  playerBps: number;
+  poolBps: number;
+  burnBps: number;
+}
 
 interface BurnedNftCardProps {
-  nft: BurnedNftInfo;
+  tokenId: string;
+  record: BurnRecord;
+  split: BurnSplit;
+  playerShare: bigint;
+  isReadyToClaim: boolean;
 }
 
 export const BurnedNftCard = React.memo(function BurnedNftCard({
-  nft,
+  tokenId,
+  record,
+  split,
+  playerShare,
+  isReadyToClaim: initialIsReadyToClaim,
 }: BurnedNftCardProps) {
-  const { tokenId, record, split, playerShare } = nft;
   const [isClaimReady, setIsClaimReady] = useState(() => {
-    return nft.isReadyToClaim;
+    return initialIsReadyToClaim;
   });
-  const { claim, isClaiming, isSuccess } = useClaimReward(tokenId);
+  const { claim, isClaiming, isSuccess } = useClaimBurnReward(tokenId);
   const { t } = useTranslation();
 
   const [hide, setHide] = useState(false);
@@ -48,10 +70,10 @@ export const BurnedNftCard = React.memo(function BurnedNftCard({
     const craa = Number(formatEther(num));
 
     // Use compact notation for large numbers
-    if (craa >= 1000000) {
-      return (craa / 1000000).toFixed(2) + 'M';
-    } else if (craa >= 1000) {
-      return (craa / 1000).toFixed(2) + 'K';
+    if (craa >= 1_000_000) {
+      return `${(craa / 1_000_000).toFixed(1)}M`;
+    } else if (craa >= 1_000) {
+      return `${(craa / 1_000).toFixed(1)}K`;
     } else if (craa >= 1) {
       return craa.toFixed(2);
     } else {
@@ -59,109 +81,107 @@ export const BurnedNftCard = React.memo(function BurnedNftCard({
     }
   };
 
-  const totalAmount = record.totalAmount;
-  const poolShare = split ? (totalAmount * BigInt(split.poolBps)) / 10000n : 0n;
-  const burnShare = split ? (totalAmount * BigInt(split.burnBps)) / 10000n : 0n;
-
   const handleClaim = async () => {
-    if (!isClaimReady || isClaiming || isSuccess) return;
-    await claim();
+    try {
+      await claim();
+    } catch (error) {
+      console.error('Claim failed:', error);
+    }
   };
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
+  const handleCountdownComplete = () => {
+    setIsClaimReady(true);
   };
+
+  const poolShare = (record.totalAmount * BigInt(split.poolBps)) / BigInt(10000);
+  const burnShare = (record.totalAmount * BigInt(split.burnBps)) / BigInt(10000);
 
   return (
     <motion.div
-      variants={cardVariants}
-      initial='hidden'
-      animate='visible'
-      className='scale-[0.75]'
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
     >
-      <Card
-        className={`bg-gradient-to-br from-yellow-900/80 to-amber-800/80 border-2 rounded-xl transition-all duration-300 hover:scale-105 ${isClaimReady ? 'border-yellow-500/60' : 'border-amber-600/50 hover:border-amber-500/60'} flex flex-col h-full w-full max-w-[220px]`}
-      >
-        <div className='flex flex-col justify-between h-full'>
-          <CardHeader className='p-0 mb-4'>
-            <div className='aspect-square w-full overflow-hidden rounded-lg relative'>
-              <img
-                src={`/images/zol${(parseInt(tokenId) % 7) + 1}.png`}
-                alt={`Cube #${tokenId}`}
-                className='w-full h-full object-cover bg-slate-800'
-                onError={e => {
-                  const target = e.target as HTMLImageElement;
-                  target.onerror = null;
-                  target.src = `/images/zol${(parseInt(tokenId) % 7) + 1}.png`;
-                }}
+      <Card className='bg-gradient-to-br from-slate-800/50 to-slate-900/50 border-slate-700 hover:border-violet-500/50 transition-all duration-300'>
+        <CardHeader className='pb-3'>
+          <CardTitle className='text-lg font-bold text-white flex items-center justify-between'>
+            <span>NFT #{tokenId}</span>
+            <span className='text-sm text-violet-400'>
+              {record.claimed ? '✓ Claimed' : isClaimReady ? '🎁 Ready' : '⏰ Pending'}
+            </span>
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className='space-y-4'>
+          {/* Accumulated Rewards */}
+          <div className='bg-slate-800/30 rounded-lg p-3'>
+            <div className='text-sm text-slate-400 mb-1'>
+              {t('rewards.accumulated', 'Accumulated Rewards')}
+            </div>
+            <div className='text-xl font-bold text-violet-300'>
+              {fmt(record.totalAmount)} CRAA
+            </div>
+          </div>
+
+          {/* Shares Breakdown */}
+          <div className='grid grid-cols-3 gap-2 text-xs'>
+            <div className='bg-blue-500/10 rounded p-2 text-center'>
+              <div className='text-blue-400 font-medium'>Pool</div>
+              <div className='text-white'>{fmt(poolShare)}</div>
+              <div className='text-slate-400'>{(split.poolBps / 100).toFixed(1)}%</div>
+            </div>
+            <div className='bg-green-500/10 rounded p-2 text-center'>
+              <div className='text-green-400 font-medium'>Player</div>
+              <div className='text-white'>{fmt(playerShare)}</div>
+              <div className='text-slate-400'>{(split.playerBps / 100).toFixed(1)}%</div>
+            </div>
+            <div className='bg-red-500/10 rounded p-2 text-center'>
+              <div className='text-red-400 font-medium'>Burn</div>
+              <div className='text-white'>{fmt(burnShare)}</div>
+              <div className='text-slate-400'>{(split.burnBps / 100).toFixed(1)}%</div>
+            </div>
+          </div>
+
+          {/* Player Claimable Amount */}
+          <div className='bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-lg p-3 border border-violet-500/20'>
+            <div className='text-sm text-slate-400 mb-1'>
+              {t('rewards.claimable', 'Available to Claim')}
+            </div>
+            <div className='text-2xl font-bold text-violet-300'>
+              {fmt(playerShare)} CRAA
+            </div>
+          </div>
+
+          {/* Countdown or Ready Status */}
+          {!isClaimReady && !record.claimed && (
+            <div className='bg-slate-800/30 rounded-lg p-3'>
+              <div className='text-sm text-slate-400 mb-2'>
+                {t('rewards.countdown', 'Claim available in')}
+              </div>
+              <Countdown
+                targetTimestamp={BigInt(record.claimAvailableTime ?? 0)}
+                onComplete={handleCountdownComplete}
               />
             </div>
-            <CardTitle className='mt-4 text-center text-xl font-bold text-white'>
-              {t('cube', 'Cube')} #{tokenId}
-            </CardTitle>
-          </CardHeader>
+          )}
+        </CardContent>
 
-          <CardContent className='pt-0 pb-2 px-2 text-[10px] space-y-1 text-yellow-200'>
-            <div className='flex justify-between'>
-              <span>{t('rewards.accumulated', 'Accumulated:')}</span>{' '}
-              <span className='font-medium text-white'>
-                {fmt(totalAmount)} CRAA
-              </span>
-            </div>
-            <div className='flex justify-between text-slate-400'>
-              <span>
-                {t('rewards.toPool', 'To pool')} (
-                {Number(split?.poolBps || 0) / 100}%):
-              </span>{' '}
-              <span className='text-rose-300'>-{fmt(poolShare)} CRAA</span>
-            </div>
-            <div className='flex justify-between text-slate-400'>
-              <span>
-                {t('rewards.burned', 'Burned')} (
-                {Number(split?.burnBps || 0) / 100}%):
-              </span>{' '}
-              <span className='text-rose-300'>-{fmt(burnShare)} CRAA</span>
-            </div>
-
-            {/* total payout highlight */}
-            <div className='bg-black/50 rounded-md py-1 px-2 mt-2 text-center shadow-inner border border-yellow-700/40'>
-              <div className='text-[11px] uppercase tracking-wider text-slate-300'>
-                {t('rewards.toClaim', 'To claim')}
-              </div>
-              <div className='text-2xl font-extrabold text-emerald-300 drop-shadow-md'>
-                {fmt(playerShare)} <span className='text-sm'>CRAA</span>
-              </div>
-            </div>
-          </CardContent>
-
-          <CardFooter className='px-2 pb-2 mt-auto'>
-            {record.claimed || isSuccess ? (
-              <div className='w-full text-center font-bold text-lg py-3 rounded-lg bg-green-500/20 text-green-300'>
-                {t('rewards.claimed', 'REWARD CLAIMED')} ✅
-              </div>
-            ) : (
-              <div className='w-full'>
-                <div className='text-amber-200 mb-2'>
-                  {t('rewards.availableIn', 'Available in:')}
-                </div>
-                <Countdown
-                  targetTimestamp={record.claimAvailableTime}
-                  onComplete={() => setIsClaimReady(true)}
-                />
-                <Button
-                  disabled={!isClaimReady || isClaiming}
-                  onClick={handleClaim}
-                  className='mt-2 w-full rounded-lg bg-amber-500 px-4 py-3 text-base font-bold text-black transition-all hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed'
-                >
-                  {isClaiming
-                    ? t('rewards.processing', 'PROCESSING...')
-                    : t('rewards.claim', 'CLAIM')}
-                </Button>
-              </div>
-            )}
-          </CardFooter>
-        </div>
+        <CardFooter>
+          <Button
+            onClick={handleClaim}
+            disabled={!isClaimReady || record.claimed || isClaiming}
+            className='w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700'
+          >
+            {isClaiming
+              ? t('rewards.claiming', 'Claiming...')
+              : record.claimed
+              ? t('rewards.claimed', 'Claimed')
+              : isClaimReady
+              ? t('rewards.claim', 'Claim Rewards')
+              : t('rewards.wait', 'Wait for Countdown')}
+          </Button>
+        </CardFooter>
       </Card>
     </motion.div>
   );

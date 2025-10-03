@@ -48,9 +48,9 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         floorApe: 0.25,
-        craaUsd: 0.0000006,
+        octaaUsd: 0.0000006,
         apeUsd: 1.2,
-        floorCraa: 500,
+        floorOctaa: 500,
         floorUsd: 0.3,
         error: 'Market data temporarily unavailable',
         timestamp: new Date().toISOString(),

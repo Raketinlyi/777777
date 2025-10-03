@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+
 import { UnifiedNftCard } from './UnifiedNftCard';
-import { Flame, Star, Loader2, SatelliteDish } from 'lucide-react';
-import { useCrazyCubeGame, type NFTGameData } from '@/hooks/useCrazyCubeGame';
-import { usePerformanceContext } from '@/hooks/use-performance-context';
+import { Flame, Star, SatelliteDish } from 'lucide-react';
+import { useCrazyOctagonGame, type NFTGameData } from '@/hooks/useCrazyOctagonGame';
+import type { NftBatchItem } from '@/hooks/useContractBatch';
+// performance context not needed in this component currently
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -15,31 +19,31 @@ import {
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import type { NFT } from '@/types/nft';
 import { useNetwork } from '@/hooks/use-network';
-import React from 'react';
-import { useMobile } from '@/hooks/use-mobile';
 import { SECURITY_CONFIG, validateChainId, validateContractAddress } from '@/config/security';
 import DOMPurify from 'isomorphic-dompurify';
+import { BurnAnimationOverlay } from './BurnAnimationOverlay';
+import { useBurnState } from '@/hooks/use-burn-state';
 
 interface BurnCardProps {
   nft: NFT;
   index: number;
   onActionComplete?: () => void;
+  batchedData?: NFTGameData | NftBatchItem | null | undefined; // Предзагруженные данные из батча
 }
 
-// Helper: format wei → CRAA human-readable
-const fmtCRAA = (val: string | bigint | number) => {
+// Helper: format wei → OCTA human-readable
+const fmtOCTA = (val: string | bigint | number) => {
   try {
     let valNumber: number;
 
     if (typeof val === 'string') {
-      // If it's a string, treat it as CRAA (not wei)
+      // If it's a string, treat it as OCTA (not wei)
       valNumber = parseFloat(val);
     } else if (typeof val === 'number') {
       valNumber = val;
@@ -57,7 +61,7 @@ const fmtCRAA = (val: string | bigint | number) => {
   } catch (error) {
     // Safe error handling for production
     if (process.env.NODE_ENV === 'development') {
-      console.warn('fmtCRAA error:', error);
+      console.warn('fmtOCTA error:', error);
     }
     return '0';
   }
@@ -66,57 +70,111 @@ const fmtCRAA = (val: string | bigint | number) => {
 export const BurnCard = React.memo(function BurnCard({
   nft,
   index,
-  onActionComplete,
+  batchedData,
 }: BurnCardProps) {
   const { t } = useTranslation();
   const tokenId = String(nft.tokenId);
-  const { isLiteMode } = usePerformanceContext();
+  // note: performance flags currently unused here
+  const { incrementBurnCount, decrementBurnCount } = useBurnState();
   const {
     getNFTGameData,
     burnFeeBps,
-    approveCRAA,
+    approveOCTA,
     approveNFT,
     burnNFT,
     isConnected,
     pingInterval,
     getBurnSplit,
-    craaBalance,
-  } = useCrazyCubeGame();
+    octaBalance,
+    getLPInfo,
+  } = useCrazyOctagonGame();
   const { toast } = useToast();
   const [data, setData] = useState<NFTGameData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [step, setStep] = useState<
-    'idle' | 'approvingCRAA' | 'approvingNFT' | 'burning'
-  >('idle');
-  const [waitMinutes, setWaitMinutes] = useState<12 | 60 | 255>(12);
+  // step state removed (was write-only); animationState drives UI
+  const [waitMinutes, setWaitMinutes] = useState<30 | 120 | 480>(120);
   const [burnSplit, setBurnSplit] = useState<{
     playerBps: number;
     poolBps: number;
     burnBps: number;
   }>({ playerBps: 0, poolBps: 0, burnBps: 0 });
-  const [burnFX, setBurnFX] = useState(false);
+  const [animationState, setAnimationState] = useState<'idle' | 'approving' | 'burning' | 'exploding'>('idle');
+  const [animationIntensity, setAnimationIntensity] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [isDisappearing, setIsDisappearing] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [charLevel, setCharLevel] = useState(0); // 0 = нет обугливания, 1-3 = уровни обугливания // Уровень интенсивности анимации
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { isApeChain, requireApeChain } = useNetwork();
-  const { isMobile } = useMobile();
+  const [lpInfo, setLpInfo] = useState<null | {
+    lpAmount: string;
+    lpAmountWei: bigint;
+    octaDeposited: string;
+    octaDepositedWei: bigint;
+    pairDeposited: string;
+    pairDepositedWei: bigint;
+    helperAddress?: string;
+    pairAddress?: string;
+  }>(null);
+  const { isApeChain, isMonadChain, requireMonadChain } = useNetwork();
   const chainId = useChainId();
 
-  // Convert string balance to wei safely
+  // Convert OCTA balance string to wei for comparisons
   const balWei = (() => {
     try {
-      if (!craaBalance) return 0n;
-      return parseEther(String(craaBalance)); // "9 999 915 222 398" → wei
-    } catch (error) {
-      // CRITICAL: Safe error handling to prevent DoS
+      if (!octaBalance) return 0n;
+      return parseEther(octaBalance);
+    } catch {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Invalid balance format:', craaBalance);
+        console.warn('Invalid OCTA balance format:', octaBalance);
       }
       return 0n;
     }
   })();
 
   useEffect(() => {
-    getNFTGameData(tokenId).then(setData);
-  }, [tokenId]);
+    // If there's batched data, it may be either already parsed NFTGameData
+    // or a wrapper from useNFTsBatchData: { tokenId, success, data, error }.
+    // Normalize both shapes to NFTGameData to avoid passing a raw batch object
+    // into the UI which causes lockedOcta to be undefined -> NaN/0 displays.
+    if (batchedData) {
+      if ('success' in batchedData) {
+        if (batchedData.success && batchedData.data) {
+          try {
+            const summary = batchedData.data;
+            const locked = (summary[9] as bigint) ?? 0n;
+            const parsed: NFTGameData = {
+              tokenId,
+              rarity: Number(summary[3] as number | bigint) || 0,
+              initialStars: 0,
+              currentStars: Number(summary[4] as number | bigint) || 0,
+              isActivated: Boolean(summary[2]),
+              lockedOcta: formatEther(locked),
+              lockedOctaWei: locked,
+              lastPingTime: Number(summary[7] as number | bigint) || 0,
+              lastBreedTime: Number(summary[8] as number | bigint) || 0,
+              isInGraveyard: Boolean(summary[6]),
+              bonusStars: Number(summary[5] as number | bigint) || 0,
+            };
+            setData(parsed);
+          } catch (err) {
+            // If parsing fails, fallback to individual RPC read
+            if (process.env.NODE_ENV === 'development') console.warn('batch parse error', err);
+            getNFTGameData(tokenId).then(setData);
+          }
+        } else {
+          // Batch item failed or missing data — fallback to individual read
+          getNFTGameData(tokenId).then(setData);
+        }
+      } else {
+        // Already in expected shape
+        setData(batchedData as NFTGameData);
+      }
+    } else {
+      // Otherwise load individually (fallback)
+      getNFTGameData(tokenId).then(setData);
+    }
+  // Note: getNFTGameData is stable from hook; intentionally omit from deps to avoid ref churn
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenId, batchedData]);
 
   // Derived ping status
   const nowSec = Math.floor(Date.now() / 1000);
@@ -136,13 +194,39 @@ export const BurnCard = React.memo(function BurnCard({
     return () => {
       ignore = true;
     };
+  // getBurnSplit is stable; intentionally omitted from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waitMinutes]);
 
-  // Helper to calculate fee based on locked CRAA and burnFeeBps + additional fees
+  // Автоматический сброс состояния после завершения анимации
+  useEffect(() => {
+    if (animationState === 'exploding') {
+      const timer = setTimeout(() => {
+        console.log('🔄 Resetting animation state to idle');
+        setAnimationState('idle');
+        setIsShaking(false);
+        setCharLevel(0);
+        setAnimationIntensity(1);
+        // Карточка остаётся скрытой через isDisappearing
+      }, 3000); // Даем время на взрыв и исчезновение
+      
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [animationState]);
+
+  // Проверка: если NFT в graveyard, скрываем карточку
+  useEffect(() => {
+    if (data?.isInGraveyard && !isDisappearing) {
+      setIsDisappearing(true);
+    }
+  }, [data?.isInGraveyard, isDisappearing]);
+
+  // Helper to calculate fee based on locked OCTA and burnFeeBps + additional fees
   const calcFee = () => {
     if (!data) return '0';
     try {
-      const lockedWei = parseEther(data.lockedCRAA);
+      const lockedWei = parseEther(data.lockedOcta);
       const baseFeeWei = (lockedWei * BigInt(burnFeeBps)) / BigInt(10000);
       const additionalFeeWei = (lockedWei * BigInt(50)) / BigInt(10000); // 0.5% = 50 bps
       const totalFeeWei = baseFeeWei + additionalFeeWei;
@@ -153,68 +237,43 @@ export const BurnCard = React.memo(function BurnCard({
       const roundedFeeWei = parseEther(roundedFeeNumber.toString());
 
       return formatEther(roundedFeeWei); // Return without commas
-    } catch (error) {
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') console.warn('calcFeeDisplay error', err);
       return '0';
     }
   };
 
   // Helper to calculate fee for display (with commas)
-  const calcFeeDisplay = () => {
-    if (!data) return '0';
-    try {
-      const lockedWei = parseEther(data.lockedCRAA);
-      const baseFeeWei = (lockedWei * BigInt(burnFeeBps)) / BigInt(10000);
-      const additionalFeeWei = (lockedWei * BigInt(50)) / BigInt(10000); // 0.5% = 50 bps
-      const totalFeeWei = baseFeeWei + additionalFeeWei;
+  // calcFeeDisplay kept for backward compatibility with confirmation dialog
+  const calcFeeDisplay = calcFee;
 
-      // Convert to number for rounding, then back to wei
-      const totalFeeNumber = Number(formatEther(totalFeeWei));
-      const roundedFeeNumber = Math.ceil(totalFeeNumber * 100) / 100; // Round up to 2 decimal places
-      const roundedFeeWei = parseEther(roundedFeeNumber.toString());
-
-      return fmtCRAA(roundedFeeWei); // Return with commas for display
-    } catch (error) {
-      return '0';
-    }
-  };
+  const initialStars = Math.max(data?.initialStars ?? 0, 0);
+  const currentStars = Math.max(data?.currentStars ?? 0, 0);
 
   const widgets = [] as JSX.Element[];
-  // CRAA badge
+  // OCTA badge
   if (data) {
     // Calculate user share for display
-    const userShare = (() => {
-      if (!data.lockedCRAA || Number(data.lockedCRAA) === 0) return '0';
-      try {
-        const totalWei = parseEther(data.lockedCRAA);
-        const userWei =
-          (totalWei * BigInt(burnSplit.playerBps)) / BigInt(10000);
-        return fmtCRAA(userWei);
-      } catch (error) {
-        return '0';
-      }
-    })();
+    // userShare intentionally unused here; keeping calcShares above
 
-    // CRAA amount - show only locked CRAA (not pending)
+    // OCTA amount - show only locked OCTA (not pending)
     widgets.push(
       <Badge
-        key='craa'
+        key='octa'
         className='bg-orange-600/80 text-xs font-mono min-w-[80px] text-center'
       >
-        💰 {fmtCRAA(data.lockedCRAA)} CRAA
+        💰 {fmtOCTA(data.lockedOcta)} OCTAA
       </Badge>
     );
 
-    // Debug info (temporary)
-    // Stars row (filled / empty)
     widgets.push(
-      <span key='stars' className='flex space-x-0.5'>
-        {Array.from({ length: data.initialStars }).map((_, idx) => (
-          <Star
-            key={idx}
-            className={`w-2 h-2 ${idx < data.currentStars ? 'text-yellow-400 fill-current' : 'text-gray-600'} `}
-          />
-        ))}
-      </span>
+      <Badge
+        key='stars'
+        className='bg-black/40 text-yellow-200 text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 border border-yellow-500/30'
+      >
+        <Star className='w-3 h-3 text-yellow-300 fill-yellow-300' />
+        {currentStars}/{initialStars}
+      </Badge>
     );
 
     // Ping status badge
@@ -230,30 +289,33 @@ export const BurnCard = React.memo(function BurnCard({
     );
   }
 
-  widgets.push(
-    <Badge
-      key='fee'
-      variant='secondary'
-      className='text-red-400/80 text-xs min-w-[120px] text-center'
-    >
-      <Flame className='w-2 h-2 mr-0.5 inline' /> Fee{' '}
-      {data && Number(data.lockedCRAA) > 0 ? calcFeeDisplay() : '0'} CRAA
-    </Badge>
-  );
+    widgets.push(
+      <Badge
+        key='fee'
+        variant='secondary'
+        className='text-red-400/80 text-xs min-w-[120px] text-center'
+      >
+        <Flame className='w-2 h-2 mr-0.5 inline' /> <span className='text-black font-bold'>Fee</span>{' '}
+        <span className='font-black text-black'>
+          {data && Number(data.lockedOcta) > 0 ? calcFeeDisplay() : '0'} OCTAA
+        </span>
+      </Badge>
+    );
 
   const calcShares = () => {
     if (!data) return { user: '0', pool: '0', burn: '0' };
-    try {
-      const totalWei = parseEther(data.lockedCRAA);
+  try {
+      const totalWei = parseEther(data.lockedOcta);
       const userWei = (totalWei * BigInt(burnSplit.playerBps)) / BigInt(10000);
       const poolWei = (totalWei * BigInt(burnSplit.poolBps)) / BigInt(10000);
       const burnWei = (totalWei * BigInt(burnSplit.burnBps)) / BigInt(10000);
       return {
-        user: fmtCRAA(userWei),
-        pool: fmtCRAA(poolWei),
-        burn: fmtCRAA(burnWei),
+        user: fmtOCTA(userWei),
+        pool: fmtOCTA(poolWei),
+        burn: fmtOCTA(burnWei),
       };
-    } catch (error) {
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') console.warn('calcShares error', err);
       return { user: '0', pool: '0', burn: '0' };
     }
   };
@@ -277,19 +339,19 @@ export const BurnCard = React.memo(function BurnCard({
       return;
     }
 
-    // Check CRAA balance before proceeding
+    // Check OCTA balance before proceeding
     const fee = calcFee();
     const feeWei = parseEther(fee);
 
-    if (craaBalance && feeWei > balWei) {
+    if (octaBalance && feeWei > balWei) {
       const balanceFormatted = formatEther(balWei);
       const feeFormatted = formatEther(feeWei);
 
       toast({
-        title: t('burn.insufficientBalance', 'Insufficient CRAA Balance'),
+        title: t('burn.insufficientBalance', 'Insufficient OCTA Balance'),
         description: t(
           'burn.insufficientBalanceDesc',
-          'You need {fee} CRAA to burn this NFT. Your balance: {balance} CRAA'
+          'You need {fee} OCTA to burn this NFT. Your balance: {balance} OCTA'
         )
           .replace('{fee}', feeFormatted)
           .replace('{balance}', balanceFormatted),
@@ -302,13 +364,42 @@ export const BurnCard = React.memo(function BurnCard({
     try {
       const freshData = await getNFTGameData(tokenId);
       setData(freshData);
-    } catch (error) {}
-
-    setDialogOpen(true);
+      // Load LP info for this token to show in confirmation
+      try {
+        const lp = await getLPInfo(tokenId as string);
+        if (lp) setLpInfo(lp);
+      } catch {
+        // ignore errors retrieving LP info
+      }
+      setDialogOpen(true);
+    } catch (err: unknown) {
+      if (process.env.NODE_ENV === 'development') console.warn('startBurn refresh error', err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+          ? err
+          : 'Failed to prepare burn data';
+      toast({
+        title: t('status.error', 'Error'),
+        description: DOMPurify.sanitize(message),
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleBurn = requireApeChain(async () => {
+  const handleBurn = requireMonadChain(async () => {
+    // DEBUG: Логирование состояния сети
+    console.log('🔥 handleBurn started:', {
+      chainId,
+      isApeChain,
+      isConnected,
+      nftId: nft.tokenId,
+      timestamp: new Date().toISOString()
+    });
+
     if (!isConnected) {
+      console.log('❌ Wallet not connected');
       toast({
         title: t('wallet.notConnected', 'Wallet not connected'),
         description: t('wallet.connectFirst', 'Connect wallet first'),
@@ -319,9 +410,10 @@ export const BurnCard = React.memo(function BurnCard({
 
     // CRITICAL: Validate chainId to prevent network spoofing
     if (!validateChainId(chainId)) {
+      console.log('❌ Invalid chainId:', chainId);
       toast({
         title: t('wallet.wrongNetwork', 'Wrong Network'),
-        description: t('wallet.switchToApeChain', 'Please switch to ApeChain network'),
+        description: t('wallet.switchToMonadChain', 'Please switch to Monad Testnet network'),
         variant: 'destructive',
       });
       return;
@@ -336,11 +428,10 @@ export const BurnCard = React.memo(function BurnCard({
       });
       return;
     }
-
     // CRITICAL: Validate contract addresses
     const expectedGameContract = SECURITY_CONFIG.CONTRACTS.GAME_CONTRACT;
-    const expectedCRAAContract = SECURITY_CONFIG.CONTRACTS.CRAA_TOKEN;
-    
+    const expectedOCTAContract = SECURITY_CONFIG.CONTRACTS.OCTA_TOKEN;
+
     if (!validateContractAddress(expectedGameContract)) {
       toast({
         title: 'Security Error',
@@ -349,20 +440,29 @@ export const BurnCard = React.memo(function BurnCard({
       });
       return;
     }
-    
-    // Check CRAA balance before proceeding
+
+    if (!validateContractAddress(expectedOCTAContract)) {
+      toast({
+        title: 'Security Error',
+        description: 'Invalid OCTA token address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check OCTA balance before proceeding
     const fee = calcFee();
     const feeWei = parseEther(fee);
 
-    if (craaBalance && feeWei > balWei) {
+    if (octaBalance && feeWei > balWei) {
       const balanceFormatted = formatEther(balWei);
       const feeFormatted = formatEther(feeWei);
 
       toast({
-        title: t('burn.insufficientBalance', 'Insufficient CRAA Balance'),
+        title: t('burn.insufficientBalance', 'Insufficient OCTA Balance'),
         description: t(
           'burn.insufficientBalanceDesc',
-          'You need {fee} CRAA to burn this NFT. Your balance: {balance} CRAA'
+          'You need {fee} OCTA to burn this NFT. Your balance: {balance} OCTA'
         )
           .replace('{fee}', feeFormatted)
           .replace('{balance}', balanceFormatted),
@@ -373,63 +473,135 @@ export const BurnCard = React.memo(function BurnCard({
 
     try {
       setIsProcessing(true);
-      setStep('approvingCRAA');
+      incrementBurnCount(); // Увеличиваем счетчик активных сжиганий
+      console.log('🔥 Starting burn animation - approving phase');
+      setAnimationState('approving');
+      setAnimationIntensity(1); // Первый уровень интенсивности
+      setIsShaking(true);
+      setCharLevel(1); // Начальное обугливание
       
       // CRITICAL: Show exact amount being approved to prevent approve-∞ attacks
       const approvalAmount = fee.replace(/,/g, '');
       toast({ 
-        title: 'Approving CRAA', 
-        description: `Amount: ${approvalAmount} CRAA (NOT unlimited)`,
+        title: 'Approving OCTA', 
+        description: `Amount: ${approvalAmount} OCTA (NOT unlimited)`,
         variant: 'default',
       });
       
-      await approveCRAA(approvalAmount);
-      setStep('approvingNFT');
+      await approveOCTA(approvalAmount);
+      
+      // Переходим ко второму этапу анимации
+      console.log('🔥 Animation phase 2 - NFT approval');
+      setAnimationState('approving'); // Продолжаем анимацию
+      setAnimationIntensity(2); // Второй уровень интенсивности
+      setCharLevel(2); // Усиливаем обугливание
       toast({ 
         title: 'Approving NFT', 
         description: `Token #${tokenId} (specific token only)`,
         variant: 'default',
       });
       await approveNFT(tokenId);
-      setStep('burning');
+      
+      // Переходим к финальному этапу анимации
+      console.log('🔥 Animation phase 3 - BURNING!');
+      setAnimationState('burning');
+      setAnimationIntensity(3); // Третий уровень интенсивности
+      setCharLevel(3); // Максимальное обугливание
+      
+      // Усиливаем дрожание перед взрывом
+      setTimeout(() => setIsShaking(false), 500);
+      setTimeout(() => setIsShaking(true), 600);
+      setTimeout(() => setIsShaking(false), 700);
+      setTimeout(() => setIsShaking(true), 800);
       toast({ 
         title: 'Burning NFT', 
         description: `Token #${tokenId}`,
         variant: 'default',
       });
-      setBurnFX(true);
-      setTimeout(() => setBurnFX(false), 3000);
+      
       await burnNFT(tokenId, waitMinutes);
+
+      console.log('💥 Animation phase 4 - EXPLODING!');
+        setAnimationState('exploding');
+        setAnimationIntensity(5); // Максимальная интенсивность для взрыва
       toast({
-        title: 'NFT burned',
+        title: 'NFT burned!',
         description: `Sent to graveyard. Claim after ${waitMinutes} minutes`,
       });
-      if (onActionComplete) onActionComplete();
+      
+      // Wait for explosion to finish
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      // Запускаем эффект исчезновения
+      setIsDisappearing(true);
+      
+      // Ждем завершения эффекта исчезновения
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Локальное обновление данных без вызова onActionComplete для сохранения анимаций
+      // if (onActionComplete) onActionComplete(); // Убрано для предотвращения обновления страницы
       const updated = await getNFTGameData(tokenId);
       setData(updated);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? DOMPurify.sanitize(error.message) : 'Failed to burn NFT';
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+          ? error
+          : 'Failed to burn NFT';
       toast({
         title: 'Error',
-        description: errorMessage,
+        description: DOMPurify.sanitize(message),
         variant: 'destructive',
       });
+      setAnimationState('idle'); // Reset animation on error
+      setAnimationIntensity(1); // Reset intensity on error
+      setIsDisappearing(false); // Reset disappearing effect on error
+      setIsShaking(false);
+      setCharLevel(0);
+      decrementBurnCount(); // Уменьшаем счетчик при ошибке
     } finally {
       setIsProcessing(false);
-      setStep('idle');
+      decrementBurnCount(); // Уменьшаем счетчик в любом случае
+      // Не сбрасываем step сразу - пусть анимация завершится
+      console.log('🏁 Burn process completed, animation should continue');
     }
   });
+
+  // Если карточка исчезла полностью, не рен��ерим её
+  if (isDisappearing && animationState === 'idle') {
+    return null;
+  }
 
   return (
     <>
       <div
-        className='flex flex-col h-full min-h-[420px]'
+        className={`relative flex flex-col h-full min-h-[420px] rounded-xl overflow-hidden transition-all duration-[5000ms] ${
+          isDisappearing 
+            ? 'opacity-0 scale-50 transform rotate-[360deg] blur-lg pointer-events-none' 
+            : 'opacity-100 scale-100 transform rotate-0 blur-0'
+        } ${
+          isShaking ? 'animate-shake' : ''
+        } ${
+          charLevel === 1 ? 'char-level-1' : 
+          charLevel === 2 ? 'char-level-2' : 
+          charLevel === 3 ? 'char-level-3' : ''
+        }`}
+        style={{
+          filter: charLevel > 0 ? `
+            brightness(${1 - charLevel * 0.2}) 
+            contrast(${1 + charLevel * 0.3}) 
+            sepia(${charLevel * 0.4})
+            hue-rotate(${charLevel * 20}deg)
+            saturate(${1 - charLevel * 0.2})
+          ` : 'none',
+          transformOrigin: 'center center'
+        }}
       >
         <div className='flex-1 flex flex-col justify-between'>
           {/* NFT visual layer */}
           <div
-            className={`${data && Number(data.lockedCRAA) === 0 ? 'opacity-30 grayscale pointer-events-none' : ''}`}
+            className={`${data && Number(data.lockedOcta) === 0 ? 'opacity-30 grayscale pointer-events-none' : ''}`}
           >
             <UnifiedNftCard
               imageSrc={nft.image}
@@ -444,20 +616,17 @@ export const BurnCard = React.memo(function BurnCard({
             />
           </div>
 
-          {/* burn overlay */}
-          {burnFX && (
-            <div className='absolute inset-0 burn-overlay pointer-events-none rounded-lg' />
-          )}
+          <BurnAnimationOverlay step={animationState} intensity={animationIntensity} />
 
           {/* Wait period selector */}
           <div className='flex justify-center gap-1 mt-2'>
-            {[12, 60, 255].map(m => (
+            {[30, 120, 480].map(m => (
               <Button
                 key={m}
                 variant={waitMinutes === m ? 'default' : 'outline'}
                 size='sm'
                 className='px-2 py-1'
-                onClick={() => setWaitMinutes(m as 12 | 60 | 255)}
+                onClick={() => setWaitMinutes(m as 30 | 120 | 480)}
                 disabled={isProcessing}
               >
                 {m}
@@ -512,9 +681,9 @@ export const BurnCard = React.memo(function BurnCard({
           <Button
             size='sm'
             className={
-              data && Number(data.lockedCRAA) === 0
+              data && Number(data.lockedOcta) === 0
                 ? 'w-full bg-gray-400 text-gray-700 cursor-not-allowed'
-                : craaBalance &&
+                : octaBalance &&
                     data &&
                     (() => {
                       try {
@@ -527,11 +696,11 @@ export const BurnCard = React.memo(function BurnCard({
                   : 'w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white'
             }
             disabled={
-              !isApeChain ||
+              !isMonadChain ||
               isProcessing ||
               !!data?.isInGraveyard ||
-              (!!data && Number(data.lockedCRAA) === 0) ||
-              (craaBalance &&
+              (!!data && Number(data.lockedOcta) === 0) ||
+              (octaBalance &&
                 data &&
                 (() => {
                   try {
@@ -544,7 +713,7 @@ export const BurnCard = React.memo(function BurnCard({
             }
             onClick={startBurn}
           >
-            {craaBalance &&
+            {octaBalance &&
             data &&
             (() => {
               try {
@@ -554,37 +723,11 @@ export const BurnCard = React.memo(function BurnCard({
                 return false;
               }
             })()
-              ? t('burn.interface.insufficientCRAA', 'Insufficient CRAA')
+              ? t('burn.interface.insufficientOCTA', 'Insufficient OCTA')
               : t('burn.interface.burnButton', 'Burn')}
           </Button>
         </div>
       </div>
-      {/* Global burn animation style & keyframes */}
-      {/* eslint-disable-next-line @next/next/no-css-tags */}
-      <style jsx global>{`
-        @keyframes burnFade {
-          0% {
-            opacity: 0;
-            filter: brightness(2) saturate(1.5);
-          }
-          10% {
-            opacity: 0.9;
-          }
-          100% {
-            opacity: 0;
-            transform: scale(0.8) rotate(2deg);
-          }
-        }
-        .burn-overlay {
-          background: radial-gradient(
-            circle at center,
-            rgba(255, 200, 0, 0.6) 0%,
-            rgba(255, 0, 0, 0.5) 40%,
-            transparent 80%
-          );
-          animation: burnFade 2.4s forwards ease-out;
-        }
-      `}</style>
       {/* Confirmation dialog */}
       {data && (
         <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -595,13 +738,13 @@ export const BurnCard = React.memo(function BurnCard({
               </AlertDialogTitle>
               
               {/* NFT Earnings Display */}
-              {data.lockedCRAA && Number(data.lockedCRAA) > 0 && (
+              {data.lockedOcta && Number(data.lockedOcta) > 0 && (
                 <div className='bg-gradient-to-r from-orange-500/20 to-red-500/20 border-2 border-orange-400/50 rounded-lg p-4 mb-4 text-center'>
                   <div className='text-2xl font-bold text-orange-200 mb-1'>
                     {t('sections.burn.feeBox.confirmDialog.nftEarnings', '🎉 NFT Earnings')}
                   </div>
                   <div className='text-3xl font-bold text-yellow-300 mb-2'>
-                    {fmtCRAA(data.lockedCRAA)} CRAA
+                    {fmtOCTA(data.lockedOcta)} OCTAA
                   </div>
                   <div className='text-sm text-orange-200'>
                     {t('sections.burn.feeBox.confirmDialog.totalLockedAmount', 'Total locked amount earned by this NFT')}
@@ -625,18 +768,18 @@ export const BurnCard = React.memo(function BurnCard({
                   </span>
                 </div>
                 <div>
-                  {t('sections.burn.feeBox.confirmDialog.lockedCRAA', 'Locked CRAA:')}{' '}
+                  {t('sections.burn.feeBox.confirmDialog.lockedOCTA', 'Locked OCTAA:')}{' '}
                   <span className='font-mono text-yellow-300'>
-                    {data.lockedCRAA && Number(data.lockedCRAA) > 0
-                      ? fmtCRAA(data.lockedCRAA)
+                    {data.lockedOcta && Number(data.lockedOcta) > 0
+                      ? fmtOCTA(data.lockedOcta)
                       : '0'}{' '}
-                    CRAA
+                    OCTAA
                   </span>
                 </div>
                 <div>
                   {t('sections.burn.feeBox.confirmDialog.fee', 'Fee:')}{' '}
                   <span className='font-mono text-red-300'>
-                    {calcFee()} CRAA
+                    {calcFee()} OCTAA
                   </span>
                 </div>
                 {(() => {
@@ -644,9 +787,21 @@ export const BurnCard = React.memo(function BurnCard({
                   return (
                     <div className='pt-1 text-xs text-gray-300 space-y-0.5'>
                       <div className='bg-gray-800/60 border border-green-400/40 rounded-md px-2 py-1 flex justify-between items-center text-base font-semibold text-green-200'>
-                        <span>{t('sections.burn.feeBox.confirmDialog.afterBurn', 'After burn you get')}</span>
-                        <span className='font-mono'>{s.user}</span>
+                          <span className='text-lg'>{t('sections.burn.feeBox.confirmDialog.afterBurn', 'After burn you get')}</span>
+                          <span className='font-mono text-3xl font-extrabold text-green-300 animate-reward-pulse'>{s.user} OCTAA</span>
                       </div>
+                        {lpInfo && (
+                          <div className='mt-2 bg-black/60 border border-blue-400/30 rounded-md p-3 text-sm text-blue-200'>
+                            <div className='font-semibold text-blue-100'>LP returned</div>
+                            {/* Emphasize player-received pair token (e.g., WMON) clearly */}
+                            <div className='mt-2 bg-blue-900/20 border border-blue-500/40 rounded-md p-3 text-center'>
+                              <div className='text-sm text-blue-200'>Player receives</div>
+                              <div className='text-2xl font-extrabold text-white font-mono mt-1'>
+                                {lpInfo.pairDeposited} WMON
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       <div>
                         {t('sections.burn.feeBox.confirmDialog.poolReceives', 'Pool receives:')}{' '}
                         <span className='text-orange-300 font-mono'>
@@ -656,7 +811,7 @@ export const BurnCard = React.memo(function BurnCard({
                       <div>
                         {t('sections.burn.feeBox.confirmDialog.burnedForever', 'Burned forever:')}{' '}
                         <span className='text-red-400 font-mono'>
-                          {s.burn} CRAA
+                          {s.burn} OCTAA
                         </span>
                       </div>
                     </div>
@@ -665,11 +820,11 @@ export const BurnCard = React.memo(function BurnCard({
                 <div className='pt-2 text-xs text-gray-400'>
                   {t('sections.burn.feeBox.confirmDialog.transactions', 'You will sign 3 transactions:')}
                   <br />
-                  {t('sections.burn.feeBox.confirmDialog.transaction1', '1️⃣ Approve CRAA fee')} • {t('sections.burn.feeBox.confirmDialog.transaction2', '2️⃣ Approve NFT')} • {t('sections.burn.feeBox.confirmDialog.transaction3', '3️⃣ Burn NFT')}
+                  {t('sections.burn.feeBox.confirmDialog.transaction1', '1️⃣ Approve OCTAA fee')} • {t('sections.burn.feeBox.confirmDialog.transaction2', '2️⃣ Approve NFT')} • {t('sections.burn.feeBox.confirmDialog.transaction3', '3️⃣ Burn NFT')}
                 </div>
-                {craaBalance && (
+                {octaBalance && (
                   <div className='pt-2 text-xs text-gray-300'>
-                    {t('sections.burn.feeBox.confirmDialog.yourBalance', 'Your CRAA balance:')} {formatEther(balWei)} CRAA
+                    {t('sections.burn.feeBox.confirmDialog.yourBalance', 'Your OCTAA balance:')} {formatEther(balWei)} OCTAA
                   </div>
                 )}
               </div>
@@ -691,3 +846,11 @@ export const BurnCard = React.memo(function BurnCard({
     </>
   );
 });
+
+
+
+
+
+
+
+

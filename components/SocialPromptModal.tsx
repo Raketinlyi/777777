@@ -20,10 +20,10 @@ export function SocialPromptModal({ tweetId, onClose }: Props) {
   const isMobile = useMobile();
   const { t } = useTranslation();
 
-  const twitterFollowUrl = `https://twitter.com/intent/follow?screen_name=crazy___cube`;
+  const twitterFollowUrl = `https://twitter.com/intent/follow?screen_name=crazy_octagon`;
   const twitterLikeUrl = `https://twitter.com/intent/like?tweet_id=${tweetId}`;
   const twitterRtUrl = `https://twitter.com/intent/retweet?tweet_id=${tweetId}`;
-  const tweetUrl = `https://x.com/crazy___cube/status/${tweetId}`;
+  const tweetUrl = `https://x.com/crazy_octagon/status/${tweetId}`;
   const telegramUrl = `https://t.me/+gEnPkDekDKgzZmYx`;
   const discordUrl = `https://discord.gg/a8tufdh65m`;
 
@@ -177,7 +177,7 @@ export function SocialPromptModal({ tweetId, onClose }: Props) {
                   className='flex items-center justify-center bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/40 text-sm'
                 >
                   <UserPlus className='w-5 h-5 mr-2' />
-                  🐦 {t('social.followTwitter', 'Follow @crazy___cube')}
+                  🐦 {t('social.followTwitter', 'Follow @crazy_octagon (x.com/crazy_octagon)')}
                 </motion.a>
 
                 {/* Tweet view button */}

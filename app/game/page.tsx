@@ -673,7 +673,7 @@ const LaserGrid = () => {
 
 export default function GamePage() {
   const { isMobile } = useMobile();
-  const [text] = useState('CRAZYCUBE 3D GAME');
+  const [text] = useState('CRAZYOCTAGON 3D GAME');
   const [subtitle] = useState('COMING SOON');
   const [spacing, setSpacing] = useState(100);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });

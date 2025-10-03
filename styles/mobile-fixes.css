@@ -33,7 +33,7 @@
     position: relative !important;
     z-index: 1 !important;
     overflow: visible !important;
-    background: linear-gradient(to bottom right, #0f172a, #1e3a8a, #0f172a) !important;
+    background: linear-gradient(to bottom right, #111827, #581c87, #7c3aed) !important;
   }
   
   /* Force content visibility on mobile */

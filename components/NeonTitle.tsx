@@ -1,103 +1,45 @@
-'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import { motion } from 'framer-motion';
 
-type NeonTitleProps = {
+interface NeonTitleProps {
   title: string;
-  subtitle?: string;
-};
+  className?: string;
+}
 
-/**
- * NeonTitle renders a neon-glowing title with occasional flicker effect.
- * On each flicker it dispatches a global custom event 'crazycube:spark-burst'
- * with the screen coordinates of the title center to trigger spark rain.
- */
-export function NeonTitle({ title, subtitle }: NeonTitleProps) {
-  const [isFlickering, setIsFlickering] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let timer: number | undefined;
-
-    const triggerBurst = () => {
-      setIsFlickering(true);
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const detail = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        window.dispatchEvent(new CustomEvent('crazycube:spark-burst', { detail }));
-      }
-      window.setTimeout(() => setIsFlickering(false), 220 + Math.random() * 180);
-    };
-
-    const scheduleFlicker = () => {
-      const nextInMs = 2000 + Math.random() * 3000; // 2-5s repeat
-      timer = window.setTimeout(() => {
-        triggerBurst();
-        scheduleFlicker();
-      }, nextInMs) as unknown as number;
-    };
-
-    // Guaranteed first burst after ~2 seconds
-    const first = window.setTimeout(() => {
-      triggerBurst();
-      scheduleFlicker();
-    }, 2000) as unknown as number;
-
-    return () => {
-      if (timer) window.clearTimeout(timer);
-      if (first) window.clearTimeout(first);
-    };
-  }, []);
-
+const NeonTitle: React.FC<NeonTitleProps> = ({ title, className }) => {
   return (
-    <div ref={containerRef} className="relative z-10 text-center select-none">
-      <h1
-        className={
-          'mx-auto uppercase font-extrabold tracking-[0.2em] ' +
-          'text-3xl md:text-6xl lg:text-8xl crazycube-neon-title ' +
-          (isFlickering ? ' crazycube-neon-flicker' : '')
-        }
-      >
+    <div className="relative">
+      <h2 className={`font-bold text-2xl text-white drop-shadow-[0_0_5px_#fff,0_0_10px_#fff,0_0_20px_#ff00ff,0_0_30px_#ff00ff,0_0_40px_#ff00ff,0_0_50px_#ff00ff] ${className}`}>
         {title}
-      </h1>
-      {subtitle ? (
-        <div className="mt-2 text-[12px] md:text-lg lg:text-xl crazycube-neon-subtitle">
-          {subtitle}
-        </div>
-      ) : null}
-
-      <style jsx>{`
-        .crazycube-neon-title {
-          color: #e879f9;
-          text-shadow:
-            0 0 5px #fff,
-            0 0 10px #fff,
-            0 0 20px #e879f9,
-            0 0 35px #e879f9,
-            0 0 40px #e879f9,
-            0 0 50px #e879f9,
-            0 0 75px #e879f9;
-          filter: saturate(1.35) brightness(1.12);
-          transition: filter 120ms ease, transform 120ms ease, letter-spacing 120ms ease;
-        }
-        .crazycube-neon-subtitle {
-          color: rgba(196, 181, 253, 1);
-          text-shadow:
-            0 0 8px rgba(139, 92, 246, 0.8),
-            0 0 18px rgba(168, 85, 247, 0.75);
-        }
-        .crazycube-neon-flicker {
-          animation: crazycubeFlicker 0.28s linear 0s 1;
-        }
-        @keyframes crazycubeFlicker {
-          0% { filter: brightness(0.6) saturate(0.9); letter-spacing: 0.18em; transform: translateY(0); }
-          20% { filter: brightness(1.4) saturate(1.6); letter-spacing: 0.22em; transform: translateY(-1px); }
-          40% { filter: brightness(0.8) saturate(1.0); letter-spacing: 0.2em; transform: translateY(0); }
-          60% { filter: brightness(1.8) saturate(1.8); letter-spacing: 0.25em; transform: translateY(-1px); }
-          80% { filter: brightness(0.7) saturate(1.0); letter-spacing: 0.19em; transform: translateY(0); }
-          100% { filter: brightness(1.1) saturate(1.3); letter-spacing: 0.2em; transform: translateY(0); }
-        }
-      `}</style>
+      </h2>
+      {/* Sparks effect for neon titles */}
+      <div className='absolute inset-0 pointer-events-none overflow-hidden'>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <motion.div
+            key={`title-spark-${i}`}
+            className='absolute w-0.5 h-0.5 bg-fuchsia-300 rounded-full'
+            style={{
+              left: `${10 + Math.random() * 80}%`,
+              top: `${20 + Math.random() * 60}%`,
+            }}
+            animate={{
+              x: [0, (Math.random() - 0.5) * 20],
+              y: [0, (Math.random() - 0.5) * 20],
+              opacity: [0, 0.8, 0],
+              scale: [0, 1.5, 0]
+            }}
+            transition={{
+              duration: 2 + Math.random(),
+              repeat: Infinity,
+              delay: Math.random() * 3,
+              ease: 'easeOut'
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default NeonTitle;

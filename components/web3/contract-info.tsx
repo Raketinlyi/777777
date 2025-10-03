@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   Code2,
   Hash,
@@ -9,7 +9,7 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -18,14 +18,14 @@ interface Props {
   craaTotal?: string;
 }
 
-const explorerUrl = 'https://apescan.io/address/'; // fallback explorer url
+const explorerUrl = 'https://explorer.monad.xyz/address/'; // MonadScan explorer
 
 export function ContractInfo({ nftCount, craaTotal }: Props) {
   const { t } = useTranslation();
   // addresses from chain config for single source of truth
-  const GAME_ADDRESS = apeChain.contracts.gameProxy.address;
-  const NFT_ADDRESS = apeChain.contracts.crazyCubeNFT.address;
-  const CRAA_ADDRESS = apeChain.contracts.crazyToken.address;
+  const GAME_ADDRESS = monadChain.contracts.gameProxy.address;
+  const NFT_ADDRESS = monadChain.contracts.crazyCubeNFT.address;
+  const OCTAA_ADDRESS = monadChain.contracts.octaaToken.address;
 
   // helper to copy address
   const copyAddress = (addr: string) => {
@@ -119,8 +119,8 @@ export function ContractInfo({ nftCount, craaTotal }: Props) {
         />
 
         <ContractCard
-          label={t('info.tabs.craaToken', 'CRAA Token')}
-          address={CRAA_ADDRESS}
+          label={t('info.tabs.octaaToken', 'OCTAA Token')}
+          address={OCTAA_ADDRESS}
           icon={Sparkles}
           gradientColors='from-amber-500 to-orange-600 border-amber-300/50'
           delay={0.3}
@@ -157,10 +157,10 @@ export function ContractInfo({ nftCount, craaTotal }: Props) {
                 <Sparkles className='w-6 h-6 mr-3 text-yellow-400' />
                 <div>
                   <div className='text-slate-300 text-sm'>
-                    {t('info.craaSupply', 'CRAA Supply')}
+                    {t('info.craaSupply', 'OCTAA Supply')}
                   </div>
                   <div className='text-white font-bold text-xl'>
-                    {craaTotal} CRAA
+                    {craaTotal} OCTAA
                   </div>
                 </div>
               </div>

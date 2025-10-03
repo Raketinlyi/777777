@@ -272,7 +272,7 @@ export default function Denis3Analytics() {
   /* ---------------------------------------------
      Derived & Sanitised Global Metrics
      -------------------------------------------*/
-  const COLLECTION_SIZE = 5000;
+  const COLLECTION_SIZE = 9700;
   const burns = globalStats?.totalBurns ?? 0;
   const breeds = globalStats?.totalBreeds ?? 0;
   const inGraveyard = Math.max(burns - breeds, 0);

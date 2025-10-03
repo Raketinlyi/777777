@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -47,7 +47,7 @@ const MarketPrices = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const fetchMarketData = async () => {
+  const fetchMarketData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -81,14 +81,14 @@ const MarketPrices = () => {
 
       // Try to fetch CRA token data
       try {
-        const craaResponse = await fetch('/api/craa-token');
+        const craaResponse = await fetch('/api/octaa-token');
         if (craaResponse.ok) {
           const craResult = await craaResponse.json();
           if (craResult.success && craResult.data) {
             setCraData(craResult.data);
           }
         }
-      } catch (craError) {
+      } catch {
         // CRA data is optional, don't fail the whole component
       }
 
@@ -99,13 +99,13 @@ const MarketPrices = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchMarketData();
     const interval = setInterval(fetchMarketData, 180000); // Update every 3 minutes
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchMarketData]);
 
   const formatPrice = (
     price: number | null | undefined,
@@ -259,15 +259,16 @@ const MarketPrices = () => {
 
             {/* NFT Marketplace Link */}
             <div className='mt-4 pt-4 border-t border-purple-500/20'>
+              {/* Monad: временно скрываем старую ссылку MagicEden/ApeChain */}
               <a
-                href='https://magiceden.us/collections/apechain/crazycube-2'
+                href={(process.env.NEXT_PUBLIC_MONAD_EXPLORER || 'https://testnet.monadexplorer.com') + '/address/' + (process.env.NEXT_PUBLIC_NFT_ADDRESS || '')}
                 target='_blank'
                 rel='noopener noreferrer'
                 className='flex items-center justify-center w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg transition-all duration-300 transform hover:scale-105'
               >
                 <ShoppingCart className='h-5 w-5 mr-2 text-white' />
                 <span className='text-white font-bold text-base'>
-                  {t('market.buyNft')}
+                  {t('market.viewOnExplorer', 'View NFT on Monad Explorer')}
                 </span>
                 <ExternalLink className='h-4 w-4 ml-2 text-white' />
               </a>
@@ -344,7 +345,7 @@ const MarketPrices = () => {
             {/* DEX Trading Link */}
             <div className='mt-4 pt-4 border-t border-orange-500/20'>
               <a
-                href='https://app.camelot.exchange/'
+                href='https://pancakeswap.finance/'
                 target='_blank'
                 rel='noopener noreferrer'
                 className='flex items-center justify-center w-full py-3 px-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg transition-all duration-300 transform hover:scale-105'
@@ -453,3 +454,5 @@ const MarketPrices = () => {
     </div>
   );
 };
+
+export default MarketPrices;

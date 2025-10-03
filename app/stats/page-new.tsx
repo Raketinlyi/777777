@@ -12,11 +12,13 @@ import { useAccount } from 'wagmi';
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import SubgraphStats from '@/components/web3/subgraph-stats';
+// Subgraph removed per request — live subgraph UI is disabled
 import { StatsGrid } from '@/components/web3/stats-grid';
 import { BurnReviveChart } from '@/components/web3/burn-revive-chart';
 import { RewardsChart } from '@/components/web3/rewards-chart';
 import { useTranslation } from 'react-i18next';
+import NFTInspectorFixed from '@/components/web3/nft-inspector-fixed';
+import ContractTest from '@/components/web3/contract-test';
 
 export default function StatsPage() {
   const isMobile = useMobile();
@@ -61,6 +63,16 @@ export default function StatsPage() {
           <GameDashboard />
         </main>
 
+        {/* Contract Connection Test */}
+        <div className='mt-8'>
+          <ContractTest />
+        </div>
+
+        {/* NFT Inspector Section */}
+        <div className='mt-8'>
+          <NFTInspectorFixed />
+        </div>
+
         {/* Navigation + title */}
         <TabNavigation />
         <h1 className='text-3xl font-bold mt-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-cyan-400'>
@@ -85,9 +97,7 @@ export default function StatsPage() {
             <TabsTrigger value='overview'>
               {t('stats.tabs.overview', 'Overview')}
             </TabsTrigger>
-            <TabsTrigger value='subgraph'>
-              {t('stats.tabs.subgraph', 'Subgraph Data')}
-            </TabsTrigger>
+            {/* Subgraph tab removed */}
             <TabsTrigger value='charts'>
               {t('stats.tabs.charts', 'Charts')}
             </TabsTrigger>
@@ -97,33 +107,7 @@ export default function StatsPage() {
             <StatsGrid />
           </TabsContent>
 
-          <TabsContent value='subgraph'>
-            <div className='grid grid-cols-1 gap-6'>
-              {/* Rendering handled conditionally below to avoid TS exactOptionalPropertyTypes */}
-              {address ? (
-                <SubgraphStats address={address} />
-              ) : (
-                <SubgraphStats />
-              )}
-              <Card className='p-4'>
-                <h3 className='text-lg font-semibold mb-2'>
-                  {t('stats.subgraph.aboutTitle', 'About Subgraph')}
-                </h3>
-                <p className='text-sm text-gray-600'>
-                  {t(
-                    'stats.subgraph.aboutParagraph1',
-                    'Data is fetched via The Graph – a decentralized blockchain indexing protocol. Our subgraph indexes all CrazyCubeUltimate events in real time, including NFT activations, pings, burns, revivals and breeds.'
-                  )}
-                </p>
-                <p className='text-sm text-gray-600 mt-2'>
-                  {t(
-                    'stats.subgraph.aboutParagraph2',
-                    'This lets us quickly retrieve info about any NFT and its history without rescanning the whole blockchain each time.'
-                  )}
-                </p>
-              </Card>
-            </div>
-          </TabsContent>
+          {/* Subgraph tab removed */}
 
           <TabsContent value='charts'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>

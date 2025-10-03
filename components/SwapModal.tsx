@@ -7,18 +7,19 @@ import {
   Coins,
   Info,
   TrendingUp,
-  Shield,
-  ExternalLink
+  Shield
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { safeOpen } from '@/lib/safeOpen';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
-// Constants for Camelot
-const CRAA_ADDRESS = process.env.NEXT_PUBLIC_CRAA_ADDRESS || '0xBb526D657Cc1Ba772469A6EC96AcB2ed9D2A93e5';
-const CAMELOT_LINK = `https://app.camelot.exchange/?token2=${CRAA_ADDRESS}&swap=v2`;
-const DEXSCREENER_LINK = process.env.NEXT_PUBLIC_DEXSCREENER_LINK || 'https://dexscreener.com/apechain/0x7493b5d547c6d9f42ca1133dcd39e2472b633efc';
+// Constants for PancakeSwap
+const PANCAKESWAP_LINK = `https://pancakeswap.finance/`;
+const DEXSCREENER_LINK =
+  process.env.NEXT_PUBLIC_DEXSCREENER_LINK ||
+  'https://dexscreener.com/monad-testnet';
 
 // Component
 interface Props {
@@ -44,17 +45,17 @@ export default function SwapModal({ open, onOpenChange }: Props) {
 
   const handleBuyClick = async () => {
     if (!window.ethereum) {
-      safeOpen(CAMELOT_LINK);
+      safeOpen(PANCAKESWAP_LINK);
       return;
     }
 
     try {
-      // Switch to ApeChain (33139 = 0x8173)
+      // Switch to Monad Testnet (10143 = 0x279F)
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x8173' }],
+        params: [{ chainId: '0x279F' }],
       });
-    } catch (e) {
+  } catch {
       // Remove console.error for production security
       // console.error('Switch error:', e);
       toast({
@@ -64,7 +65,7 @@ export default function SwapModal({ open, onOpenChange }: Props) {
       });
     }
 
-    safeOpen(CAMELOT_LINK);
+    safeOpen(PANCAKESWAP_LINK);
   };
 
   return (
@@ -74,7 +75,7 @@ export default function SwapModal({ open, onOpenChange }: Props) {
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
               <Coins className="w-5 h-5 text-yellow-400" />
-              {t('swap.buyCRAA', 'Buy CRAA on Camelot')}
+              {t('swap.buyCRAA', 'Buy OCTA on PancakeSwap')}
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-emerald-400" />
@@ -91,8 +92,8 @@ export default function SwapModal({ open, onOpenChange }: Props) {
               <div className="text-blue-300 text-sm space-y-2">
                 <div className="font-semibold">{t('swap.instructions.title', 'Instructions for buying CRAA:')}</div>
                 <ol className="list-decimal list-inside space-y-1 text-xs">
-                  <li>{t('swap.instructions.step1', 'Click the "🟡 Buy CRAA on Camelot" button below')}</li>
-                  <li>{t('swap.instructions.step2', 'Automatically switch to ApeChain network')}</li>
+                  <li>{t('swap.instructions.step1', 'Click the "🟡 Buy OCTA on PancakeSwap" button below')}</li>
+                  <li>{t('swap.instructions.step2', 'Automatically switch to Monad Testnet network')}</li>
                   <li>{t('swap.instructions.step3', 'Set slippage: buy 3-5%, sell 10-15%')}</li>
                   <li>{t('swap.instructions.step4', 'Confirm transaction in wallet')}</li>
                 </ol>
@@ -106,18 +107,18 @@ export default function SwapModal({ open, onOpenChange }: Props) {
               <div className="font-semibold text-base">{t('swap.fees.title', '💰 Fees and Slippage:')}</div>
               
               <div className="space-y-2">
-                <div className="font-medium">{t('swap.fees.buy.title', '🟢 Buy CRAA (APE → CRAA):')}</div>
+                <div className="font-medium">{t('swap.fees.buy.title', '🟢 Buy CRAA (MON → CRAA):')}</div>
                 <div className="text-xs space-y-1 ml-4">
-                  <div>• <span className="text-green-300">{t('swap.fees.camelot', 'Camelot Fee:')}</span> {t('swap.fees.free', '0% (free)')}</div>
+                  <div>• <span className="text-green-300">{t('swap.fees.camelot', 'PancakeSwap Fee:')}</span> {t('swap.fees.free', '0% (free)')}</div>
                   <div>• <span className="text-green-300">{t('swap.fees.slippage', 'Slippage:')}</span> {t('swap.fees.buy.slippage', '3-5% (recommended)')}</div>
                   <div>• <span className="text-green-300">{t('swap.fees.token.tax', 'Token Tax:')}</span> {t('swap.fees.buy.tax', '0% on purchase')}</div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <div className="font-medium">{t('swap.fees.sell.title', '🔴 Sell CRAA (CRAA → APE):')}</div>
+                <div className="font-medium">{t('swap.fees.sell.title', '🔴 Sell CRAA (CRAA → MON):')}</div>
                 <div className="text-xs space-y-1 ml-4">
-                  <div>• <span className="text-red-300">{t('swap.fees.camelot', 'Camelot Fee:')}</span> {t('swap.fees.free', '0% (free)')}</div>
+                  <div>• <span className="text-red-300">{t('swap.fees.camelot', 'PancakeSwap Fee:')}</span> {t('swap.fees.free', '0% (free)')}</div>
                   <div>• <span className="text-red-300">{t('swap.fees.slippage', 'Slippage:')}</span> {t('swap.fees.sell.slippage', '10-15% (recommended)')}</div>
                   <div>• <span className="text-red-300">{t('swap.fees.token.tax', 'Token Tax:')}</span> {t('swap.fees.sell.tax', '10% (automatic)')}</div>
                   <div className="text-amber-200 font-medium">⚠️ {t('swap.fees.sell.total', 'Total on sale: 10-15% slippage + 10% tax')}</div>
@@ -136,22 +137,17 @@ export default function SwapModal({ open, onOpenChange }: Props) {
           {/* Screenshot */}
           <div className="bg-purple-500/15 border border-purple-500/30 rounded-lg p-4">
             <div className="text-center">
-              <div className="text-purple-300 text-sm font-medium mb-3">{t('swap.screenshot.title', '📸 Example of Camelot settings:')}</div>
+              <div className="text-purple-300 text-sm font-medium mb-3">{t('swap.screenshot.title', '📸 Example of PancakeSwap settings:')}</div>
               <div className="relative">
-                <img 
-                  src="/images/1234.jpg" 
-                  alt={t('swap.screenshot.alt', 'Camelot settings example')}
+                <Image 
+                  src="/images/1234.jpg"
+                  alt={t('swap.screenshot.alt', 'PancakeSwap settings example')}
+                  width={800}
+                  height={400}
                   className="w-full h-auto max-h-[400px] object-contain rounded-lg border border-purple-400/30 shadow-lg"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (nextElement) {
-                      nextElement.style.display = 'block';
-                    }
-                  }}
                 />
                 <div className="hidden text-purple-200 text-xs p-4 bg-purple-500/20 rounded-lg">
-                  {t('swap.screenshot.fallback', 'Camelot settings screenshot will be added to /public/images/1234.jpg')}
+                  {t('swap.screenshot.fallback', 'PancakeSwap settings screenshot will be added to /public/images/1234.jpg')}
                 </div>
               </div>
             </div>
@@ -180,7 +176,7 @@ export default function SwapModal({ open, onOpenChange }: Props) {
               onClick={handleBuyClick}
               className="w-full h-14 text-lg font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:brightness-110 transition-all duration-300"
             >
-              🟡 {t('swap.camelot.button', 'Buy CRAA on Camelot')}
+              🟡 {t('swap.camelot.button', 'Buy OCTA on PancakeSwap')}
             </Button>
           </motion.div>
 
@@ -188,7 +184,7 @@ export default function SwapModal({ open, onOpenChange }: Props) {
           <div className="text-center text-xs text-gray-400 space-y-2 pt-2 border-t border-white/10">
             <div className="flex items-center justify-center gap-2">
               <Shield className="w-3 h-3 text-emerald-400" />
-              <span>{t('swap.security', 'Secure purchase through Camelot V2')}</span>
+              <span>{t('swap.security', 'Secure purchase through PancakeSwap')}</span>
             </div>
             <div className="text-[10px] text-gray-500">
               {t('swap.recommended.settings', 'Recommended settings: buy 3-5% slippage, sell 10-15% slippage')}

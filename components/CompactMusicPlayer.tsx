@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getGlobalAudioElement } from '@/lib/globalAudio';
 import { Button } from '@/components/ui/button';
 import { Music, VolumeX, Play, Pause } from 'lucide-react';
@@ -69,34 +70,29 @@ const sanitizeTrackData = (track: unknown) => {
   };
 };
 
-const musicTracks = [
-  {
-    id: 'track1',
-    name: 'Space Walk',
-    url: '/myzzzz/678.mp3',
-    theme: 'party',
-  },
-  {
-    id: 'track2',
-    name: 'Deep Bass',
-    url: '/myzzzz/890.mp3',
-    theme: 'retro',
-  },
-  {
-    id: 'track3',
-    name: 'Neon Flux',
-    url: '/myzzzz/zzz55.mp3',
-    theme: 'chill',
-  },
-  {
-    id: 'track4',
-    name: 'Retro Wave',
-    url: '/myzzzz/456-1.mp3',
-    theme: 'dance',
-  },
-].map(sanitizeTrackData).filter(Boolean);
+// Raw track list (names will be translated at runtime)
+const rawTracks = [
+  { id: 'track1', name: 'Space Walk', url: '/myzzzz/678.mp3', theme: 'party' },
+  { id: 'track2', name: 'Deep Bass', url: '/myzzzz/890.mp3', theme: 'retro' },
+  { id: 'track3', name: 'Neon Flux', url: '/myzzzz/zzz55.mp3', theme: 'chill' },
+  { id: 'track4', name: 'Retro Wave', url: '/myzzzz/456-1.mp3', theme: 'dance' },
+];
 
 export const CompactMusicPlayer: React.FC = () => {
+  const { t } = useTranslation();
+  const translationKeyById: Record<string, string> = {
+    track1: 'music.spaceWalk',
+    track2: 'music.deepBass',
+    track3: 'music.neonFlux',
+    track4: 'music.retroWave',
+  };
+  const musicTracks = rawTracks
+    .map((rt) => ({
+      ...rt,
+      name: t(translationKeyById[rt.id] ?? '', rt.name),
+    }))
+    .map(sanitizeTrackData)
+    .filter(Boolean);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(musicTracks[0]);
   const [volume, setVolume] = useState(0.5);
@@ -320,4 +316,4 @@ export const CompactMusicPlayer: React.FC = () => {
       </Button>
     </div>
   );
-}; 
+};

@@ -1,340 +1,557 @@
-'use client';
+﻿﻿'use client';
 
-import React, { useState } from 'react';
-import { usePendingBurnRewards } from '@/hooks/usePendingBurnRewards';
-import { useClaimReward } from '@/hooks/useBurnedNfts';
-import { useClaimBlocking } from '@/hooks/useClaimBlocking';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-import { Gift, Coins, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useChainId } from 'wagmi';
+import Image from 'next/image';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatEther } from 'viem';
+import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
 import { useTranslation } from 'react-i18next';
-import { SECURITY_CONFIG, validateChainId, validateContractAddress } from '@/config/security';
-import DOMPurify from 'isomorphic-dompurify';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
-interface ClaimableNFTCardProps {
-  tokenId: string;
-  onClaim: (tokenId: string) => void;
-  isLoading: boolean;
-  isClaimed: boolean;
-  claimMessage?: { type: 'success' | 'error'; message: string } | undefined;
-}
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TooltipProvider } from '@/components/ui/tooltip';
+// lightweight image for reward card (keep simple, avoid custom props mismatch)
+import { WalletConnectNoSSR as WalletConnect } from '@/components/web3/wallet-connect.no-ssr';
 
-const ClaimableNFTCard: React.FC<ClaimableNFTCardProps> = ({
-  tokenId,
+import { useToast } from '@/hooks/use-toast';
+import { usePendingBurnRewards, BurnReward } from '@/hooks/usePendingBurnRewards';
+import { useClaimBlocking } from '@/hooks/useClaimBlocking';
+import { useNetwork } from '@/hooks/use-network';
+
+import { coreContractConfig } from '@/lib/contracts';
+
+import {
+  AlertCircle,
+  Gift,
+  Loader2,
+  ShieldAlert,
+  Timer,
+  Wallet,
+} from 'lucide-react';
+
+const formatRewardValue = (wei: string): string => {
+  try {
+    // Return only the integer part, no decimals, no grouping.
+    const [whole] = formatEther(BigInt(wei)).split('.');
+    return whole ?? '0';
+  } catch {
+    return '0';
+  }
+};
+
+type RewardCardProps = {
+  reward: BurnReward;
+  onClaim: (reward: BurnReward) => void | Promise<void>;
+  disabled: boolean;
+  isProcessing: boolean;
+  errorMessage?: string | null | undefined;
+  index: number;
+};
+
+const clearRewardCaches = (address?: string) => {
+  if (typeof window === 'undefined' || !address) return;
+  const cacheKeys = [
+    `crazycube:burnedNfts:${address}`,
+    `crazycube:claimable:${address}`,
+    `${address}:pendingRewards`,
+  ];
+
+  for (const key of cacheKeys) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // ignore storage quota or availability issues
+    }
+  }
+};
+
+const mapErrorToKey = (error: unknown): string => {
+  if (!error) return 'sections.claim.errors.unexpected';
+
+  const name = (error as { name?: string }).name ?? '';
+  const message = `${(error as { message?: string }).message ?? ''} ${
+    (error as { shortMessage?: string }).shortMessage ?? ''
+  }`
+    .toLowerCase()
+    .trim();
+
+  if (
+    name === 'UserRejectedRequestError' ||
+    message.includes('user rejected') ||
+    message.includes('rejected the request') ||
+    message.includes('denied the request')
+  ) {
+    return 'sections.claim.errors.rejected';
+  }
+  if (message.includes('early')) return 'sections.claim.errors.tooEarly';
+  if (message.includes('owner')) return 'sections.claim.errors.notOwner';
+  if (message.includes('claimed')) return 'sections.claim.errors.alreadyClaimed';
+  if (message.includes('paused')) return 'sections.claim.errors.paused';
+  if (message.includes('insufficient')) return 'sections.claim.errors.insufficient';
+
+  return 'sections.claim.errors.unexpected';
+};
+
+const RewardCard: React.FC<RewardCardProps> = ({
+  reward,
   onClaim,
-  isLoading,
-  isClaimed,
-  claimMessage,
+  disabled,
+  isProcessing,
+  errorMessage,
+  index,
 }) => {
   const { t } = useTranslation();
+
+  const imgIdx = (index % 9) + 1;
+  const imageSrc = `/images/z${imgIdx}.png`;
+  const brightness = 1 + (Math.floor(index / 9) % 6) * 0.07;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const remaining = Math.max(0, reward.claimAt - nowSec);
+  const isClaimable = reward.isClaimable && remaining <= 0;
+
+  const getCardTheme = () => {
+    if (reward.claimed) {
+      return {
+        cardClass: 'border-blue-500/30 bg-slate-900/80',
+        hoverGlow: 'hover:shadow-[0_0_25px_rgba(59,130,246,0.25)]',
+        stripeColor: 'rgba(59, 130, 246, 0.1)',
+        buttonClass: 'bg-slate-700/60 text-slate-300',
+      };
+    } else if (isClaimable) {
+      return {
+        cardClass: 'border-cyan-400/50 bg-cyan-900/40',
+        hoverGlow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.35)]',
+        stripeColor: 'rgba(6, 182, 212, 0.15)',
+        buttonClass: 'bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-600 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]',
+      };
+    } else {
+      return {
+        cardClass: 'border-purple-500/40 bg-purple-900/40',
+        hoverGlow: 'hover:shadow-[0_0_25px_rgba(139,92,246,0.2)]',
+        stripeColor: 'rgba(139, 92, 246, 0.1)',
+        buttonClass: 'border-gray-500/40 bg-gray-800/40 text-gray-300',
+      };
+    }
+  };
+
+  const cardTheme = getCardTheme();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
+      transition={{ delay: index * 0.05 }}
+      className='group w-full max-w-[320px] mx-auto' // Increased size
     >
-      <Card className='border-orange-500/30 bg-slate-900/50 backdrop-blur-sm hover:border-orange-500/50 transition-colors'>
-        <CardHeader className='pb-3'>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='text-lg font-semibold text-orange-100'>
-              {`NFT #${tokenId}`}
-            </CardTitle>
-            <div className='flex gap-2'>
-              <Badge variant='outline' className='border-orange-500/50 text-orange-300'>
-                <Gift className='w-3 h-3 mr-1' />
-                {t('sections.claim.claimable', 'Claimable')}
-              </Badge>
+      <Card
+        className={cn(
+          'relative overflow-hidden rounded-2xl border-2 transition-all duration-300 backdrop-blur-lg',
+          cardTheme.cardClass,
+          cardTheme.hoverGlow
+        )}
+      >
+        {/* Subtle animated stripes */}
+        <div
+          className='absolute inset-0 opacity-30 mix-blend-overlay animated-stripes'
+          style={{ '--stripe-color': cardTheme.stripeColor } as React.CSSProperties}
+        />
+        
+        <div className='relative z-10 flex flex-col h-full p-4 text-center'>
+          {/* Header */}
+          <div className='flex-shrink-0'>
+            <Image
+              src={imageSrc}
+              alt={`Cube #${reward.tokenId}`}
+              width={64}
+              height={64}
+              className='w-16 h-16 object-cover rounded-lg mx-auto ring-2 ring-white/10 shadow-lg'
+              style={{ filter: `brightness(${brightness}) saturate(1.5) hue-rotate(20deg)` }}
+            />
+            <p className='mt-2 font-semibold text-white text-lg'>Cube #{reward.tokenId}</p>
+            <div className='flex items-center justify-center gap-1.5 text-xs mt-1'>
+              {reward.claimed ? (
+                <span className='font-medium text-green-300'>{t('sections.claim.status.claimed', 'Claimed')}</span>
+              ) : isClaimable ? (
+                <span className='font-medium text-cyan-300 flex items-center gap-1.5'>
+                  <div className='w-2 h-2 rounded-full bg-cyan-400 animate-pulse'></div>
+                  {t('sections.claim.status.ready', 'Ready to Claim')}
+                </span>
+              ) : (
+                <span className='font-mono text-purple-300 flex items-center gap-1.5'>
+                  <Timer className='w-3 h-3' />
+                  {Math.floor(remaining / 60)}m {String(remaining % 60).padStart(2, '0')}s
+                </span>
+              )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='flex items-center justify-between text-sm'>
-            <span className='text-slate-400'>
-              {t('sections.claim.rewardAmount', 'Reward Amount')}:
-            </span>
-            <span className='text-orange-300 font-semibold'>
-              Calculating...
-            </span>
+
+          {/* Reward Amount (Main Content) */}
+          <div className='flex-grow flex flex-col justify-center items-center my-4 min-h-[80px]'>
+            <span className='text-sm text-black font-bold'>{t('sections.claim.rewardAmount', 'Reward')}</span>
+            <svg viewBox="0 0 100 12" preserveAspectRatio="xMidYMid meet" className="w-full h-12">
+              <defs>
+                <linearGradient id="reward-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="white" />
+                  <stop offset="100%" stopColor="#67E8F9" />
+                </linearGradient>
+              </defs>
+              <text 
+                x="50" 
+                y="9" 
+                textAnchor="middle" 
+                className='font-black font-mono'
+                fill="black"
+                textLength="98" 
+                lengthAdjust="spacingAndGlyphs"
+              >
+                {formatRewardValue(reward.playerAmount)}
+              </text>
+            </svg>
+            <span className='text-lg font-bold text-black -mt-2'>OCTAA</span>
           </div>
 
-          {claimMessage && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={`p-3 rounded-lg text-sm ${
-                claimMessage.type === 'success'
-                  ? 'bg-green-500/10 border border-green-500/20 text-green-300'
-                  : 'bg-red-500/10 border border-red-500/20 text-red-300'
-              }`}
-            >
-              {claimMessage.message}
-            </motion.div>
-          )}
-
-          <div className='flex gap-2'>
-            <Button
-              onClick={() => onClaim(tokenId)}
-              disabled={isLoading || isClaimed}
-              className='flex-1 bg-orange-600 hover:bg-orange-700 text-white'
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                  {t('sections.claim.claiming', 'Claiming...')}
-                </>
-              ) : isClaimed ? (
-                <>
-                  <CheckCircle className='w-4 h-4 mr-2' />
-                  {t('sections.claim.claimed', 'Claimed')}
-                </>
-              ) : (
-                <>
-                  <Coins className='w-4 h-4 mr-2' />
-                  {t('sections.claim.claimReward', 'Claim Reward')}
-                </>
-              )}
-            </Button>
+          {/* Footer with Button */}
+          <div className='flex-shrink-0 mt-auto'>
+            {errorMessage && (
+              <div className='text-xs text-red-300 mb-2'>
+                {errorMessage}
+              </div>
+            )}
+            {reward.claimed ? (
+              <Button disabled className={cn('w-full h-10 text-sm font-semibold', cardTheme.buttonClass)}>
+                {t('sections.claim.status.claimed', 'Already claimed')}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => onClaim(reward)}
+                disabled={disabled || isProcessing || !isClaimable}
+                className={cn('w-full h-10 text-sm font-semibold transition-all duration-300', cardTheme.buttonClass)}
+              >
+                {isProcessing ? (
+                  <Loader2 className='h-5 w-5 animate-spin' />
+                ) : (
+                  <Gift className='mr-2 h-4 w-4' />
+                )}
+                {t('sections.claim.buttons.claim', 'Claim Reward')}
+              </Button>
+            )}
           </div>
-        </CardContent>
+        </div>
       </Card>
     </motion.div>
   );
 };
-
-export const ClaimRewards = () => {
+export const ClaimRewards: React.FC = () => {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+  const {
+    isMonadChain,
+    switchToMonadChain,
+    isSwitching,
+  } = useNetwork();
   const {
     rewards,
-    loading: isLoadingNfts,
-    error: nftsError,
+    loading,
+    error,
+    paused,
+    refreshing,
     refresh,
   } = usePendingBurnRewards();
-  const { toast } = useToast();
-  const { t } = useTranslation();
-  const chainId = useChainId();
-  const { isBlocked, timeLeft } = useClaimBlocking();
+  const { isBlocked, timeLeft, blockClaimSection } = useClaimBlocking();
 
-  // State to track claimed NFTs and show messages
-  const [claimedNFTs, setClaimedNFTs] = useState<Set<string>>(new Set());
-  const [claimMessages, setClaimMessages] = useState<Map<string, { type: 'success' | 'error', message: string }>>(new Map());
-  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimingTokenId, setClaimingTokenId] = useState<string | null>(null);
+  const [claimErrors, setClaimErrors] = useState<Record<string, string>>({});
+  const [optimisticStatus, setOptimisticStatus] = useState<Record<string, 'claimed'>>({});
+  const [manualRewards, setManualRewards] = useState<BurnReward[]>([]);
 
-  // Create individual claim hooks for each reward (max 6 to avoid hook rules violation)
-  const claimHook0 = useClaimReward(rewards[0]?.tokenId || '0', refresh);
-  const claimHook1 = useClaimReward(rewards[1]?.tokenId || '0', refresh);
-  const claimHook2 = useClaimReward(rewards[2]?.tokenId || '0', refresh);
-  const claimHook3 = useClaimReward(rewards[3]?.tokenId || '0', refresh);
-  const claimHook4 = useClaimReward(rewards[4]?.tokenId || '0', refresh);
-  const claimHook5 = useClaimReward(rewards[5]?.tokenId || '0', refresh);
+  // timer for `now` removed
 
-  const handleClaim = async (tokenId: string) => {
-    // CRITICAL: Validate chainId to prevent network spoofing
-    if (!validateChainId(chainId)) {
-      toast({
-        title: 'Wrong Network',
-        description: 'Please switch to ApeChain network',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // CRITICAL: Validate contract addresses
-    const expectedGameContract = SECURITY_CONFIG.CONTRACTS.GAME_CONTRACT;
-    if (!validateContractAddress(expectedGameContract)) {
-      toast({
-        title: 'Security Error',
-        description: 'Invalid game contract address',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Immediately block the button and show message
-    setClaimedNFTs(prev => new Set(prev).add(tokenId));
-    setIsClaiming(true);
-
-    try {
-      // Find the correct claim hook for this tokenId
-      const claimHook = [claimHook0, claimHook1, claimHook2, claimHook3, claimHook4, claimHook5]
-        .find((hook, index) => rewards[index]?.tokenId === tokenId);
-
-      if (claimHook) {
-        await claimHook.claim();
-        
-        // Show success message
-        setClaimMessages(prev => new Map(prev).set(tokenId, {
-          type: 'success',
-          message: `NFT #${tokenId} reward claimed successfully! Updating contract data (2-5 minutes)...`
-        }));
-        
-        // Refresh data after successful claim
-        setTimeout(() => {
-          refresh();
-        }, 2000);
-      } else {
-        throw new Error('Claim hook not available for this token');
+  useEffect(() => {
+    if (!Object.keys(optimisticStatus).length) return;
+    setOptimisticStatus(prev => {
+      const next = { ...prev };
+      let changed = false;
+      for (const reward of rewards) {
+        if (reward.claimed && next[reward.tokenId]) {
+          delete next[reward.tokenId];
+          changed = true;
+        }
       }
-      
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? DOMPurify.sanitize(error.message) : 'Failed to claim rewards';
-      
-      // Show error message
-      setClaimMessages(prev => new Map(prev).set(tokenId, {
-        type: 'error',
-        message: `Transaction failed: ${errorMessage}`
-      }));
-      
-      // Unblock the button on error
-      setClaimedNFTs(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(tokenId);
-        return newSet;
-      });
-      
-      toast({
-        title: 'Claim Failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsClaiming(false);
+      return changed ? next : prev;
+    });
+  }, [rewards, optimisticStatus]);
+
+  // When on-chain rewards arrive, remove any manualRewards that are now present in fetched rewards
+  useEffect(() => {
+    if (!manualRewards.length || !rewards.length) return;
+    setManualRewards(prev => prev.filter(m => !rewards.some(r => r.tokenId === m.tokenId)));
+  }, [rewards, manualRewards.length]);
+
+  const normalizedRewards = useMemo(() => {
+    // Merge manual (quickCheck) rewards with fetched rewards; fetched rewards take precedence
+    const mergedMap = new Map<string, BurnReward>();
+    for (const r of [...manualRewards, ...rewards]) {
+      if (!mergedMap.has(r.tokenId)) mergedMap.set(r.tokenId, r);
     }
-  };
+  const merged = Array.from(mergedMap.values()).filter(r => r.tokenId);
+    if (!Object.keys(optimisticStatus).length) return merged;
+    return merged.map(reward => (
+      optimisticStatus[reward.tokenId]
+        ? { ...reward, claimed: true, isClaimable: false }
+        : reward
+    ));
+  }, [manualRewards, rewards, optimisticStatus]);
 
-  if (isLoadingNfts && rewards.length === 0) {
+  // Show all not-yet-claimed rewards (eligible + pending). Pending items will have disabled Claim button
+  const displayRewards = useMemo(
+    () => normalizedRewards.filter(r => !r.claimed),
+    [normalizedRewards]
+  );
+  const handleClaim = useCallback(async (reward: BurnReward) => {
+    // minimal, linear claim flow to avoid multiple wallet prompts and race conditions
+    if (!address || !publicClient) {
+      toast({ variant: 'destructive', title: 'Error', description: t('sections.claim.errors.unexpected', 'Unexpected error. Please try again.') });
+      return;
+    }
+    if (paused) {
+      toast({ variant: 'destructive', title: 'Error', description: t('sections.claim.errors.paused', 'Claims are paused') });
+      return;
+    }
+    if (isBlocked) {
+      toast({ variant: 'destructive', title: 'Error', description: t('sections.claim.blockedToast', 'Claim section is temporarily blocked. Please wait.') });
+      return;
+    }
+    if (!reward.isClaimable || reward.claimed || reward.totalAmount === '0') {
+      toast({ variant: 'destructive', title: 'Error', description: t('sections.claim.errors.tooEarly', 'Too early to claim') });
+      return;
+    }
+
+    // prevent re-entrancy from UI
+    if (claimingTokenId !== null) return;
+
+    setClaimingTokenId(reward.tokenId);
+    setClaimErrors((prev) => {
+      const next = { ...prev };
+      delete next[reward.tokenId];
+      return next;
+    });
+
+    if (!isMonadChain) {
+      toast({ variant: 'destructive', title: 'Error', description: t('sections.claim.errors.wrongNetwork', 'Switch to Monad testnet to claim rewards.') });
+      return;
+    }
+
+    // perform the claim
+    try {
+      const th = toast({ title: t('sections.claim.txPending', 'Confirm the transaction in your wallet') });
+
+      let tokenIdBigInt: bigint;
+      try {
+        tokenIdBigInt = BigInt(reward.tokenId);
+      } catch {
+        // tokenId parse failed
+        // eslint-disable-next-line no-console
+        console.error('Invalid tokenId for claim:', reward.tokenId);
+        throw new Error('Invalid tokenId format');
+      }
+
+      // single write, wait for hash
+      const hash = await writeContractAsync({
+        address: coreContractConfig.address,
+        abi: coreContractConfig.abi,
+        functionName: 'claimBurnRewards',
+        args: [tokenIdBigInt],
+      });
+
+      th.update({ id: th.id, title: t('sections.claim.txProcessing', 'Transaction submitted. Waiting for confirmations...') });
+
+      if (publicClient && typeof publicClient.waitForTransactionReceipt === 'function') {
+        await publicClient.waitForTransactionReceipt({ hash, confirmations: 2 });
+      }
+
+      th.update({ id: th.id, title: t('sections.claim.successSingle', 'Reward claimed successfully!') });
+
+      // tx tracking removed in simplified UI
+      setOptimisticStatus((prev) => ({ ...prev, [reward.tokenId]: 'claimed' }));
+      clearRewardCaches(address);
+      blockClaimSection();
+      await refresh();
+    } catch (err) {
+      const key = (err as Error)?.message === 'Invalid tokenId format' ? 'sections.claim.errors.invalidId' : mapErrorToKey(err);
+      const baseMessage = t(key, t('sections.claim.errors.unexpected', 'Unexpected error. Please try again.'));
+      // Always include token id in the visible error so the user knows which NFT failed
+      const message = `${t('sections.claim.nftLabel', { defaultValue: 'NFT #{id}', id: reward.tokenId })}: ${baseMessage}`;
+      toast({ variant: 'destructive', title: 'Error', description: message });
+      setClaimErrors((prev) => ({ ...prev, [reward.tokenId]: message }));
+    } finally {
+      setClaimingTokenId(null);
+    }
+  }, [
+    address,
+    blockClaimSection,
+    isBlocked,
+    isMonadChain,
+    paused,
+    publicClient,
+    refresh,
+    t,
+    toast,
+    writeContractAsync,
+    claimingTokenId,
+  ]);
+
+  if (!isConnected) {
     return (
-      <div className='flex justify-center items-center py-12'>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className='w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full'
-        />
-        <span className='ml-3 text-green-300'>
-          Loading claimable rewards...
-        </span>
-      </div>
+      <TooltipProvider>
+        <Card className='border border-slate-800/60 bg-slate-900/60 shadow-xl shadow-black/10'>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2 text-xl text-slate-100'>
+              <Wallet className='h-5 w-5 text-slate-300' />
+              {t('sections.claim.noWallet.title', 'Connect Wallet')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-4 text-slate-300'>
+            <p className='text-sm text-slate-400'>
+              {t('sections.claim.noWallet.description', 'Connect your wallet to view and claim rewards from burned NFTs.')}
+            </p>
+            <WalletConnect />
+          </CardContent>
+        </Card>
+      </TooltipProvider>
     );
   }
 
-  if (nftsError) {
+  if (!isMonadChain) {
     return (
-      <div className='text-center py-12'>
-        <AlertCircle className='w-12 h-12 text-red-400 mx-auto mb-4' />
-        <div className='text-red-400 mb-2'>Error loading data</div>
-        <div className='text-slate-400'>{nftsError}</div>
-      </div>
-    );
-  }
-
-  if (rewards.length === 0) {
-    return (
-      <div className='text-center py-12'>
-        <Gift className='w-12 h-12 text-slate-400 mx-auto mb-4' />
-        <div className='text-slate-400 mb-2'>
-          {t('sections.claim.noClaimableRewards', 'No claimable rewards found')}
-        </div>
-        <div className='text-sm text-slate-500'>
-          {t('sections.claim.burnNFTsFirst', 'Burn some NFTs first to see claimable rewards here')}
-        </div>
-      </div>
+      <TooltipProvider>
+        <Card className='border border-slate-800/60 bg-slate-900/60 shadow-xl shadow-black/10'>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2 text-xl text-slate-100'>
+              <Wallet className='h-5 w-5 text-slate-300' />
+              {t('sections.claim.wrongNetwork.title', 'Switch Network')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-4 text-slate-300'>
+            <p className='text-sm text-slate-400'>
+              {t('sections.claim.wrongNetwork.description', 'Claiming rewards is only available on the Monad testnet. Switch your wallet to continue.')}
+            </p>
+            <Button
+              onClick={() => switchToMonadChain?.()}
+              disabled={isSwitching}
+              className='bg-emerald-500/80 text-slate-900 hover:bg-emerald-400'
+            >
+              {isSwitching ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  {t('sections.claim.wrongNetwork.switching', 'Switching...')}
+                </>
+              ) : (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4' />
+                  {t('sections.claim.wrongNetwork.button', 'Switch to Monad testnet')}
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </TooltipProvider>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      {/* Header */}
-      <div className='text-center'>
-        <h2 className='text-2xl font-bold text-orange-100 mb-2'>
-          {t('sections.claim.title', 'Claim Burn Rewards')}
-        </h2>
-        <p className='text-slate-400'>
-          {t('sections.claim.description', 'Claim your CRAA rewards from burned NFTs')}
-        </p>
+    <TooltipProvider>
+      <div className='space-y-6'>
+        {paused && (
+          <div className='flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200'>
+            <ShieldAlert className='h-5 w-5' />
+            <div>
+              <div className='font-medium'>{t('sections.claim.pausedBanner.title', 'Game is paused')}</div>
+              <div>{t('sections.claim.pausedBanner.subtitle', 'Claims are temporarily unavailable.')}</div>
+            </div>
+          </div>
+        )}
+
+        {isBlocked && (
+          <div className='flex items-center gap-3 rounded-lg border border-slate-700/60 bg-slate-800/60 p-3 text-sm text-slate-200'>
+            <Timer className='h-5 w-5 text-slate-300' />
+            <div>
+              <div className='font-medium'>{t('sections.claim.blockedBanner.title', 'Claim section blocked')}</div>
+              <div>
+                {t('sections.claim.blockedBanner.subtitle', 'Please wait before trying again.')}{' '}
+                {timeLeft > 0 && (
+                  <span className='text-slate-100'>
+                    {t('sections.claim.blockedBanner.remaining', { defaultValue: '{seconds}s remaining', seconds: timeLeft })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className='rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200'>
+            <div className='flex items-center gap-2 text-red-200'>
+              <AlertCircle className='h-5 w-5' />
+              <span>{error}</span>
+            </div>
+            <Button
+              size='sm'
+              className='mt-3 bg-red-500/80 text-red-900 hover:bg-red-400'
+              onClick={() => refresh()}
+            >
+              {t('sections.claim.retry', 'Try again')}
+            </Button>
+          </div>
+        )}
+
+  {loading && displayRewards.length === 0 && (
+          <div className='flex items-center justify-center gap-2 rounded-lg border border-slate-800/60 bg-slate-900/60 p-6 text-slate-300'>
+            <Loader2 className='h-5 w-5 animate-spin text-emerald-300' />
+            <span>{t('sections.claim.loading', 'Loading claimable rewards...')}</span>
+          </div>
+        )}
+
+  {!loading && displayRewards.length === 0 && (
+          <Card className='border border-slate-800/60 bg-slate-900/60 text-center text-slate-300'>
+            <CardContent className='space-y-3 py-10'>
+              <Gift className='mx-auto h-10 w-10 text-slate-500' />
+              <div className='text-lg font-medium text-slate-100'>
+                {t('sections.claim.empty.title', 'No rewards yet')}
+              </div>
+              <p className='text-sm text-slate-400'>
+                {t('sections.claim.empty.description', 'Burn NFTs to start accumulating OCTA rewards. Eligible and pending rewards will appear here.')}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className='nft-card-grid'>
+          {displayRewards.map((reward, index) => {
+            return (
+              <RewardCard
+                key={reward.tokenId}
+                reward={reward}
+                onClaim={handleClaim}
+                disabled={
+                  paused ||
+                  isBlocked ||
+                  claimingTokenId !== null ||
+                  refreshing
+                }
+                isProcessing={claimingTokenId === reward.tokenId}
+                errorMessage={claimErrors[reward.tokenId] ?? null}
+                index={index}
+              />
+            );
+          })}
+        </div>
+        
       </div>
-
-      {/* Blocking notice */}
-      {isBlocked && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className='text-center bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4'
-        >
-          <div className='text-yellow-300 text-lg mb-2'>
-            ⏰ {t('sections.claim.blockedTitle', 'Claim Section Blocked')}
-          </div>
-          <p className='text-sm text-slate-400'>
-            {t('sections.claim.blockedMessage', 'Please wait')} {timeLeft} {t('sections.claim.blockedMessage2', 'before claiming again')}
-          </p>
-        </motion.div>
-      )}
-
-      {/* Rewards Grid */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-        {rewards.map((reward) => (
-          <ClaimableNFTCard
-            key={reward.tokenId}
-            tokenId={reward.tokenId}
-            onClaim={handleClaim}
-            isLoading={isClaiming || [claimHook0, claimHook1, claimHook2, claimHook3, claimHook4, claimHook5].some(hook => hook?.isClaiming)}
-            isClaimed={claimedNFTs.has(reward.tokenId)}
-            claimMessage={claimMessages.get(reward.tokenId)}
-          />
-        ))}
-      </div>
-
-      {/* Status Messages */}
-      {(isClaiming || [claimHook0, claimHook1, claimHook2, claimHook3, claimHook4, claimHook5].some(hook => hook?.isClaiming)) && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className='text-center bg-blue-500/10 border border-blue-500/20 rounded-lg p-4'
-        >
-          <div className='flex justify-center items-center gap-2'>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className='w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full'
-            />
-            <span className='text-blue-300'>
-              {t('sections.claim.processingClaim', 'Processing claim...')}
-            </span>
-          </div>
-        </motion.div>
-      )}
-
-      {[claimHook0, claimHook1, claimHook2, claimHook3, claimHook4, claimHook5].some(hook => hook?.isSuccess) && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className='text-center bg-green-500/10 border border-green-500/20 rounded-lg p-4'
-        >
-          <div className='text-green-400 text-lg'>
-            🎉 Rewards Claimed Successfully!
-          </div>
-          <p className='text-sm text-slate-400 mt-1'>
-            Your CRAA rewards have been transferred to your wallet.
-          </p>
-        </motion.div>
-      )}
-
-      {[claimHook0, claimHook1, claimHook2, claimHook3, claimHook4, claimHook5].some(hook => hook?.error) && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className='text-center bg-red-500/10 border border-red-500/20 rounded-lg p-4'
-        >
-          <div className='text-red-400 text-lg'>❌ Claim Failed</div>
-          <p className='text-sm text-slate-400 mt-1'>
-            {String([claimHook0, claimHook1, claimHook2, claimHook3, claimHook4, claimHook5].find(hook => hook?.error)?.error || 'Unknown error occurred')}
-          </p>
-        </motion.div>
-      )}
-    </div>
+    </TooltipProvider>
   );
 };

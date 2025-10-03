@@ -1,0 +1,1062 @@
+{
+  "home": {
+    "title": "OCTAAzyCube",
+    "subtitle": "큐브가 울고 농담하는 곳!",
+    "balance": "잔액:",
+    "connectWallet": "MetaMask 연결",
+    "walletNotDetected": "MetaMask가 감지되지 않았습니다. MetaMask를 설치하세요"
+  },
+  "sections": {
+    "bridge": {
+      "title": "브릿지 (큐브 되돌리기!)",
+      "description": "OCTAA 토큰과 CrazyCube NFT를 Monad Testnet과 Solana 간에 전송하세요. 빠르고 안전하며 수수료는 최소! 진정한 컬렉터를 위한 크로스체인.",
+      "button": "NFT 브릿지",
+      "guide": {
+        "title": "🪄 부활 가이드",
+        "intro": "묘지에서 큐브를 되살리려면 OpenSea 또는 Magic Eden에서의 현재 가격의 20%에 해당하는 CRAAA 수수료를 지불할 수 있습니다.",
+        "fee": "수수료는 최신 시장가에 따라 자동 계산되며 영구적으로 소각됩니다.",
+        "requirement": "부활을 위해 최소 별 1개를 가진 NFT 2개를 선택하세요.",
+        "rarity": "별 등급: 1 ⭐ — 일반, 2 ⭐ — 희귀, 3 ⭐ — 레어, 4 ⭐ — 에픽, 5 ⭐ — 미식.",
+        "penalty": "성공적인 부활 후 선택된 각 NFT는 별 1개를 잃습니다.",
+        "step1": "1. 20% 수수료를 위한 OCTAAA 지출 승인.",
+        "step2": "2. 브릿지 트랜잭션 확인 — NFT가 즉시 지갑으로 돌아옵니다.",
+        "note": "5,000개의 큐브만 존재하며, 그 수는 절대 변하지 않습니다. 소각된 OCTAAA는 데드지갑으로 가며 누구도 복구할 수 없습니다."
+      }
+    },
+    "burn": {
+      "title": "NFT 소각 (큐브를 구워요!)",
+      "description": "큐브를 태워서 CRAAA를 얻으세요. 쉬운 돈! 💰",
+      "button": "NFT 소각",
+      "feeBox": {
+        "title": "🔥 소각 수수료 및 단계",
+        "line1": "• 소각 수수료는 큐브 내 잠긴 CRAAA의 <1>5%</1>입니다.",
+        "line2": "• 소각하려면 <1>세 번의 확인</1>이 필요합니다:",
+        "step1": "1. 계약에 NFT 이동 권한을 부여합니다.",
+        "step2": "2. 잠긴 코인의 10% CRAAA 지출을 허용합니다.",
+        "step3": "3. 최종 트랜잭션 확인 — 큐브가 소각되고 CRAAA가 당신에게 갑니다.",
+        "note": "시작하기 전에 지갑에 수수료를 위한 충분한 CRAAA가 있는지 확인하세요.",
+        "guide": {
+          "title": "🔥 소각 가이드 여기를 클릭하세요",
+          "intro": "<div class='text-lg font-bold text-cyan-400 mb-2'>이 게임은 완전히 Monad Testnet 블록체인 위에 구축되었습니다. 모든 게임 액션은 스마트 컨트랙트에 의해 처리되며, 웹사이트는 정보 표시 역할만 합니다.</div>소각 전에 반드시 핑(7일마다 한 번)을 해서 채굴된 CRAAA를 잠금 해제해야 합니다.",
+          "loss": "소각 후 NFT는 영구적으로 묘지로 보내집니다. CRAAA는 보상 섹션에서 청구할 수 있습니다.",
+          "step1": "1. 계약에 NFT 이동 권한을 부여합니다.",
+          "step2": "2. 잠긴 코인의 10% CRAAA 지출을 허용합니다.",
+          "step3": "3. 최종 트랜잭션 확인 — 큐브가 소각되고 CRAAA가 당신에게 갑니다.",
+          "timing": "CRAAA는 선택한 지연(30분 / 120분 / 480분) 후에 도착합니다. 이 시간 동안 큐브는 회색(쿨다운)입니다.",
+          "note": "예: 10,000 CRAAA 잠김 → 수수료 1,000 CRAAA (10%). 더 긴 지연 = 더 작은 풀 점유율.",
+          "pingLock": "핑할 때 CRAAA는 지갑으로 가지 않고 NFT 내에 잠겨 있습니다. 소각으로만 인출할 수 있습니다.",
+          "bridgeNote": "'브릿지' 섹션에서 묘지의 NFT를 부활시킵니다. 큐브 수는 9700개로 제한되며 절대 변하지 않습니다. 각 행동에서 소각되는 OCTAA는 영원히 데드지갑으로 가며 누구도 되찾을 수 없습니다.",
+          "sellOCTA": "OCTA 판매: <a>Camelot Exchange</a>",
+          "fees": "🔹 CRAA 토큰 수수료 • 이체 시 3% 수수료 — 게임 계약으로 이동 • DEX 판매 시 10% 수수료 — 게임 계약으로 이동 • DEX 구매 시 0% 수수료 — 구매 시 수수료 없음 • 모든 수수료는 게임 생태계와 보상 풀을 지원합니다",
+          "contractAddress": "CRAA 토큰 계약: 0xBb526D657Cc1Ba772469A6EC96AcB2ed9D2A93e5"
+        }
+      },
+      "noNFTsDescription": "태울 CRAAzyCube NFT가 없습니다"
+    },
+    "claim": {
+      "title": "청구 (내 CRAAA 어디에?)",
+      "description": "커다란 슬픈 눈의 큐브가 \"날 청구하고 CRAAA를 받아가!\"라고 외칩니다",
+      "button": "청구",
+      "processing": "처리 중...",
+      "claimReward": "청구",
+      "waitingForWallet": "지갑 확인 대기 중...",
+      "processingClaim": "청구 처리 중...",
+      "noRewardsTitle": "청구할 보상이 없습니다",
+      "noRewardsDescription": "먼저 NFT를 소각하여 보상을 획득하세요!",
+      "delayInfoTitle": "💡 보상 지연이 발생할 수 있습니다:",
+      "delayReason1": "블록체인 확인 (3-5분)",
+      "delayReason2": "네트워크 혼잡",
+      "delayReason3": "인덱싱 지연",
+      "delayNote": "최근에 NFT를 소각했다면 몇 분 기다린 후 페이지를 새로고침하세요.",
+      "blockedTitle": "컨트랙트와 동기화 중",
+      "blockedDescription": "블록체인 동기화를 위해 4분 기다려주세요. 이는 정확한 보상 데이터를 보장합니다.",
+      "timeRemaining": "남은 시간",
+      "blockedNote": "대기 중에 다른 섹션을 사용할 수 있습니다."
+    },
+    "stats": {
+      "title": "통계 (눈물과 고통 카운터)",
+      "description": "얼마나 많은 NFT가 소각되었고, 묘지에서 돌아왔으며, 풀에 얼마나 많은 CRAAA가 있는지 보여줍니다",
+      "button": "통계 보기",
+      "analytics": "분석"
+    },
+    "ping": {
+      "title": "NFT 핑",
+      "description": "CRAAA 토큰을 얻기 위해 10일마다 NFT를 핑하세요! 일관된 핑으로 보너스가 증가합니다.",
+      "connectWallet": "큐브를 보려면 지갑을 연결하세요",
+      "noNFTs": "CRAAzyCube NFT를 찾을 수 없습니다.",
+      "sentFor": "핑 전송됨",
+      "error": "핑 오류",
+      "interval": "핑 간격: 10일",
+      "bonusGrowth": "보너스가 10일마다 +2.7% 증가",
+      "maxBonus": "최대 보너스: +97.2%",
+      "penaltyReset": "20+일 놓치면 = 보너스가 -50%로 리셋",
+      "activate": "활성화",
+      "pingNow": "지금 핑",
+      "cooldown": "쿨다운",
+      "ready": "준비됨",
+      "button": "핑",
+      "readyToPing": "핑 준비됨",
+      "waitingForWallet": "지갑 확인 대기 중...",
+      "processingPing": "핑 처리 중...",
+      "accumulated": "누적됨",
+      "nextPing": "다음 핑",
+      "live": "실시간",
+      "basePerHour": "기본/시간",
+      "rarity": "희귀도",
+      "streak": "연속",
+      "penalty": "페널티",
+      "totalBonus": "총 보너스",
+      "pending": "대기 중",
+      "lockedCRAA": "잠긴 OCTAA",
+      "status": "상태",
+      "active": "활성"
+    },
+    "graveyard": {
+      "title": "묘지",
+      "description": "소각된 큐브들을 보고, 애도하며, CRAAA를 청구하세요.",
+      "button": "묘지로 가기",
+      "phrases": [
+        "여기는 왜 이렇게 어두워… ☠️",
+        "추워… 🥶",
+        "저게 빛인가? 💀",
+        "후회 없어! 🔥",
+        "재는 재로…",
+        "엄마에게 괜찮다고 전해줘!",
+        "여기 꽤 아늑한데… 아마도?"
+      ],
+      "loading": "묘지에서 NFT를 로딩하는 중...",
+      "empty": {
+        "title": "묘지가 비어있음",
+        "description": "태운 큐브를 찾을 수 없습니다."
+      },
+      "showingFirst": "처음 20개 큐브 표시. 총: {count}"
+    },
+    "game": {
+      "title": "3D 큐브 게임",
+      "description": "열린 미친 세계, 미친 놀라운 물리학과 게임플레이를 가진 마인크래프트 스타일 인터랙티브 게임! 곧 출시!",
+      "button": "게임하기"
+    },
+    "breed": {
+      "title": "유전자 융합 연구소 🧬",
+      "description": "두 표본의 DNA를 과학적으로 융합하여 냉동 보관소에서 하나를 부활시키세요! 과학이 기적을 만듭니다! 🔬⚗️",
+      "button": "실험 시작",
+      "feeNotice": "연구 비용: 40% (10% CRAA + 30% OCTAA) 시장 최소 표본 가격에서",
+      "cooldown": "⏳ 배양 시간:",
+      "needTwoNfts": "실험을 위해 정확히 2개의 표본을 선택해야 합니다",
+      "selectGender": "표본 유형 선택",
+      "male": "알파 표본",
+      "female": "베타 표본",
+      "genderRequired": "성공적인 돌연변이를 위해 다른 유형의 표본이 필요합니다",
+      "waitingForWallet": "연구소 접근 대기 중...",
+      "processingBreeding": "유전자 실험 진행 중...",
+      "graveyardCooldown": "냉동 보관소 안정화 진행 중",
+      "graveyardCooldownDesc": "최소 하나의 표본이 냉동 보존 과정을 완료할 때까지 기다리세요",
+      "graveyardReady": "냉동 보관소가 실험 준비 완료",
+      "graveyardEmpty": "냉동 보관소에 표본이 없습니다",
+      "graveyardEmptyDesc": "냉동 보관소가 비어 있습니다. 실험을 활성화하려면 먼저 일부 표본을 보관소에 넣으세요.",
+      "timeUntilReady": "표본이 준비될 때까지 시간:",
+      "selectNft": "표본 선택",
+      "selectedNft": "선택된 표본",
+      "breeding": "돌연변이 진행 중...",
+      "breedNfts": "실험 수행",
+      "returnToHome": "메인 연구소로 돌아가기",
+      "connectWallet": "연구소 접근 연결",
+      "connectWalletDesc": "표본을 보고 실험하려면 연구소 접근을 연결하세요",
+      "connectWalletButton": "연구소 접근 획득",
+      "errorLoadingNfts": "표본 로딩 오류",
+      "loadingNfts": "표본 로딩 중...",
+      "loadingNftsDesc": "CrazyCube 표본 컬렉션을 가져오는 중",
+      "noNftsFound": "표본을 찾을 수 없음",
+      "noNftsFoundDesc": "실험할 CrazyCube 표본이 없습니다",
+      "goToCollection": "컬렉션으로 이동",
+      "selectNftsForBreeding": "실험을 위해 2개 표본 선택",
+      "loadingGraveyardStatus": "냉동 보관소 상태 로딩 중...",
+      "insufficientCra": "연구 자금 부족",
+    "needCraToBreed": "실험에 {amount} OCTAA 필요",
+    "approveCra": "연구 자금 승인",
+    "approveCraDesc": "첫 번째 거래: 연구소 자금 접근 권한 부여",
+    "breedingFee": "실험 비용",
+    "craAllowanceSet": "자금 접근 권한 설정됨",
+      "confirmBreeding": "유전자 실험 확인",
+      "signBreedingTransaction": "돌연변이 프로토콜 서명",
+      "breedingCanceled": "실험 취소됨",
+      "transactionRejected": "프로토콜 거부됨",
+      "breedingSuccessful": "돌연변이 성공! 🧬⚡",
+      "txConfirmed": "프로토콜 확인됨: {hash}...",
+      "transactionError": "연구소 시스템 오류",
+      "inactiveNftSelected": "비활성 표본 선택됨",
+      "nftNoStarsLeft": "표본 #{id}에 남은 에너지가 없어 실험에 사용할 수 없습니다.",
+      "maximumSelectionReached": "최대 선택 수에 도달함",
+      "canOnlySelectTwoNfts": "실험을 위해 2개 표본만 선택할 수 있습니다",
+      "invalidSelection": "잘못된 선택",
+      "mustSelectExactlyTwoNfts": "돌연변이를 위해 정확히 2개 표본을 선택해야 합니다",
+      "walletNotConnected": "연구소 접근이 연결되지 않음",
+      "pleaseConnectWalletFirst": "먼저 연구소 접근을 연결하세요",
+      "selectedNftsNoStars": "선택된 표본에 남은 에너지가 없습니다! 에너지가 있는 활성 표본을 선택하세요.",
+      "cannotBreedSelectedNfts": "선택된 표본으로 실험할 수 없습니다. 요구사항을 확인하세요.",
+      "breedYourCubes": "표본으로 실험하세요",
+      "select2NftsToCreate": "냉동 보관소에서 하나를 부활시키기 위해 2개 표본 선택",
+      "breedingCost": "실험 비용",
+      "yourBalance": "연구 자금",
+      "graveyardSize": "묘지 크기",
+      "selectedParents": "선택된 부모",
+      "breedSelectedNfts": "선택된 NFT 교배",
+      "guide": {
+        "title": "🪄 교배 가이드 여기를 클릭하세요",
+        "intro": "<div class='text-lg font-bold text-cyan-400 mb-2'>이 게임은 완전히 Monad Testnet 블록체인 위에 구축되었습니다. 모든 게임 액션은 스마트 컨트랙트를 통해 처리되며, 웹사이트는 정보 표시 역할만 합니다.</div>OpenSea 또는 Magic Eden의 현재 가격의 40%에 해당하는 CRAA 수수료를 지불하여 새로운 큐브를 교배할 수 있습니다.",
+        "fee": "수수료는 최신 시장 가격에서 자동으로 계산되며 영구적으로 소각됩니다.",
+        "requirement": "교배를 위해 최소 1 ⭐이 있는 2개 NFT를 선택하세요.",
+        "rarity": "별 등급: 1 ⭐ — 일반, 2 ⭐ — 희귀, 3 ⭐ — 레어, 4 ⭐ — 에픽, 5 ⭐ — 전설, 6 ⭐ — 신화.",
+        "penalty": "별이 손실됩니다!",
+        "step1": "1. 40% 수수료를 위해 CRAA 지출을 허용하세요. <a href='https://pancakeswap.finance/swap?outputCurrency=0xB4832932D819361e0d250c338eBf87f0757ed800' target='_blank'>PancakeSwap</a>에서 OCTAA를 구매할 수 있습니다 (구매 0%, 판매 10%, 전송 3%).",
+        "step2": "2. 교배 거래를 확인하세요 — 새로운 큐브가 생성되고 CRAA가 소각됩니다.",
+        "note": "컬렉션은 5,000개 큐브로 제한됩니다; CRAA는 복구 가능성 없이 데드 지갑으로 소각됩니다.",
+        "buyNFT": "NFT 구매: <a>Magic Eden</a>",
+                  "contractAddress": "CRAA 토큰 계약: 0xBb526D657Cc1Ba772469A6EC96AcB2ed9D2A93e5"
+        },
+        "confirmDialog": {
+          "title": "NFT #{tokenId} 소각",
+          "warning": "⚠️ 중요: 이 작업은 되돌릴 수 없습니다!",
+          "description": "귀하의 NFT는 영구적으로 소각되어 묘지로 보내집니다.",
+          "waitPeriod": "대기 시간:",
+          "minutes": "분",
+          "lockedCRAA": "잠긴 OCTAA:",
+          "fee": "수수료:",
+          "afterBurn": "소각 후 받게 됩니다",
+          "poolReceives": "풀이 받습니다:",
+          "burnedForever": "영원히 소각됨:",
+          "transactions": "3개의 트랜잭션에 서명합니다:",
+          "transaction1": "1️⃣ OCTAA 수수료 승인",
+          "transaction2": "2️⃣ NFT 승인",
+          "transaction3": "3️⃣ NFT 소각",
+          "yourBalance": "OCTAA 잔액:",
+          "cancel": "취소",
+          "confirm": "소각 확인",
+          "nftEarnings": "🎉 NFT 수익",
+          "totalLockedAmount": "이 NFT가 획득한 총 잠긴 금액"
+        }
+      }
+    },
+  "footer": {
+    "copyright": "© 2025 CRAAzyCube — 큐브가 울고 웃는 곳!",
+    "CRAAshMessage": "사이트가 다운되면 큐브가 피자를 사러 간 거예요"
+  },
+  "construction": {
+    "title": "공사 중",
+    "message": "이 섹션은 아직 개발 중입니다. 곧 여기에 많은 흥미로운 것들이 있을 거예요!",
+    "returnHome": "집으로 돌아가기",
+    "phrases": [
+      "여기서 일하고 있어요! 방해하지 마세요!",
+      "곧 될 거예요, 헬멧 쓰고 있어요!",
+      "공사 진행 중!",
+      "큐브가 공사 중이니 나중에 오세요!",
+      "여기 아름다울 거예요, 약속해요!",
+      "어머, 일찍 오셨네요! 아직 안 끝났어요!",
+      "큐브가 건설하고, 칠하고, 피곤해요..."
+    ]
+  },
+  "wallet": {
+    "connect": "지갑 연결",
+    "connecting": "연결 중…",
+    "copyAddress": "주소 복사",
+    "copied": "복사됨!",
+    "openExplorer": "탐색기에서 열기",
+    "disconnect": "지갑 연결 해제",
+    "balance": "잔액:",
+    "notConnected": "지갑이 연결되지 않음",
+    "connectFirst": "먼저 지갑을 연결하세요",
+    "connected": "연결됨",
+    "instruction": "설명서",
+"nftInspectorButton": "NFT 검사기로 이동",
+    "gameGuide": "CrazyCube 게임 가이드",
+    "gameGuideContent": {
+      "title": "🎮 CrazyCube 게임 가이드",
+      "gettingStarted": {
+        "title": "🔹 시작하기",
+        "getCRAA": "• CRAA 토큰 획득 — 가스비 및 게임 액션용",
+        "buyNFTs": "• 마켓플레이스에서 CrazyCube NFT 구매"
+      },
+      "howToStart": {
+        "title": "🔹 게임 시작 방법",
+        "goToPing": "• Ping 탭으로 이동 — NFT를 볼 수 있습니다",
+        "activate": "• 새 큐브의 경우 Activate를 누르세요 — 이것이 첫 번째 Ping이며, CRAA를 주지 않지만 타이머를 시작합니다",
+        "pingAfterActivation": "• 활성화 후 ping 가능 (Ping 클릭). 기본값은 24시간마다 한 번, 보상이 쌓이기 시작합니다",
+        "pingRewards": "• 성공적인 각 Ping은 CRAA를 가져옵니다 — 양은 다음에 따라 달라집니다:",
+        "rarityFactor": "- 큐브 희귀도 (Common, Rare, Mystic 등)",
+        "experienceBonus": "- 경험 보너스 — 24시간마다, ping을 놓치지 않고 증가",
+        "timeFactor": "- ping 간격 (더 많은 기간이 지나면 더 많은 CRAA)"
+      },
+      "experienceBonus": {
+        "title": "🔹 경험 보너스란 무엇인가",
+        "initialPenalty": "• 처음에는 모든 큐브가 -50% 페널티를 가집니다",
+        "bonusGrowth": "• 24시간마다 ping할 때 보너스를 받습니다 — +2.7%",
+        "maxBonus": "• 최대 +97.2%까지 달성 가능 + 희귀도 보너스도 계산됩니다",
+        "miss10Days": "• 10일 이상 놓치면 — 보너스가 증가하지 않습니다",
+        "miss20Days": "• 20일 이상 놓치면 — 보너스가 -50%로 리셋됩니다"
+      },
+      "howToGetCRAA": {
+        "title": "🔹 CRAA 획득 방법",
+        "accumulation": "• CRAA는 지갑에 즉시 떨어지지 않고 큐브 내부에 누적됩니다 (이렇게 각 NFT가 실제 가치를 가집니다)",
+        "collect": "• 수집하려면 — 큐브를 태워야 합니다 (Burn) (큐브가 묘지 섹션으로 가서 더 이상 당신 것이 아니며, claim 섹션에서 CRAA 코인을 받습니다)"
+      },
+      "howToBurn": {
+        "title": "🔹 태우는 방법",
+        "goToBurn": "• Burn 섹션으로 이동",
+        "chooseCube": "• 큐브와 대기 시간 선택:",
+        "time12h": "- 12분 → 플레이어에게 50%",
+        "time24h": "- 60분 → 70%",
+        "time48h": "- 255분 → 80%",
+        "restSplit": "• 나머지는 풀과 영구 소각 사이에 분배됩니다 (공식 데드 지갑으로 이동)",
+        "claim": "• 선택한 시간 후 Claim 버튼 클릭 — CRAA가 지갑으로 옵니다"
+      },
+      "howToRevive": {
+        "title": "🔹 큐브 부활 방법 (Breed)",
+        "goToBreed": "• Breed 섹션으로 이동",
+        "choose2Cubes": "• 2개의 살아있는 큐브 선택 (별이 있고 쿨다운 중이 아닌)",
+        "selectGender": "• 각 큐브의 성별 선택 (남성 또는 여성)",
+        "payCRAA": "• 수수료 지불: 40% (10% CRAA + 30% OCTAA) 최소 시장 가격에서",
+        "randomNFT": "• 묘지의 랜덤 NFT가 새것으로 돌아옵니다. 모든 별이 있지만 코인은 없습니다:",
+        "bonusReset": "- 보너스 리셋 (-50%로 돌아감)",
+        "starsRestored": "- 별 복원",
+        "canPingAgain": "- 처음부터 다시 ping 가능"
+      },
+      "crasInSystem": {
+        "title": "🔹 시스템에서 CRAA의 위치",
+        "pingRewards": "• Ping용 CRAA는 월간 보상 풀에서 나옵니다",
+        "breedReturns": "• Breed에 소비된 CRAA는 이 풀로 돌아갑니다",
+        "burnForever": "• Burn의 CRAA는 영원히 소각됩니다",
+        "burnedGoesTo": "• 모든 소각된 것은 특별한 지갑 0x...dead Monad Testnet 네트워크의 공식 지갑으로 가서 영원히 사라집니다"
+      },
+      "crasFees": {
+        "title": "🔹 CRAA 토큰 수수료",
+        "transferFee": "• 전송 시 3% 수수료 — 게임 컨트랙트로 이동",
+        "dexSalesFee": "• DEX 판매 시 10% 수수료 — 게임 컨트랙트로 이동",
+        "dexPurchaseFee": "• DEX 구매 시 0% 수수료 — 구매 시 수수료 없음",
+        "feesSupport": "• 모든 수수료는 게임 생태계와 보상 풀을 지원합니다"
+      },
+      "exampleStrategy": {
+        "title": "🔹 전략 예시",
+        "youHaveThree": "세 개의 큐브가 있습니다:",
+        "common": "• Common (일반) — ping하세요, 보너스가 24시간마다 2.7%씩 97%까지 증가한 후 멈춥니다. NFT 판매, 전송 가능, 보너스 보존됩니다",
+        "rare": "• Rare — Breed에 사용하거나 CRAA 누적",
+        "mystic": "• Mystic — 희귀, 더 많은 CRAA 제공, 태우지 않는 것이 좋습니다",
+        "playCalmly": "차분하게 플레이:",
+        "pingEvery10Days": "• 24시간마다 한 번 로그인해서 Ping 클릭",
+        "burnWeakCubes": "• 주기적으로 약한 큐브 태우기 → 토큰 획득",
+        "reviveDead": "• 또는 죽은 것들 부활 — 더 희귀한 것을 얻을 기회"
+      },
+      "tips": {
+        "title": "💡 팁",
+        "maxProfit": "최대 이익을 원한다면 — 정기적으로 ping하고 희귀한 큐브를 너무 일찍 태우지 마세요.",
+        "burnedTokens": "💥 태워진 토큰은 돌아오지 않습니다 — 이는 남은 CRAA의 가치를 증가시킵니다."
+      },
+      "vision": {
+        "title": "🚀 우리의 비전",
+        "plans": "1-2개월 내에 게임플레이를 조정하고 NFT 및 토큰 계약의 관리자 권한을 포기할 계획입니다. 우리는 사회적 실험을 수행하고 아무것도 변경할 수 없는 완전한 사회적 게임플레이를 만들고 싶습니다 — 시장과 사람들만이 결정합니다.",
+        "noBonuses": "팀은 OCTAA 코인 형태의 계약 보너스가 없습니다. 예를 들어 Rabby 지갑에서 1분 만에 지갑을 만들고 우리 게임을 플레이할 수 있습니다.",
+        "decentralized": "곧 우리 게임은 시장 자체 조절로 100% 탈중앙화될 것입니다."
+      }
+    },
+    "gameGuideContent": "🎮 CrazyCube 게임 가이드\n\n🔹 시작하기\n• CRAA 토큰 획득 — 가스 수수료와 게임 액션용\n• 마켓플레이스에서 CrazyCube NFT 구매\n• 구매하기 전에 \"정보\" → \"NFT 검사기\" 섹션에서 NFT를 확인하세요 — NFT 번호를 입력하고 완전한 정보를 얻으세요: 잠긴 코인 수량, 남은 별, 쿨다운 상태 및 기타 매개변수\n\n🔹 게임 시작 방법\n• Ping 탭으로 이동 — NFT를 볼 수 있습니다\n• 새 큐브의 경우 Activate를 누르세요 — 이것이 첫 번째 Ping이며, CRAA를 주지 않지만 타이머를 시작합니다\n• 활성화 후 ping을 할 수 있습니다 (Ping 클릭). 기본값은 24시간마다 한 번, 보상이 쌓이기 시작합니다\n• 각 성공적인 Ping은 CRAA를 가져옵니다 — 양은 다음에 따라 다릅니다:\n  - 큐브 희귀도 (Common, Rare, Mystic 등)\n  - 경험 보너스 — 24시간마다 ping을 놓치지 않고 성장\n  - ping 간 시간 (더 많은 기간이 지나면 더 많은 CRAA)\n\n🔹 경험 보너스란 무엇인가\n• 처음에는 모든 큐브가 -50% 페널티를 가집니다\n• 24시간마다 ping할 때 보너스를 얻습니다 — +2.7%\n• 도달할 수 있는 최대 +97.2% + 희귀도 보너스도 계산됩니다\n• ping을 놓치면 — 보너스가 증가하지 않습니다\n• ping을 놓치면 — 보너스가 -50%로 리셋됩니다\n\n🔹 CRAA 획득 방법\n• CRAA는 즉시 지갑에 떨어지지 않고 큐브 내부에 축적됩니다 (이렇게 각 NFT가 실제 가치를 가집니다)\n• 수집하려면 — 큐브를 태워야 합니다 (Burn) (큐브가 묘지 섹션으로 가고 더 이상 당신의 것이 아니며, claim 섹션에서 CRAA 코인을 얻습니다)\n\n🔹 태우는 방법\n• Burn 섹션으로 이동\n• 큐브와 대기 시간을 선택하세요:\n  - 12분 → 플레이어에게 50%\n  - 60분 → 70%\n  - 255분 → 80%\n• 나머지는 풀과 영구 소각 사이에 분할됩니다 (공식 데드 월렛으로 이동)\n• 선택한 시간 후에 가서 Claim을 누르세요 — CRAA가 지갑에 올 것입니다\n\n🔹 큐브 부활 방법 (Breed)\n• Breed 섹션으로 이동\n• 2개의 살아있는 큐브를 선택하세요 (별이 있고 쿨다운에 있지 않은 것)\n• CRAA를 지불하세요 (마켓플레이스 최소 가격의 10%, 지속적으로 업데이트됨)\n• 묘지에서 랜덤 NFT가 새로운 것으로 돌아올 것입니다, 모든 별이 있지만 코인은 없습니다:\n  - 보너스가 리셋됩니다 (다시 -50%로)\n  - 별이 복원됩니다\n  - 처음부터 다시 ping할 수 있습니다\n\n🔹 시스템에서 CRAA 위치\n• Ping용 CRAA는 월별 보상 풀에서 옵니다\n• Breed에 소비된 CRAA는 이 풀로 돌아갑니다\n• Burn에서 CRAA는 영원히 태워집니다\n• 태워진 모든 것은 특별 지갑 0x...dead으로 가고 영원히 사라집니다\n\n🔹 CRAA 토큰 수수료\n• 전송 시 3% 수수료 — 게임 계약으로 이동\n• DEX 판매 시 10% 수수료 — 게임 계약으로 이동\n• DEX 구매 시 0% 수수료 — 구매 시 수수료 없음\n• 모든 수수료는 게임 생태계와 보상 풀을 지원합니다\n\n🔹 예시 전략\n세 개의 큐브가 있습니다:\n• Common (일반) — ping하세요, 보너스가 24시간마다 2.7%씩 97%까지 성장한 후 멈춥니다. 판매, NFT 전송 가능, 보너스가 보존되고 NFT의 잠긴 코인도 보존됩니다\n• Rare — Breed용으로 사용하거나 CRAA 축적\n• Mystic — 희귀, 더 많은 CRAA를 가져오며, 태우지 않는 것이 좋습니다\n\n차분히 플레이하세요:\n• 24시간마다 한 번 로그인하여 Ping을 누르세요\n• 주기적으로 약한 큐브를 태우세요 → 토큰 획득\n• 또는 죽은 것을 부활시키세요 — 더 희귀한 것을 위한 기회 획득\n\n💡 팁\n최대 이익을 원한다면 — 정기적으로 ping하고 희귀한 큐브를 너무 일찍 태우지 마세요.\n💥 태워진 토큰은 돌아오지 않습니다 — 이것은 남은 CRAA의 가치를 증가시킵니다.\n\n🚀 우리의 비전\n1-2개월 내 계획은 게임플레이를 조정하고 NFT 및 토큰 계약의 관리자 권한을 포기하는 것입니다. 우리는 사회적 실험을 수행하고 아무것도 변경할 수 있는 가능성이 없는 완전히 사회적인 게임플레이를 만들고 싶습니다 — 시장과 사람들만이 결정합니다.\n\n팀은 CRAA 코인 형태의 계약에서 보너스가 없습니다. 지갑을 만들 수 있습니다, 예를 들어 Rabby 지갑에서 1분 만에 만들고 우리 게임을 플레이할 수 있습니다.\n\n곧 우리 게임은 시장 자체 규제와 함께 100% 탈중앙화될 것입니다. 또한 계획에서 CRAA 토큰은 Solana 블록체인으로 전송되고 거래될 수 있으며, 이는 코인을 특히 가치 있게 만들 것입니다, 또한 NFT도 Solana 블록체인으로 전송될 수 있으며, 아시다시피 Solana 블록체인에서는 코인과 NFT 모두에서 거대한 거래가 이루어집니다."
+  },
+  "userNFTs": {
+    "title": "내 NFT",
+    "connectToView": "CRAAzyCube NFT를 보려면 지갑을 연결하세요",
+    "errorLoading": "NFT 로딩 오류",
+    "noNFTs": "아직 CRAAzyCube NFT가 없습니다",
+    "yourCRAAzyCubeNFTs": "내 CRAAzyCube NFT",
+    "showing": "{{total}}개 중 {{count}}개 표시"
+  },
+  "cubeAnimation": {
+    "loading": "로딩 중...",
+    "loadingMessage": "앗, 사이트가 멈췄어요! 잠시만요, 우리가 좀 게을러요 🦥",
+    "speechBubbles": [
+      "서 있기 지겨워! 🥱",
+      "어라, 모두 어디 갔지?! 😱",
+      "나도 가! 👋",
+      "피자 사러 가! 🍕",
+      "매니큐어 시간! 💅"
+    ],
+    "partyBubble": "야호! 모두 갔다! 파티 시간! 🎵🎉",
+    "whereIsEveryone": "어라, 모두 어디 갔지?! 😱",
+    "waitingForMusicPhrases": [
+      "음악 좀 틀어줘! 🎵",
+      "음악 없으니 심심해... 😴",
+      "춤추고 싶어! 음악이 필요해! 💃",
+      "누가 버튼 좀! 👆"
+    ],
+    "partyPhrases": [
+      "밤새 춤춰! 🕺",
+      "파티가 막 시작됐어! 🎉",
+      "누가 큐브가 파티 못 한다고 했어? 🎵",
+      "음악 크게! 🔊",
+      "이 파티의 왕은 나야! 👑",
+      "나보다 잘 추는 사람은 없어! 💃",
+      "이게 내 최애 트랙이야! 🎧",
+      "DJ, 볼륨 올려! 🎚️",
+      "큐브들이 여기 있어! 🏠",
+      "새벽까지 파티! 🌅"
+    ],
+    "musicOn": "음악 끄기",
+    "musicOff": "음악 켜기"
+  },
+  "social": {
+    "telegram": "텔레그램",
+    "discord": "디스코드",
+    "followUs": "팔로우하기",
+    "megaGiveaway": "메가 경품 이벤트!",
+    "supportAndWin": "우리를 지원하고 NFT + OCTAA 토큰을 받으세요!",
+    "prizePool": "상금 풀:",
+    "exclusiveNFTs": "독점 NFT",
+    "CRAATokens": "OCTAA 토큰 (다양한 수량)",
+    "discordRoles": "특별 Discord 역할",
+    "bonusSurprises": "보너스와 서프라이즈",
+    "joinTelegram": "텔레그램 참여",
+    "joinDiscord": "디스코드 참여",
+    "twitterActions": "트위터 액션:",
+    "followTwitter": "@OCTAAzy___cube 팔로우",
+    "viewPost": "게시물 보기",
+    "like": "좋아요",
+    "retweet": "리트윗",
+    "allDone": "모든 것을 완료했습니다!",
+    "later": "나중에",
+    "participateNow": "지금 참여하세요!",
+    "weeklyGiveaway": "활발한 참가자들 사이에서 매주 경품 이벤트!",
+    "github": "GitHub",
+    "share": "공유하기",
+    "shareTitle": "CRAAzyCube - 큐브가 울고 웃는 곳!"
+  },
+  "tabs": {
+    "breed": "교배",
+    "bridge": "브릿지",
+    "burn": "소각",
+    "claim": "보상",
+    "graveyard": "묘지",
+    "ping": "핑",
+    "rewards": "보상",
+    "info": "정보"
+  },
+  "navigation": {
+    "home": "홈",
+    "returnHome": "홈으로 돌아가기"
+  },
+  "ping": {
+    "title": "NFT 핑",
+    "description": "CRAAA 토큰을 얻기 위해 10일마다 NFT를 핑하세요! 일관된 핑으로 보너스가 증가합니다.",
+    "connectWallet": "큐브를 보려면 지갑을 연결하세요",
+    "noNFTs": "CRAAzyCube NFT를 찾을 수 없습니다.",
+    "sentFor": "핑 전송됨",
+    "error": "핑 오류",
+    "interval": "핑 간격: 10일",
+    "bonusGrowth": "보너스가 10일마다 +2.7% 증가",
+    "maxBonus": "최대 보너스: +97.2%",
+    "penaltyReset": "20+일 놓치면 = 보너스가 -18.9%로 리셋",
+    "activate": "활성화",
+    "pingNow": "지금 핑",
+    "cooldown": "쿨다운",
+    "ready": "준비됨",
+    "button": "핑",
+    "readyToPing": "핑 준비됨",
+    "waitingForWallet": "지갑 확인 대기 중...",
+    "processingPing": "핑 처리 중...",
+    "accumulated": "누적됨",
+    "nextPing": "다음 핑",
+    "live": "실시간",
+    "basePerHour": "기본/시간",
+    "rarity": "희귀도",
+    "streak": "연속",
+    "penalty": "페널티",
+    "totalBonus": "총 보너스",
+    "pending": "대기 중",
+    "lockedCRAA": "잠긴 CRAA",
+    "status": "상태",
+    "active": "활성"
+  },
+  "tokenInfo": {
+    "priceUSD": "USD 가격",
+    "marketCap": "시가총액",
+    "volume24h": "24시간 거래량",
+    "totalBurns": "총 소각",
+    "avg": "평균",
+    "totalSupply": "총 공급량",
+    "circulating": "유통량",
+    "burned": "소각됨"
+  },
+  "common": {
+    "retry": "다시 시도",
+    "loading": "로딩 중...",
+    "loadingNFTs": "NFT 로딩 중...",
+    "total": "총계",
+    "fetchingCollection": "CRAAzyCube 컬렉션을 가져오는 중",
+    "noNFTsFound": "NFT를 찾을 수 없음",
+    "goToCollection": "컬렉션으로 이동"
+  },
+  "market": {
+    "loading": "시장 데이터 로딩 중...",
+    "failed": "시장 데이터 로딩 실패",
+    "header": "시장 가격",
+    "subtitle": "실시간 NFT와 토큰",
+    "error": "오류",
+    "live": "라이브",
+    "floorPrice": "최저가",
+    "buyNft": "MagicEden에서 NFT 구매",
+    "gameToken": "게임 토큰",
+    "baseCurrency": "기본 통화",
+    "tradeDex": "Camelot DEX에서 거래",
+    "additional": "추가 정보",
+    "change1h": "1시간 변화",
+    "change24h": "24시간 변화",
+    "volume24h": "24시간 거래량",
+    "marketCap": "시가총액"
+  },
+  "rewards": {
+    "loading": {
+      "title": "보상 검색 중…"
+    },
+    "accumulated": "누적:",
+    "toPool": "풀로",
+    "burned": "소각됨",
+    "toClaim": "청구 예정",
+    "availableIn": "사용 가능:",
+    "processing": "처리 중...",
+            "claim": "청구",
+    "claimed": "보상 청구됨"
+  },
+  "info": {
+    "nftInspector": "⏱️ NFT 쿨다운 인스펙터",
+    "lockedCRAA": "잠긴 CRAAA",
+    "enterNftId": "확인할 NFT ID 입력",
+    "connectWallet": "NFT 확인을 위해 지갑 연결",
+    "connectWalletNfts": "NFT를 보려면 지갑을 연결하세요",
+    "noNfts": "CRAAzyCube NFT가 없습니다",
+    "yourNfts": "당신의 NFT",
+    "live": "살아있음",
+    "inGraveyard": "묘지에",
+    "activeNfts": "활성 NFT",
+    "nftsInGraveyard": "묘지의 NFT",
+    "noStars": "별 없음",
+    "totalCRAALocked": "NFT에 잠긴 총 CRAAA",
+    "nftCollection": "NFT 컬렉션",
+    "totalNfts": "총 NFT",
+    "CRAASupply": "CRAAA 공급량",
+    "rarity": "희귀도",
+    "stars": "별",
+    "status": "상태",
+    "graveyard": "묘지",
+    "active": "활성",
+    "locked": "잠김",
+    "timeLeft": "남은 시간",
+    "guide": {
+      "title": "CRAAzyCube 플레이 방법",
+      "subtitle": "게임 메커니즘 완전 가이드"
+    },
+    "tabs": {
+      "overview": "개요",
+      "CRAAToken": "OCTAA 토큰",
+      "contract": "계약",
+      "contractData": "계약 데이터",
+      "liveAnalytics": "실시간 분석"
+    },
+    "features": {
+      "title": "⚡ 독특한 게임 특징",
+      "accumulate": {
+        "title": "누적된 코인은 소각되지 않음",
+        "desc": "당신의 CRAAA 토큰은 잠기고 누적되며, 영원히 소각되지 않습니다!"
+      },
+      "future": {
+        "title": "탈중앙화 미래",
+        "desc": "디버깅 후(1-2개월) 팀은 관리자 권한을 비활성화하고 자율 에이전트에게 제어권을 이전합니다"
+      },
+      "autonomy": {
+        "title": "완전한 자율성",
+        "desc": "NFT 컬렉션은 완전히 탈중앙화된 시장 거버넌스로 전환됩니다"
+      }
+    },
+    "actions": {
+      "title": "📊 게임 액션과 타이머",
+      "timeLabel": "시간:",
+      "burn": {
+        "title": "NFT 소각",
+        "time": "30/120/480 분",
+        "desc": "NFT를 소각하고 보상을 위해 CRAAA 토큰을 잠급니다"
+      },
+      "graveyard": {
+        "title": "묘지",
+        "desc": "소각된 NFT는 24시간 쿨다운으로 묘지에 갑니다"
+      },
+      "breed": {
+        "title": "교배",
+        "desc": "묘지에서 새로운 NFT 생성",
+        "note": "교배 후 NFT는 액션에 참여할 수 없습니다"
+      },
+      "ping": {
+        "title": "핑",
+        "desc": "보상을 위해 NFT 활성화",
+        "time": "7일 간격",
+        "note": "NFT는 누적되고 소각되지 않습니다!"
+      },
+      "rewards": {
+        "title": "풀 보상",
+        "desc": "보상 풀에서 CRAAA 토큰 받기",
+        "time": "30일 간격"
+      },
+      "other": {
+        "title": "기타 액션",
+        "desc": "다양한 게임 메커니즘",
+        "time": "24시간 쿨다운"
+      },
+      "cooldown48": "24시간 쿨다운"
+    },
+    "roadmap": {
+      "title": "🛣️ 탈중앙화로의 길",
+      "phase1": {
+        "title": "1단계: 디버깅",
+        "desc": "모든 게임 메커니즘의 1-2개월 테스트 및 최적화"
+      },
+      "phase2": {
+        "title": "2단계: 자율성",
+        "desc": "자율 에이전트 연결 및 관리자 권한 제거"
+      },
+      "phase3": {
+        "title": "3단계: 자유",
+        "desc": "NFT 컬렉션과 게임 계약이 완전히 탈중앙화되고, CRAAA 토큰이 자율적이 됩니다"
+      },
+      "callout": "🚀 CRAAzyCube - 완전한 탈중앙화 계획을 가진 첫 번째 NFT 컬렉션!"
+    },
+    "title": "정보 및 분석"
+  },
+  "status": {
+    "ready": "준비됨",
+    "readyToClaim": "청구 준비됨",
+    "waiting": "준비되지 않음",
+    "processing": "처리 중",
+    "success": "성공",
+    "failed": "실패",
+    "claim": "청구",
+    "claimed": "청구됨",
+    "alreadyBurned": "이미 소각됨",
+    "alreadyInGraveyard": "이미 묘지에 있음",
+    "noStarsLeft": "별 없음",
+    "activated": "활성화됨",
+    "notActivated": "활성화되지 않음",
+    "cantPing": "핑할 수 없음",
+    "rewardReady": "보상 준비됨",
+    "readyForBreeding": "교배 준비됨",
+    "claimReady": "청구 준비됨",
+    "locked": "잠김",
+    "claimable": "청구 가능",
+    "burnable": "소각 가능",
+    "done": "완료!",
+    "graveyard": "묘지",
+    "alive": "살아있음",
+    "dying": "죽어감",
+    "notClaimed": "아니오",
+    "confirming": "확인 중..."
+  },
+  "nft": {
+    "burnable": "소각 가능"
+  },
+  "pages": {
+    "breed": {
+      "title": "큐브 교배",
+      "subtitle": "두 부모로부터 새로운 큐브 생성",
+      "selectParents": "두 부모 선택",
+      "noNftsAvailable": "교배에 사용 가능한 NFT 없음",
+      "needTwoParents": "두 부모를 선택해야 합니다",
+      "breedingFee": "교배 수수료",
+      "breedingSuccess": "교배 성공!",
+      "breedingFailed": "교배 실패",
+      "howItWorks": "작동 방식",
+      "breedingGuide": "교배 가이드",
+      "selectTwoNfts": "최소 1개 별을 가진 NFT 2개 선택",
+      "payFee": "시장 가격의 20% 수수료 지불",
+      "getNewCube": "컬렉션에서 새로운 큐브 얻기"
+    },
+    "burn": {
+      "title": "큐브 소각",
+      "subtitle": "잠긴 CRAAA를 얻기 위해 NFT 소각",
+      "selectToBurn": "소각할 NFT 선택",
+      "burnFee": "소각 수수료",
+      "burnSuccess": "소각 성공!",
+      "burnFailed": "소각 실패",
+      "confirmBurn": "소각 확인",
+      "burnWarning": "경고: 소각은 되돌릴 수 없습니다!",
+      "nftWillBeDestroyed": "NFT가 영원히 파괴됩니다",
+      "CRAAWillBeTransferred": "CRAAA가 지갑으로 이전됩니다"
+    },
+    "ping": {
+      "title": "큐브 핑",
+      "subtitle": "OCTAA를 얻기 위해 24시간마다 큐브 핑",
+      "pingYourCubes": "큐브들을 핑하세요",
+      "howPingWorks": "핑 작동 방식",
+      "pingInterval": "핑 간격",
+      "betweenPings": "핑 사이",
+      "pingableNfts": "핑 준비된 NFT",
+      "noPingableNfts": "핑 준비된 NFT 없음",
+      "nftsNeedActivation": "핑하려면 NFT가 활성화되어야 하고 묘지에 있지 않아야 합니다",
+      "pingInitiated": "핑 시작됨!",
+      "pingTransaction": "NFT용 핑 트랜잭션 전송됨",
+      "earnCRAABasedOnRarity": "희귀도에 따라 CRAAA를 얻을 것입니다!",
+      "pingSuccessful": "핑 성공!",
+      "nftPinged": "NFT가 핑되었고 CRAAA를 얻었습니다!"
+    },
+    "claim": {
+      "title": "보상 청구",
+      "subtitle": "획득한 CRAAA 토큰 청구",
+      "searchingRewards": "보상 검색 중",
+      "scanningBlockchain": "블록체인과 묘지 스캔 중, 몇 초 걸릴 수 있습니다",
+      "noRewards": "보상을 찾을 수 없음",
+      "noRewardsDescription": "아직 청구할 수 있는 보상이 없습니다"
+    },
+    "graveyard": {
+      "title": "큐브 묘지",
+      "subtitle": "소각된 NFT의 안식처",
+      "burnedCubes": "소각된 큐브",
+      "restInPeace": "평안히 쉬세요",
+      "someStillWhisper": "일부는 재에서 여전히 속삭입니다",
+      "totalBurned": "총 소각됨",
+      "viewBurnedNft": "소각된 NFT 보기"
+    },
+    "stats": {
+      "title": "게임 통계",
+      "subtitle": "실시간 게임 상태 데이터",
+      "totalNfts": "총 NFT",
+      "activeNfts": "활성 NFT",
+      "burnedNfts": "소각된 NFT",
+      "totalCRAA": "총 CRAAA",
+      "lockedCRAA": "잠긴 CRAAA",
+      "burnedCRAA": "소각된 CRAAA",
+      "gameActivity": "게임 활동",
+      "recentTransactions": "최근 트랜잭션"
+    },
+    "info": {
+      "title": "정보",
+      "nalaPhrases": [
+        "📊 데이터가 약간 맞지 않지만, 모든 것을 고칠 거예요! 시간을 주세요 ⏰",
+        "🔧 시스템 디버깅 진행 중, 곧 모든 것이 완벽하게 작동할 거예요! ✨",
+        "📈 숫자가 아직 일치하지 않지만, 팀이 수정 작업 중이에요 🛠️",
+        "⚡ 새로운 기능 테스트 중, 조금만 기다려주세요 - 멋질 거예요! 🚀",
+        "🔄 최대 데이터 정확도를 위해 알고리즘 조정 중 📊",
+        "🌟 모든 임시 불일치가 곧 수정될 거예요! 💫",
+        "🔄 시스템 업데이트 중, 곧 모든 것이 시계처럼 작동할 거예요! ⏰"
+      ],
+      "subtitle": "NFT와 게임에 대한 자세한 정보",
+      "overview": "개요",
+      "yourCollection": "컬렉션",
+      "gameRules": "게임 규칙",
+      "tokenomics": "토크노믹스",
+      "connectWalletNfts": "NFT를 보려면 지갑을 연결하세요.",
+      "noNfts": "CRAAzyCube NFT를 소유하고 있지 않습니다.",
+      "yourNfts": "당신의 NFT",
+      "live": "활성",
+      "inGraveyard": "무덤에",
+      "activeNfts": "활성 NFT",
+      "nftsInGraveyard": "무덤의 NFT",
+      "noStars": "별 없음",
+      "lockedCRAA": "잠긴 CRAAA",
+      "totalCRAALocked": "NFT에 잠긴 총 CRAAA",
+      "CRAALockedWarning": "NFT 내부에 잠긴 CRAAA는 소각되지 않으며, NFT가 이전, 판매 또는 어떤 방식으로든 이동될 때 함께 이동합니다. 이 토큰들은 영구적으로 NFT 자체에 속합니다. 이 토큰을 얻으려면 NFT를 소각해야 합니다.",
+      "CRAALockedWarningBurn": "소각"
+    }
+  },
+  "components": {
+    "buttons": {
+      "connect": "연결",
+      "disconnect": "연결 해제",
+      "approve": "승인",
+      "confirm": "확인",
+      "cancel": "취소",
+      "retry": "다시 시도",
+      "close": "닫기",
+      "back": "뒤로",
+      "next": "다음",
+      "save": "저장",
+      "load": "로드",
+      "refresh": "새로고침"
+    },
+    "messages": {
+      "loading": "로딩 중...",
+      "connecting": "연결 중...",
+      "processing": "처리 중...",
+      "success": "성공!",
+      "error": "오류",
+      "warning": "경고",
+      "info": "정보",
+      "noData": "데이터 없음",
+      "noResults": "결과 없음",
+      "tryAgain": "다시 시도",
+      "somethingWentWrong": "문제가 발생했습니다",
+      "pleaseWait": "기다려 주세요",
+      "transactionPending": "트랜잭션 대기 중",
+      "transactionConfirmed": "트랜잭션 확인됨",
+      "transactionFailed": "트랜잭션 실패"
+    },
+    "forms": {
+      "required": "필수 필드",
+      "invalid": "잘못된 값",
+      "tooShort": "너무 짧음",
+      "tooLong": "너무 긺",
+      "enterAmount": "금액 입력",
+      "selectOption": "옵션 선택",
+      "searchPlaceholder": "검색...",
+      "noOptionsAvailable": "사용 가능한 옵션 없음"
+    },
+    "navigation": {
+      "home": "홈",
+      "back": "뒤로",
+      "forward": "앞으로",
+      "menu": "메뉴",
+      "settings": "설정",
+      "help": "도움말",
+      "about": "정보"
+    }
+  },
+  "rarity": {
+    "common": "일반",
+    "uncommon": "희귀",
+    "rare": "레어",
+    "epic": "에픽",
+    "legendary": "레전더리",
+    "mythic": "미식",
+    "unknown": "알 수 없음"
+  },
+  "cube": "큐브",
+  "glueCube": {
+    "phrases": [
+      "이 불을 꺼봅시다! 🧯",
+      "불-불, 멈춰! 🔥",
+      "당황하지 마세요, 소화기가 있어요! 💨",
+      "쉬쉬쉬! 모든 게 통제되고 있어요! 🚒",
+      "불이 어디 있나요? 다 꺼드릴게요! 🧯"
+    ]
+  },
+  "cubeObservers": {
+    "idlePhrases": [
+      "여기서 뭐해요?",
+      "누가 시끄럽게 해요?",
+      "오-오-오...",
+      "안 볼게요!",
+      "내 잠을 방해하지 마세요!"
+    ],
+    "successPhrases": [
+      "새 큐브를 축하해요!",
+      "만세, 새로운 큐브 아기!",
+      "환영해요, 꼬마야!"
+    ]
+  },
+  "shyCubes": {
+    "bubbles": [
+      "오-오-오!",
+      "여기서 무슨 일이야?",
+      "누가 시끄럽게 해요?",
+      "우린 아무것도 못 봤어요!",
+      "보지 마세요!"
+    ]
+  },
+  "graveyard": {
+    "claimedReward": "보상 청구됨",
+    "claimError": "청구 오류"
+  },
+  "contractInteraction": {
+    "error": "오류",
+    "enterTokenId": "토큰 ID를 입력하세요",
+    "enterTokenIdAndHours": "토큰 ID와 대기 시간을 입력하세요",
+    "enterBothParents": "두 부모 토큰 ID를 모두 입력하세요"
+  },
+  "distribution": {
+    "activeVsGraveyard": "희귀도별 활성 vs 묘지",
+    "rarity": "희귀도",
+    "byRarity": "희귀도별",
+    "byStatus": "상태별",
+    "nfts": "NFT"
+  },
+  "burn": {
+    "description": "Burn the cube — get CRAAA. Easy money! 💰",
+    "noNFTsDescription": "You don't have any CRAAzyCube NFTs to burn",
+    "interface": {
+      "burnButton": "소각",
+      "insufficientOCTA": "CRAA 부족",
+      "balanceDetails": {
+        "you": "👤 당신",
+        "pool": "🏦 풀",
+        "burn": "🔥 소각",
+        "split12h": "60% / 30% / 10%",
+        "split24h": "70% / 20% / 10%",
+        "split48h": "80% / 10% / 10%"
+      }
+    }
+  },
+  "stats": {
+    "analytics": "Analytics",
+    "yourNFTs": "Your NFTs",
+    "bridgeNFT": "Bridge NFT"
+  },
+  "bridge": {
+    "title": "크로스체인 브릿지 🌉",
+    "description": "Monad Testnet과 Solana 간에 CRAA 토큰과 CrazyCube NFT를 원활하게 전송하세요",
+    "connectWallet": "지갑 연결",
+    "connectWalletDesc": "크로스체인 브릿지에 접근하려면 지갑을 연결하세요",
+    "guide": {
+      "title": "자산 전송 방법",
+      "intro": "Monad Testnet과 Solana 네트워크 간에 자산을 안전하고 효율적으로 전송하세요.",
+      "step1": "전송할 자산 유형 선택 (CRAA 토큰 또는 NFT)",
+      "step2": "출발지와 목적지 네트워크 선택",
+      "step3": "금액 입력 또는 전송할 NFT 선택",
+      "step4": "거래 확인 및 완료 대기",
+      "note": "전송 과정은 보통 30-60초가 소요됩니다. 자산은 전송 중 스마트 컨트랙트로 보호됩니다."
+    },
+    "interface": {
+      "title": "브릿지 인터페이스",
+      "amountLabel": "전송할 금액",
+      "amountPlaceholder": "0.00",
+      "available": "사용 가능: 1,234.56 CRAA",
+      "useMax": "최대 사용",
+      "selectNftLabel": "전송할 NFT 선택",
+      "selectNftPlaceholder": "CrazyCube NFT 선택",
+      "bridgeButton": "{type} 전송",
+      "bridgeAgain": "다시 전송",
+      "preparing": "준비 중...",
+      "processing": "처리 중...",
+      "confirming": "확인 중...",
+      "insufficientOCTA": "CRAA 부족",
+      "insufficientOCTADesc": "브릿지하려면 {required} CRAA가 필요합니다. 잔액: {balance} CRAA",
+      "balanceDetails": {
+        "you": "👤 당신",
+        "pool": "🏦 풀",
+        "burn": "🔥 소각",
+        "split": "60% / 30% / 10%"
+      }
+    },
+    "status": {
+      "ready": "전송 준비 완료",
+      "preparing": "거래 준비 중",
+      "processing": "브릿지 처리 중",
+      "confirming": "목적지에서 확인 중",
+      "success": "브릿지 완료",
+      "error": "브릿지 실패",
+      "remaining": "~{time}초 남음"
+    },
+    "success": {
+      "title": "전송 성공!",
+      "description": "귀하의 {type}이(가) {network}로 성공적으로 전송되었습니다.",
+      "transaction": "거래: {hash}"
+    },
+    "info": {
+      "title": "브릿지 정보",
+      "security": {
+        "title": "보안",
+        "description": "자산은 전송 과정에서 스마트 컨트랙트로 보호됩니다"
+      },
+      "speed": {
+        "title": "속도",
+        "description": "전송 완료는 보통 30-60초가 소요됩니다"
+      },
+      "fees": {
+        "title": "수수료",
+        "description": "크로스체인 전송을 위한 최소 수수료"
+      }
+    },
+    "comingSoon": {
+      "title": "🚀 곧 출시될 기능",
+      "features": [
+        "Monad Testnet과 Solana 간 CRAA 토큰 전송",
+        "네트워크 간 CrazyCube NFT 전송",
+        "NFT 메타데이터 및 희귀도 유지",
+        "저비용 크로스체인 거래",
+        "실시간 브릿지 상태 추적",
+        "자동 잔액 동기화"
+      ]
+    }
+  },
+  "nftInspector": {
+    "title": "NFT 쿨다운 검사기",
+    "description": "NFT 검사기는 지갑 연결 없이 작동합니다 - 공개 통계를 보려면 NFT ID를 입력하세요.",
+    "enterNftId": "NFT ID 입력",
+    "inspect": "검사",
+    "loading": "NFT 데이터 로딩 중...",
+    "error": "NFT 데이터 가져오기 오류",
+    "notFound": "NFT를 찾을 수 없거나 활성화되지 않음",
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "lockedCRAA": "잠긴 CRAAA",
+    "pendingCRAA": "대기 중인 CRAAA",
+    "periods": "기간",
+    "ping": "핑",
+    "breed": "교배",
+    "ready": "준비됨"
+  },
+  "burn": {
+    "interface": {
+      "burnButton": "소각",
+      "insufficientOCTA": "CRAA 부족",
+      "balanceDetails": {
+        "you": "👤 당신",
+        "pool": "🏦 풀",
+        "burn": "🔥 소각",
+        "split12h": "60% / 30% / 10%",
+        "split24h": "70% / 20% / 10%",
+        "split48h": "80% / 10% / 10%"
+      }
+    }
+  },
+  "swap": {
+    "buyCRAA": "Camelot에서 CRAA 구매",
+    "buyCRAALink": "https://pancakeswap.finance/swap?outputCurrency=0xB4832932D819361e0d250c338eBf87f0757ed800",
+    "instructions": {
+      "title": "CRAA 구매 안내:",
+      "step1": "아래 '🟡 Camelot에서 CRAA 구매' 버튼을 클릭하세요",
+      "step2": "자동으로 Monad Testnet 네트워크로 전환됩니다",
+      "step3": "슬리피지 설정: 구매 3-5%, 판매 10-15%",
+      "step4": "지갑에서 거래를 확인하세요"
+    },
+    "fees": {
+      "title": "💰 수수료 및 슬리피지:",
+      "buy": {
+        "title": "🟢 CRAA 구매 (APE → CRAA):",
+        "slippage": "3-5% (권장)",
+        "tax": "구매 시 0% 세금",
+        "link": "https://pancakeswap.finance/swap?outputCurrency=0xB4832932D819361e0d250c338eBf87f0757ed800"
+      },
+      "sell": {
+        "title": "🔴 CRAA 판매 (CRAA → APE):",
+        "slippage": "10-15% (권장)",
+        "tax": "10% (자동)",
+        "total": "판매 시 총합: 10-15% 슬리피지 + 10% 세금"
+      },
+      "transfer": {
+        "title": "📤 OCTAA 전송:",
+        "tax": "전송 시 3% 세금"
+      },
+      "camelot": "Camelot 수수료:",
+      "free": "0% (무료)",
+      "slippage": "슬리피지:",
+      "token": {
+        "tax": "토큰 세금:"
+      }
+    },
+    "slippage": {
+      "what": {
+        "title": "💡 슬리피지란?",
+        "description": "슬리피지는 사용자가 허용할 수 있는 최대 가격 변동입니다. 변동성이 크거나 유동성이 낮을 때, 거래 전송과 실행 사이에 가격이 변할 수 있습니다."
+      }
+    },
+    "screenshot": {
+      "title": "📸 Camelot 설정 예시:",
+      "alt": "Camelot 설정 예시",
+      "fallback": "Camelot 설정 스크린샷이 /public/images/1234.jpg에 추가됩니다"
+    },
+    "dexscreener": {
+      "button": "DexScreener에서 CRAA 시세 보기"
+    },
+    "camelot": {
+      "button": "Camelot에서 CRAA 구매",
+      "link": "https://pancakeswap.finance/swap?outputCurrency=0xB4832932D819361e0d250c338eBf87f0757ed800"
+    },
+    "security": "Camelot V2를 통한 안전한 구매",
+    "recommended": {
+      "settings": "권장 설정: 구매 3-5% 슬리피지, 판매 10-15% 슬리피지"
+    }
+  }
+}

@@ -157,7 +157,7 @@ export const SocialSidebar = React.memo(function SocialSidebar() {
 
       {/* Twitter/X */}
       <a
-        href='https://x.com/crazy___cube'
+        href='https://x.com/crazy_octagon'
         target='_blank'
         rel='noopener noreferrer'
         className='relative group'

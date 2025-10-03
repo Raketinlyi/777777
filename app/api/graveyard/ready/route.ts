@@ -1,129 +1,124 @@
 import { NextResponse } from 'next/server';
 import { createPublicClient, http } from 'viem';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
+import { CRAZY_OCTAGON_READER_ABI } from '@/lib/abi/crazyOctagon';
 
-// CrazyCube game contract deployed on ApeChain mainnet
-const GAME_ADDRESS = '0x7dFb75F1000039D650A4C2B8a068f53090e857dD' as const;
-
-// Minimal ABI fragments that we need
-const GAME_ABI = [
-  {
-    inputs: [],
-    name: 'getGraveyardSize',
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ type: 'uint256' }],
-    name: 'graveyardTokens',
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ type: 'uint256' }],
-    name: 'burnRecords',
-    outputs: [
-      { type: 'address' }, // owner
-      { type: 'uint256' }, // totalAmount
-      { type: 'uint256' }, // claimAvailableTime
-      { type: 'uint256' }, // graveyardReleaseTime
-      { type: 'bool' }, // claimed
-      { type: 'uint8' }, // waitPeriod
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const;
+// Use Reader contract for graveyard data
+const READER_ADDRESS = monadChain.contracts.reader.address;
 
 // Always execute server-side so we avoid browser CORS restrictions
 export const dynamic = 'force-dynamic';
 
+// Retry helper function for RPC calls
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  delay = 1000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 export async function GET() {
   try {
-    const client = createPublicClient({ chain: apeChain, transport: http() });
+    const client = createPublicClient({ 
+      chain: monadChain, 
+      transport: http(),
+      batch: {
+        multicall: true,
+      },
+    });
 
-    const sizeBn = (await client.readContract({
-      address: GAME_ADDRESS,
-      abi: GAME_ABI,
-      functionName: 'getGraveyardSize',
-    })) as bigint;
+    // Get graveyard window from Reader contract with retry
+    const graveWindowData = await retryOperation(async () => {
+      return (await client.readContract({
+        address: READER_ADDRESS,
+        abi: CRAZY_OCTAGON_READER_ABI,
+        functionName: 'viewGraveWindow',
+        args: [0n, 100n], // Get first 100 tokens
+      })) as readonly [bigint[], bigint, bigint, number];
+    });
 
-    const size = Number(sizeBn);
+    const [tokenIds, totalSize] = graveWindowData;
     const readyTokens: string[] = [];
     const notReadyTokens: string[] = [];
     const currentTime = Math.floor(Date.now() / 1000);
 
-    // Check each token in graveyard
-    for (let i = 0; i < size; i++) {
+    // Check each token in graveyard using Reader contract
+    for (const tokenIdBn of tokenIds) {
       try {
-        const tokenIdBn = (await client.readContract({
-          address: GAME_ADDRESS,
-          abi: GAME_ABI,
-          functionName: 'graveyardTokens',
-          args: [BigInt(i)],
-        })) as bigint;
-
         const tokenId = tokenIdBn.toString();
 
-        try {
-          // Check burn record
-          const burnRecord = (await client.readContract({
-            address: GAME_ADDRESS,
-            abi: GAME_ABI,
-            functionName: 'burnRecords',
+        // Get burn info from Reader contract with retry
+        const burnInfo = await retryOperation(async () => {
+          return (await client.readContract({
+            address: READER_ADDRESS,
+            abi: CRAZY_OCTAGON_READER_ABI,
+            functionName: 'getBurnInfo',
             args: [tokenIdBn],
           })) as readonly [
-            `0x${string}`,
-            bigint,
-            bigint,
-            bigint,
-            boolean,
-            number,
+            `0x${string}`, // owner
+            bigint, // totalAmount
+            bigint, // claimAt
+            bigint, // graveReleaseAt
+            boolean, // claimed
+            number, // waitMinutes
+            bigint, // playerAmount
+            bigint, // poolAmount
+            bigint, // burnedAmount
           ];
+        });
 
-          const [
-            owner,
-            totalAmount,
-            claimAvailableTime,
-            graveyardReleaseTime,
-            claimed,
-            waitPeriod,
-          ] = burnRecord;
+        const [
+          , // owner - not used
+          , // totalAmount - not used
+          claimAt,
+          graveReleaseAt,
+          claimed,
+          , // waitMinutes - not used
+          , // playerAmount - not used
+          , // poolAmount - not used
+          , // burnedAmount - not used
+        ] = burnInfo;
 
-          const claimTime = Number(claimAvailableTime);
-          const releaseTime = Number(graveyardReleaseTime);
+        const claimTime = Number(claimAt);
+        const releaseTime = Number(graveReleaseAt);
 
-          // Determine readiness
-          let isReady = false;
+        // Determine readiness
+        let isReady = false;
 
-          if (!claimed) {
-            if (releaseTime > 0 && releaseTime <= currentTime) {
-              isReady = true; // new contract >=v3
-            } else if (
-              releaseTime === 0 &&
-              claimTime > 0 &&
-              claimTime <= currentTime
-            ) {
-              isReady = true; // old records
-            }
+        if (!claimed) {
+          if (releaseTime > 0 && releaseTime <= currentTime) {
+            isReady = true; // new contract >=v3
+          } else if (
+            releaseTime === 0 &&
+            claimTime > 0 &&
+            claimTime <= currentTime
+          ) {
+            isReady = true; // old records
           }
+        }
 
-          if (isReady) {
-            readyTokens.push(tokenId);
-          } else {
-            notReadyTokens.push(tokenId);
-          }
-        } catch (burnError: unknown) {
-          // If we can't read burn record, consider token not ready
+        if (isReady) {
+          readyTokens.push(tokenId);
+        } else {
           notReadyTokens.push(tokenId);
         }
-      } catch (tokenError: unknown) {}
+      } catch {
+        // If we can't read burn record, consider token not ready
+        notReadyTokens.push(tokenIdBn.toString());
+      }
     }
 
     const response = {
-      totalTokens: size,
+      totalTokens: Number(totalSize),
       readyTokens,
       notReadyTokens,
       hasReady: readyTokens.length > 0,

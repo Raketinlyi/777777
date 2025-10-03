@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http } from 'viem';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
 import { nftAbi } from '@/config/abis/nftAbi';
 import { z } from 'zod';
 
@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
     const { owner: ownerAddr, index: indexStr } = parse.data;
 
     const client = createPublicClient({
-      chain: apeChain,
+      chain: monadChain,
       transport: http(),
     });
 
     const tokenId = await client.readContract({
-      address: apeChain.contracts.crazyCubeNFT.address as `0x${string}`,
+      address: monadChain.contracts.crazyCubeNFT.address as `0x${string}`,
       abi: nftAbi,
       functionName: 'tokenOfOwnerByIndex',
       args: [ownerAddr as `0x${string}`, BigInt(indexStr)],

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
 import { alchemyFetch } from '@/lib/alchemyFetch';
 import { z } from 'zod';
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const ownerAddr = parseResult.data as `0x${string}`;
-    const contractAddr = apeChain.contracts.crazyCubeNFT.address;
+    const contractAddr = monadChain.contracts.crazyCubeNFT.address;
 
     // Get NFT balance using balanceOf
     const balanceCall = await alchemyFetch('rpc', '', {

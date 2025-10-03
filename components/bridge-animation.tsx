@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { usePerformanceMonitor } from '@/hooks/use-performance-monitor';
+import { useMobile } from '@/hooks/use-mobile';
 
 interface BridgeAnimationProps {
   /** Animation intensity (1-5). Higher = more particles */
@@ -40,6 +42,13 @@ export function BridgeAnimation({
   const particlesRef = useRef<Particle[]>([]);
   const lastTimeRef = useRef<number>(0);
   const particleIdRef = useRef<number>(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const { getOptimalParticleCount, getOptimalIntensity } = usePerformanceMonitor();
+  const { isMobile } = useMobile();
+
+  const currentOptimalIntensity = getOptimalIntensity(intensity);
+  const adjustedIntensity = isMobile ? Math.max(1, Math.floor(currentOptimalIntensity / 2)) : currentOptimalIntensity;
 
   useEffect(() => {
     setIsClient(true);
@@ -107,6 +116,9 @@ export function BridgeAnimation({
     const endX = side === 'left' ? width * 0.9 : width * 0.1;
     const endY = height * 0.3 + Math.random() * height * 0.4;
 
+  const baseSize = 2 + Math.random() * 3;
+  const particleSize = Math.max(1, Math.min(getOptimalParticleCount(baseSize), 5));
+
     return {
       id: particleIdRef.current++,
       x: startX,
@@ -115,7 +127,7 @@ export function BridgeAnimation({
       targetY: endY,
       progress: 0,
       speed: 0.015 + Math.random() * 0.02, // 0.015-0.035% per frame (20x slower)
-      size: 2 + Math.random() * 3,
+      size: particleSize,
       opacity: 0.8 + Math.random() * 0.2,
       color: getParticleColor(theme, 0),
       trail: [],
@@ -212,22 +224,30 @@ export function BridgeAnimation({
     const rightNode = { x: width * 0.9, y: height * 0.5 };
 
     // Draw connection lines
-    ctx.strokeStyle =
-      theme === 'purple'
-        ? 'rgba(147, 51, 234, 0.3)'
-        : theme === 'blue'
-          ? 'rgba(59, 130, 246, 0.3)'
-          : 'rgba(147, 51, 234, 0.3)';
-    ctx.lineWidth = 1;
+    const baseColor = theme === 'purple' ? [147, 51, 234] : theme === 'blue' ? [59, 130, 246] : [147, 51, 234];
+
+    ctx.lineWidth = isHovered ? 2.5 : 1.5; // Thicker lines on hover
     ctx.setLineDash([5, 5]);
 
-    // Multiple bridge lines for effect
     for (let i = 0; i < 3; i++) {
       const offsetY = (i - 1) * 20;
+      const gradient = ctx.createLinearGradient(leftNode.x, 0, rightNode.x, 0);
+      gradient.addColorStop(0, `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${isHovered ? 0.6 : 0.3})`);
+      gradient.addColorStop(0.5, `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${isHovered ? 0.9 : 0.6})`);
+      gradient.addColorStop(1, `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${isHovered ? 0.6 : 0.3})`);
+
+      ctx.strokeStyle = gradient;
+
       ctx.beginPath();
       ctx.moveTo(leftNode.x, leftNode.y + offsetY);
       ctx.lineTo(rightNode.x, rightNode.y + offsetY);
       ctx.stroke();
+
+      // Add glow effect to lines
+      ctx.shadowBlur = isHovered ? 15 : 10; // Stronger glow on hover
+      ctx.shadowColor = `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${isHovered ? 0.9 : 0.7})`;
+      ctx.stroke();
+      ctx.shadowBlur = 0; // Reset shadow
     }
 
     ctx.setLineDash([]); // Reset dash
@@ -245,12 +265,12 @@ export function BridgeAnimation({
       gradient.addColorStop(
         0,
         theme === 'purple'
-          ? 'rgba(147, 51, 234, 0.8)'
+          ? `rgba(147, 51, 234, ${isHovered ? 1 : 0.8})`
           : theme === 'blue'
-            ? 'rgba(59, 130, 246, 0.8)'
+            ? `rgba(59, 130, 246, ${isHovered ? 1 : 0.8})`
             : index === 0
-              ? 'rgba(147, 51, 234, 0.8)'
-              : 'rgba(236, 72, 153, 0.8)'
+              ? `rgba(147, 51, 234, ${isHovered ? 1 : 0.8})`
+              : `rgba(236, 72, 153, ${isHovered ? 1 : 0.8})`
       );
       gradient.addColorStop(1, 'rgba(147, 51, 234, 0)');
 
@@ -292,7 +312,10 @@ export function BridgeAnimation({
 
       // Add new particles (much slower spawn rate)
       const deltaTime = currentTime - lastTimeRef.current;
-      if (deltaTime > 2000 / intensity) {
+  const baseSpawnInterval = 2000 / adjustedIntensity;
+  const optimalParticleSpawnRate = Math.max(500, Math.min(getOptimalParticleCount(baseSpawnInterval), 4000)); // Adjust min/max spawn rates as needed
+
+      if (deltaTime > optimalParticleSpawnRate) {
         // Spawn rate based on intensity (20x slower)
         particlesRef.current.push(createParticle());
         lastTimeRef.current = currentTime;
@@ -315,7 +338,8 @@ export function BridgeAnimation({
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [isClient, enabled, dimensions, intensity, theme]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient, enabled, dimensions, adjustedIntensity, theme, getOptimalParticleCount]);
 
   if (!isClient || !enabled) {
     return null;
@@ -325,6 +349,8 @@ export function BridgeAnimation({
     <canvas
       ref={canvasRef}
       className={`pointer-events-none ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         width: '100%',
         height: '100%',

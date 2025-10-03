@@ -29,7 +29,7 @@ import {
   getNFTImage,
   getTokenIdAsDecimal,
 } from '@/hooks/useUserNFTs';
-import { useCrazyCubeGame, type NFTGameData } from '@/hooks/useCrazyCubeGame';
+import { useCrazyOctagonGame, type NFTGameData, type BurnWaitMinutes } from '@/hooks/useCrazyOctagonGame';
 import { useToast } from '@/hooks/use-toast';
 import { formatEther, parseEther } from 'viem';
 import { getColor, getLabel } from '@/lib/rarity';
@@ -53,14 +53,14 @@ export default function NFTBurnCard({
   const {
     getNFTGameData,
     burnFeeBps,
-    approveCRAA,
+  approveOCTAA,
     approveNFT,
     burnNFT,
     isConnected,
     getBurnSplit,
     pingInterval,
     breedCooldown,
-  } = useCrazyCubeGame();
+  } = useCrazyOctagonGame();
 
   const { toast } = useToast();
 
@@ -70,7 +70,7 @@ export default function NFTBurnCard({
   const [step, setStep] = useState<
     'idle' | 'approvingCRAA' | 'approvingNFT' | 'burning'
   >('idle');
-  const [waitMinutes, setWaitMinutes] = useState<12 | 60 | 255>(12);
+  const [waitMinutes, setWaitMinutes] = useState<BurnWaitMinutes>(30);
   const [burnSplit, setBurnSplit] = useState<{
     playerBps: number;
     poolBps: number;
@@ -102,14 +102,14 @@ export default function NFTBurnCard({
 
   const calcFee = (): string => {
     if (!gameData) return '0';
-    const lockedWei = parseEther(gameData.lockedCRAA);
+    const lockedWei = parseEther(gameData.lockedOcta);
     const feeWei = (lockedWei * BigInt(burnFeeBps)) / BigInt(10000);
     return formatEther(feeWei);
   };
 
   const calcShares = () => {
     if (!gameData) return { user: '0', pool: '0', burn: '0' };
-    const totalWei = parseEther(gameData.lockedCRAA);
+    const totalWei = parseEther(gameData.lockedOcta);
     const userWei = (totalWei * BigInt(burnSplit.playerBps)) / BigInt(10000);
     const poolWei = (totalWei * BigInt(burnSplit.poolBps)) / BigInt(10000);
     const burnWei = (totalWei * BigInt(burnSplit.burnBps)) / BigInt(10000);
@@ -151,7 +151,7 @@ export default function NFTBurnCard({
       setIsProcessing(true);
       setStep('approvingCRAA');
       toast({ title: 'Approving CRAA', description: `Fee: ${fee} CRAA` });
-      await approveCRAA(fee);
+      await approveOCTAA(fee);
 
       setStep('approvingNFT');
       toast({
@@ -219,7 +219,7 @@ export default function NFTBurnCard({
     ? Math.max(0, gameData.lastBreedTime + breedCooldown - nowSec)
     : 0;
 
-  const noCRAA = gameData ? Number(gameData.lockedCRAA) === 0 : false;
+  const noCRAA = gameData ? Number(gameData.lockedOcta) === 0 : false;
 
   return (
     <motion.div
@@ -315,9 +315,9 @@ export default function NFTBurnCard({
                 <p>
                   ⭐ Stars: {gameData.currentStars}/{gameData.initialStars}
                 </p>
-                {Number(gameData.lockedCRAA) > 0 ? (
+                {Number(gameData.lockedOcta) > 0 ? (
                   <p className='text-lg font-extrabold text-orange-400'>
-                    💰 CRAA: {gameData.lockedCRAA}
+                    💰 OCTAA: {gameData.lockedOcta}
                   </p>
                 ) : (
                   <p className='text-sm text-gray-500'>No CRAA locked</p>
@@ -403,16 +403,16 @@ export default function NFTBurnCard({
           {/* Wait period selector */}
           {selected && !gameData?.isInGraveyard && (
             <div className='flex justify-center gap-2 mb-2'>
-              {[12, 60, 255].map(m => (
+              {[30, 120, 480].map(m => (
                 <Button
                   key={m}
-                  variant={waitMinutes === m ? 'default' : 'outline'}
+                    variant={waitMinutes === m ? 'default' : 'outline'}
                   className={
                     waitMinutes === m
                       ? 'px-3 py-1'
                       : 'px-3 py-1 border-orange-500/30'
                   }
-                  onClick={() => setWaitMinutes(m as 12 | 60 | 255)}
+                    onClick={() => setWaitMinutes(m as BurnWaitMinutes)}
                   disabled={isProcessing}
                 >
                   {m}
@@ -471,18 +471,18 @@ export default function NFTBurnCard({
                   </span>
                 </div>
                 <div>
-                  {t('burn.confirmDialog.lockedCRAA')}{' '}
+                  {t('burn.confirmDialog.lockedOCTAA')}{' '}
                   <span className='font-mono text-yellow-300'>
-                    {gameData.lockedCRAA && Number(gameData.lockedCRAA) > 0
-                      ? gameData.lockedCRAA
+                    {gameData.lockedOcta && Number(gameData.lockedOcta) > 0
+                        ? gameData.lockedOcta
                       : '0'}{' '}
-                    CRAA
+                    OCTAA
                   </span>
                 </div>
                 <div>
                   {t('burn.confirmDialog.fee')}{' '}
                   <span className='font-mono text-red-300'>
-                    {calcFee()} CRAA
+                    {calcFee()} OCTAA
                   </span>
                 </div>
                 {(() => {

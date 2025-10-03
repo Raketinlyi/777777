@@ -13,13 +13,13 @@ interface ShatterImageProps {
   src: string;
   alt?: string;
   className?: string;
-  /** maximum number of pieces to create (6-12) */
+  /** maximum number of pieces to create (8-16) */
   maxPieces?: number;
-      /** delay before starting to fall (seconds) */
+  /** delay before starting to fall (seconds) */
   stillDelay?: number;
-      /** total animation duration (seconds) */
+  /** total animation duration (seconds) */
   explodeDuration?: number;
-      /** mode */
+  /** mode */
   mode?: ShatterMode;
   priority?: boolean;
 }
@@ -28,8 +28,8 @@ export function ShatterImage({
   src,
   alt = '',
   className = '',
-  maxPieces = 12,
-      stillDelay = 5, // ← requirement: 5s (increased display time)
+  maxPieces = 16,
+  stillDelay = 0, // No delay for immediate shatter
   mode = 'shatter',
   priority = false,
 }: ShatterImageProps) {
@@ -37,54 +37,44 @@ export function ShatterImage({
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [ready, setReady] = useState(false);
 
-  /* ----------------- fly (left unchanged) ----------------- */
   const runFly = useCallback(() => {
     const img = imgRef.current;
-    const wrap = wrapRef.current;
-    if (!img || !wrap) return;
-
-    gsap.set(img, { opacity: 0 });
-    const vw = window.innerWidth;
-    const { left, top, width, height } = img.getBoundingClientRect();
-    const offset = 40;
-
-    gsap
-      .timeline()
-      .to(img, { opacity: 1, duration: 0.4 })
-      .to(img, {
-        delay: stillDelay,
-        duration: 1.25,
-        scale: 0.1,
-        x: vw - left + offset,
-        y: -(top + height) - offset,
-        opacity: 0,
-        ease: 'power3.inOut',
-      });
+    if (!img) return;
+    gsap.to(img, { 
+      opacity: 1,
+      duration: 0.4,
+      onComplete: () => {
+        gsap.to(img, {
+          delay: stillDelay,
+          duration: 1.25,
+          scale: 0.1,
+          x: window.innerWidth - img.getBoundingClientRect().left + 40,
+          y: -(img.getBoundingClientRect().top + img.getBoundingClientRect().height) - 40,
+          opacity: 0,
+          ease: 'power3.inOut',
+        });
+      }
+    });
   }, [stillDelay]);
 
-  /* ----------------- shatter (improved logic) ----------------- */
   const runShatter = useCallback(() => {
     const img = imgRef.current;
     const wrap = wrapRef.current;
     if (!img || !wrap) return;
 
-    // Fix container position and dimensions
     const { width, height } = wrap.getBoundingClientRect();
     wrap.style.width = `${width}px`;
     wrap.style.height = `${height}px`;
-    wrap.style.overflow = 'hidden';
+    wrap.style.overflow = 'visible'; // Allow pieces to fly out
     wrap.style.position = 'relative';
 
-    /* create pieces */
     const pieces: HTMLDivElement[] = [];
-    const pieceCount = Math.max(6, Math.min(maxPieces, 12)); // bounds 6-12
-
-    // Create 3x3 or 4x4 grid depending on number of pieces
+    const pieceCount = Math.max(8, Math.min(maxPieces, 16));
     const gridSize = pieceCount <= 9 ? 3 : 4;
     const pw = width / gridSize;
     const ph = height / gridSize;
 
-    for (let i = 0; i < pieceCount; i++) {
+    for (let i = 0; i < gridSize * gridSize; i++) {
       const piece = document.createElement('div');
       piece.style.position = 'absolute';
       piece.style.width = `${pw}px`;
@@ -101,79 +91,54 @@ export function ShatterImage({
       piece.style.backgroundSize = `${width}px ${height}px`;
       piece.style.backgroundPosition = `-${left}px -${top}px`;
       piece.style.backgroundRepeat = 'no-repeat';
-      piece.style.opacity = '0';
       piece.style.zIndex = '20';
       piece.style.pointerEvents = 'none';
       wrap.appendChild(piece);
       pieces.push(piece);
     }
 
+    // Hide original image immediately
+    gsap.set(img, { opacity: 0 });
+
     const tl = gsap.timeline();
 
-    // show original WITHOUT movement - fix position
-    tl.set(img, {
-      x: 0,
-      y: 0,
-      scale: 1,
-      rotation: 0,
-      transformOrigin: 'center center',
-    });
-    tl.to(img, { opacity: 1, duration: 0.3 });
-
-    // wait for stillDelay, then start destruction
-    tl.addLabel('shatterStart', `+=${stillDelay}`);
-
-    // first show all pieces simultaneously
-    tl.to(
-      pieces,
-      {
-        opacity: 1,
-        duration: 0.3,
-      },
-      'shatterStart'
-    );
-
-    // smoothly hide original image WITHOUT movement
-    tl.to(
-      img,
-      {
-        opacity: 0,
-        duration: 2,
-        ease: 'power2.out',
-      },
-      'shatterStart+=0.3'
-    );
-
-    // animate pieces with different delays for 50-second animation
+    // Animate pieces with physics
     pieces.forEach((piece, index) => {
-              const delay = index * 1.5; // increased delay between pieces
-              const duration = gsap.utils.random(40, 45); // duration for 50-second animation
-
       tl.to(
         piece,
         {
-          duration: duration,
-          x: gsap.utils.random(-1200, 1200),
-          y: gsap.utils.random(-1200, 1200),
-          rotation: gsap.utils.random(-3600, 3600), // 10 full rotations
-          scale: gsap.utils.random(0.01, 0.15),
+          duration: gsap.utils.random(1.5, 2.5),
+          physics2D: {
+            velocity: gsap.utils.random(300, 500), // Increased velocity
+            angle: gsap.utils.random(0, 360),
+            gravity: 400, // Add some gravity
+          },
+          scale: gsap.utils.random(0.2, 0.8),
+          rotation: gsap.utils.random(-720, 720),
           opacity: 0,
-          ease: 'power1.out', // very slow fade out
+          ease: 'power2.out',
           onComplete: () => piece.remove(),
         },
-                  `shatterStart+=${delay + 1}` // start after pieces have appeared
+        stillDelay // Start animation after the delay
       );
     });
   }, [src, maxPieces, stillDelay]);
 
   useEffect(() => {
     if (!ready) return;
-    if (mode === 'fly') runFly();
-    else runShatter();
+    // Ensure the shatter effect runs when triggered
+    if (mode === 'shatter') {
+      runShatter();
+    } else if (mode === 'fly') {
+      runFly();
+    } else {
+      // Default state: just show the image
+      if(imgRef.current) gsap.set(imgRef.current, { opacity: 1 });
+    }
   }, [ready, mode, runFly, runShatter]);
 
   return (
-    <div ref={wrapRef} className={`relative overflow-hidden ${className}`}>
+    <div ref={wrapRef} className={`relative ${className}`}>
       <Image
         ref={imgRef}
         src={src}
@@ -182,7 +147,7 @@ export function ShatterImage({
         className='object-cover'
         priority={priority}
         onLoadingComplete={() => setReady(true)}
-        style={{ opacity: 0 }}
+        style={{ opacity: 0 }} // Start with image hidden
       />
     </div>
   );

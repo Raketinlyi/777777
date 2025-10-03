@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import type { ComponentType, SVGProps, PointerEvent as ReactPointerEvent } from 'react';
 
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,12 +24,14 @@ import { WalletConnectNoSSR as WalletConnect } from '@/components/web3/wallet-co
 import dynamic from 'next/dynamic';
 import { ParticleEffect } from '@/components/particle-effect';
 import { useTranslation } from 'react-i18next';
+import { monadChain } from '@/config/chains';
 import { useMobile } from '@/hooks/use-mobile';
 import { ContractInfo } from '@/components/web3/contract-info';
 import MarketTicker from '@/components/MarketTicker';
 import { motion } from 'framer-motion';
 import { usePerformanceContext } from '@/hooks/use-performance-context';
 import { cn } from '@/lib/utils';
+import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 const NalaInfoCube = dynamic(
   () => import('@/components/NalaInfoCube').then(m => ({ default: m.default })),
   { ssr: false }
@@ -63,7 +66,7 @@ const Denis3LiveData = dynamic(
   () => import('@/components/web3/denis3-live-data'),
   { ssr: false }
 );
-const CRATokenInfo = dynamic(() => import('@/components/CRATokenInfo'), {
+const OCTATokenInfo = dynamic(() => import('@/components/OCTATokenInfo'), {
   ssr: false,
 });
 const ContractFullStats = dynamic(
@@ -111,14 +114,115 @@ const ComingSoonWatermark = () => (
   </div>
 );
 
+interface InfoMetricProps {
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  label: string;
+  value: string;
+  hint: string;
+}
+
+function InfoMetric({ icon: Icon, label, value, hint }: InfoMetricProps) {
+  return (
+    <Card className='border-violet-500/20 bg-black/40 text-slate-100 shadow-[0_0_30px_rgba(129,140,248,0.12)]'>
+      <CardContent className='flex items-start gap-2 p-3'>
+        <div className='rounded-full bg-violet-500/20 p-1.5 text-violet-200'>
+          <Icon className='h-4 w-4' />
+        </div>
+        <div className='space-y-0.5'>
+          <div className='text-[10px] uppercase tracking-wide text-slate-400'>{label}</div>
+          <div className='text-sm font-semibold text-white'>{value}</div>
+          <div className='text-[9px] text-slate-400'>{hint}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function InfoPage() {
   const { t } = useTranslation();
   const { isMobile } = useMobile();
-  const { isLiteMode } = usePerformanceContext();
+  const { /* isLiteMode */ } = usePerformanceContext();
   const [selectedTab, setSelectedTab] = useState('nft-inspector');
+  const {
+    graveyardSize,
+    pingInterval,
+    breedCost,
+    breedOctaCost,
+    breedSponsorFee,
+    breedLpContribution,
+    burnFeeBps,
+  } = useCrazyOctagonGame();
 
-  // Show watermark for all tabs except NFT Inspector
-  const showWatermark = selectedTab !== 'nft-inspector';
+  const pingMinutes = Math.max(1, Math.round(pingInterval / 60));
+
+  // Network context (Monad) for dynamic copy
+  const chainName = monadChain.name;
+  const pairTokenSymbol = monadChain.nativeCurrency.symbol;
+
+  // Watermark временно отключён: все вкладки получают собственный контент
+  const showWatermark = false;
+
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
+  const enableHeroTilt = !isMobile;
+
+  const handleHeroPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enableHeroTilt) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    const rotateY = (x - 0.5) * 10;
+    const rotateX = (0.5 - y) * 10;
+    setHeroTilt({ x: rotateX, y: rotateY });
+  };
+
+  const tabDefinitions = useMemo(
+    () => [
+      { value: 'nft-inspector', label: t('info.nftInspector', 'NFT Inspector'), icon: Database, accent: 'pink' },
+      { value: 'overview', label: t('info.tabs.overview', 'Overview'), icon: BarChart3, accent: 'violet' },
+      { value: 'cra-token', label: t('info.tabs.octaaToken', 'OCTA Token'), icon: Coins, accent: 'orange' },
+      { value: 'contract-stats', label: t('info.tabs.contract', 'Contract Stats'), icon: Database, accent: 'emerald' },
+      { value: 'subgraph', label: t('info.tabs.contractData', 'Live Data'), icon: Info, accent: 'blue' },
+      { value: 'denis3', label: t('info.tabs.liveAnalytics', 'Live Analytics'), icon: Zap, accent: 'cyan' },
+      { value: 'system', label: t('info.tabs.system', 'System'), icon: Activity, accent: 'slate' },
+    ],
+    [t]
+  );
+
+  const accentGradients: Record<string, string> = {
+    blue: 'from-blue-500/80 to-cyan-400/80',
+    violet: 'from-violet-500/80 to-fuchsia-500/80',
+    orange: 'from-orange-500/80 to-amber-400/80',
+    emerald: 'from-emerald-500/80 to-teal-400/80',
+    pink: 'from-pink-500/80 to-rose-500/80',
+    cyan: 'from-cyan-500/80 to-sky-400/80',
+    slate: 'from-slate-500/70 to-slate-300/70',
+  };
+
+  const activeTabDefinition = tabDefinitions.find(tab => tab.value === selectedTab) ?? tabDefinitions[0];
+  const activeGradient = accentGradients[activeTabDefinition?.accent ?? 'violet'] ?? accentGradients.violet;
+
+  const tabsListRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
+
+  useEffect(() => {
+    const update = () => {
+      const listEl = tabsListRef.current;
+      const activeEl = tabRefs.current[selectedTab];
+      if (listEl && activeEl) {
+        const listRect = listEl.getBoundingClientRect();
+        const activeRect = activeEl.getBoundingClientRect();
+        setIndicatorStyle({
+          width: activeRect.width,
+          left: activeRect.left - listRect.left,
+        });
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [selectedTab, tabDefinitions, isMobile]);
 
   return (
     <div
@@ -160,107 +264,177 @@ export default function InfoPage() {
           </div>
         </header>
 
-        <main>
-          <NalaInfoCube />
-
-          {/* Title like in breed */}
-          <div className='mt-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 text-center'>
-            <h1 className='text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-blue-400 whitespace-nowrap'>
-              {t('info.title', 'Info & Analytics')}
-            </h1>
+        <motion.section
+          ref={heroRef}
+          className='relative mt-6 overflow-hidden rounded-2xl border border-violet-500/25 bg-slate-950/75 shadow-[0_20px_60px_rgba(129,140,248,0.18)]'
+          style={{ transformStyle: 'preserve-3d' }}
+          onPointerMove={enableHeroTilt ? handleHeroPointer : undefined}
+          onPointerLeave={enableHeroTilt ? () => setHeroTilt({ x: 0, y: 0 }) : undefined}
+          animate={{ rotateX: enableHeroTilt ? heroTilt.x : 0, rotateY: enableHeroTilt ? heroTilt.y : 0 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+        >
+          <div className='absolute inset-0 bg-gradient-to-br from-violet-500/15 via-transparent to-sky-500/10' />
+          <div className='relative z-10 p-4 md:p-6'>
+            <div className='flex flex-col md:flex-row items-center justify-between gap-4'>
+              <div className='flex-1 text-center md:text-left'>
+                <h1 className='text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-200 via-white to-cyan-200 mb-2'>
+                  {t('info.hero.title', 'Crazy Octagon Analytics')}
+                </h1>
+                <div className='flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs text-slate-300/90'>
+                  <span className='rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-1'>
+                    {chainName} • {pairTokenSymbol}
+                  </span>
+                  <span className='rounded-full border border-cyan-400/40 bg-cyan-500/10 px-2 py-1'>
+                    {t('info.hero.status', 'Live data feed')}
+                  </span>
+                  <span className='text-slate-400'>
+                    {t('info.hero.subtitle', 'Track burn economics and on-chain health.')}
+                  </span>
+                </div>
+              </div>
+              
+              {!isMobile && (
+                <motion.div
+                  className='w-[120px] h-[120px] flex-shrink-0'
+                  animate={{ y: [0, -4, 0] }}
+                  transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+                >
+                  <div
+                    className='absolute inset-0 rounded-full blur-2xl'
+                    style={{ background: 'radial-gradient(rgba(129,140,248,0.25), transparent 65%)' }}
+                  />
+                  <NalaInfoCube />
+                </motion.div>
+              )}
+            </div>
           </div>
+        </motion.section>
 
-          {/* Contract info panel - reduced spacing */}
+        <main>
+          {/* NFT Inspector - moved to top */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className='mt-4'
+            className='mt-6'
           >
-            <ContractInfo />
-            <div className='mt-4'>
-              <MarketTicker />
-            </div>
+            <NFTCooldownInspector />
+          </motion.div>
+
+          {/* Status Cards - moved below NFT Inspector */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.2 }}
+            className='mt-6 mb-6 grid gap-3 md:grid-cols-2'
+          >
+            {/* Combined Network & Status Card */}
+            <Card className='border-violet-500/20 bg-black/40 text-slate-100 shadow-[0_0_30px_rgba(129,140,248,0.12)]'>
+              <CardContent className='p-3'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-2'>
+                    <div className='rounded-full bg-violet-500/20 p-1.5 text-violet-200'>
+                      <Database className='h-4 w-4' />
+                    </div>
+                    <div>
+                      <div className='text-[10px] uppercase tracking-wide text-slate-400'>Network & Status</div>
+                      <div className='text-sm font-semibold text-white'>{chainName} • {pairTokenSymbol}</div>
+                      <div className='text-[9px] text-slate-400'>Live data feed active</div>
+                    </div>
+                  </div>
+                  <div className='text-right'>
+                    <div className='text-[10px] uppercase tracking-wide text-slate-400'>Graveyard</div>
+                    <div className='text-sm font-semibold text-white'>{graveyardSize}</div>
+                    <div className='text-[9px] text-slate-400'>NFTs ready</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Combined Costs & Fees Card */}
+            <Card className='border-violet-500/20 bg-black/40 text-slate-100 shadow-[0_0_30px_rgba(129,140,248,0.12)]'>
+              <CardContent className='p-3'>
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-2'>
+                      <div className='rounded-full bg-violet-500/20 p-1.5 text-violet-200'>
+                        <Coins className='h-4 w-4' />
+                      </div>
+                      <div>
+                        <div className='text-[10px] uppercase tracking-wide text-slate-400'>Breed Cost</div>
+                        <div className='text-sm font-semibold text-white'>{breedCost} / {breedOctaCost} OCTA</div>
+                      </div>
+                    </div>
+                    <div className='text-right'>
+                      <div className='text-[10px] uppercase tracking-wide text-slate-400'>Ping</div>
+                      <div className='text-sm font-semibold text-white'>{pingMinutes} min</div>
+                    </div>
+                  </div>
+                  <div className='text-[9px] text-slate-400 border-t border-slate-700 pt-1'>
+                    Burn fee: {(burnFeeBps / 100).toFixed(1)}% • Sponsor: {breedSponsorFee} OCTA
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Market Ticker - moved below status cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.4 }}
+            className='mb-6'
+          >
+            <MarketTicker />
           </motion.div>
 
           {/* Main tabs - larger tabs */}
           <div className='mt-6'>
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
               <TabsList
+                ref={tabsListRef}
                 className={cn(
-                  'mb-6 bg-slate-800/50 p-1.5 backdrop-blur-sm',
-                  isMobile && 'flex flex-wrap h-auto'
+                  'relative mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-700/40 bg-slate-900/60 p-2 backdrop-blur-md shadow-[0_10px_30px_rgba(15,23,42,0.35)]',
+                  isMobile && 'justify-center'
                 )}
               >
-                <TabsTrigger
-                  value='nft-inspector'
-                  className='data-[state=active]:bg-blue-600 text-base px-4 py-2.5'
-                >
-                  <Database className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.nftInspector', 'NFT Inspector')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value='overview'
-                  className='data-[state=active]:bg-violet-600 text-base px-4 py-2.5'
-                >
-                  <BarChart3 className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.tabs.overview', 'Overview')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value='cra-token'
-                  className='data-[state=active]:bg-orange-600 text-base px-4 py-2.5'
-                >
-                  <Coins className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.tabs.craaToken', 'CRAA Token')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value='contract-stats'
-                  className='data-[state=active]:bg-emerald-600 text-base px-4 py-2.5'
-                >
-                  <Database className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.tabs.contract', 'Contract Stats')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value='subgraph'
-                  className='data-[state=active]:bg-pink-600 text-base px-4 py-2.5'
-                >
-                  <Info className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.tabs.contractData', 'Live Data')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value='denis3'
-                  className='data-[state=active]:bg-cyan-600 text-base px-4 py-2.5'
-                >
-                  <Zap className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.tabs.liveAnalytics', 'Live Analytics')}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value='system'
-                  className='data-[state=active]:bg-gray-700 text-base px-4 py-2.5'
-                >
-                  <Activity className={cn('h-5 w-5', !isMobile && 'mr-2')} />
-                  <span className={cn(isMobile && 'hidden')}>
-                    {t('info.tabs.system', 'System')}
-                  </span>
-                </TabsTrigger>
+                {indicatorStyle.width > 0 && (
+                  <motion.span
+                    className={cn('absolute top-1 bottom-1 rounded-xl bg-gradient-to-r shadow-[0_8px_24px_rgba(99,102,241,0.35)]', activeGradient)}
+                    animate={{ width: indicatorStyle.width, x: indicatorStyle.left }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+                  />
+                )}
+                {tabDefinitions.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <TabsTrigger
+                      key={item.value}
+                      value={item.value}
+                      ref={el => {
+                        tabRefs.current[item.value] = el;
+                      }}
+                      className={cn(
+                        'relative z-10 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-0 data-[state=active]:text-white hover:text-slate-100',
+                        isMobile && 'flex-1 justify-center min-w-[46%] text-xs'
+                      )}
+                    >
+                      <Icon className='h-5 w-5' />
+                      {!isMobile && <span>{item.label}</span>}
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
 
-              {/* NFT Inspector Tab */}
+              {/* Contract Info Tab */}
               <TabsContent value='nft-inspector'>
-                <div className='grid grid-cols-1 gap-6'>
-                  <NFTCooldownInspector />
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className='grid grid-cols-1 gap-6'
+                >
+                  <ContractInfo />
                   <UserNftsList />
 
                   {/* Game Guide */}
@@ -269,7 +443,7 @@ export default function InfoPage() {
                     <Card className='p-6 bg-gradient-to-r from-violet-900/50 to-purple-900/50 border-violet-500/30 mobile-safe-button'>
                       <div className='text-center'>
                         <h2 className='text-3xl font-bold text-white mb-2'>
-                          🎮 {t('info.guide.title', 'How to play CrazyCube')}
+                          🎮 {t('info.guide.title', 'How to play Crazy Octagon')}
                         </h2>
                         <p className='text-violet-300 text-lg'>
                           {t(
@@ -306,7 +480,7 @@ export default function InfoPage() {
                           <p className='text-slate-300 text-sm'>
                             {t(
                               'info.features.accumulate.desc',
-                              'Your CRAA tokens are locked and accumulate, they are not permanently burned!'
+                              `Rewards accrue without permanent burn: OCTA is locked by pings, and on claim OCTA is burned while you receive ${pairTokenSymbol} on ${chainName}.`
                             )}
                           </p>
                         </motion.div>
@@ -374,7 +548,7 @@ export default function InfoPage() {
                             time: t('info.actions.burn.time', '12/24/48 hours'),
                             description: t(
                               'info.actions.burn.desc',
-                              'Burn NFT and lock CRAA tokens to earn rewards'
+                              `Burn NFT to lock OCTA and start accruing rewards; later you can claim ${pairTokenSymbol} on ${chainName}.`
                             ),
                             color: 'border-red-500/30 bg-red-900/10',
                           },
@@ -431,7 +605,7 @@ export default function InfoPage() {
                             ),
                             description: t(
                               'info.actions.rewards.desc',
-                              'Claim CRAA tokens from reward pool'
+                              `Claim your rewards in ${pairTokenSymbol} on ${chainName}; the OCTA part is burned at claim time.`
                             ),
                             time: t(
                               'info.actions.rewards.time',
@@ -560,18 +734,23 @@ export default function InfoPage() {
                         <p className='text-indigo-300 text-center font-semibold'>
                           {t(
                             'info.roadmap.callout',
-                            '🚀 CrazyCube is the first NFT collection with a full decentralization plan!'
+                            '🚀 Crazy Octagon is the first NFT collection with a full decentralization plan!'
                           )}
                         </p>
                       </div>
                     </Card>
                   </div>
-                </div>
+                </motion.div>
               </TabsContent>
 
               {/* Overview Tab - more compact */}
               <TabsContent value='overview'>
-                <div className='grid grid-cols-1 gap-4'>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className='grid grid-cols-1 gap-4'
+                >
                   <StatsGrid />
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                     <BurnReviveChart />
@@ -585,61 +764,86 @@ export default function InfoPage() {
                       'Charts may take a moment to load...'
                     )}
                   </div>
-                </div>
+                </motion.div>
               </TabsContent>
 
-              {/* CRAA Token Tab */}
+              {/* OCTA Token Tab */}
               <TabsContent value='cra-token'>
-                <div className='grid grid-cols-1 gap-6'>
-                  <CRATokenInfo />
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className='grid grid-cols-1 gap-6'
+                >
+                  <OCTATokenInfo />
                   {/* Fallback message */}
                   <div className='text-center text-slate-400 text-sm mt-4'>
                     {t(
-                      'info.craa.fallback',
+                      'info.octa.fallback',
                       'Token data may take a moment to load...'
                     )}
                   </div>
-                </div>
+                </motion.div>
               </TabsContent>
 
               {/* Contract Stats Tab */}
               <TabsContent value='contract-stats'>
-                <div className='grid grid-cols-1 gap-6'>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className='grid grid-cols-1 gap-6'
+                >
                   <ContractFullStats />
-                </div>
+                </motion.div>
               </TabsContent>
 
               {/* Live Data Tab */}
               <TabsContent value='subgraph'>
-                <div className='grid grid-cols-1 gap-6'>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className='grid grid-cols-1 gap-6'
+                >
                   <Denis3LiveData />
-                </div>
+                </motion.div>
               </TabsContent>
 
               {/* Live Analytics Tab */}
               <TabsContent value='denis3'>
-                <Denis3Analytics />
-                <div className='mt-8'>
-                  <CRABurnAnalytics />
-                </div>
-                <div className='mt-8'>
-                  <PlayerAnalytics />
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Denis3Analytics />
+                  <div className='mt-8'>
+                    <CRABurnAnalytics />
+                  </div>
+                  <div className='mt-8'>
+                    <PlayerAnalytics />
+                  </div>
+                </motion.div>
               </TabsContent>
 
               {/* System Tab */}
               <TabsContent value='system'>
-                <div className='max-w-lg mx-auto flex flex-col gap-6 items-center'>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className='max-w-lg mx-auto flex flex-col gap-6 items-center'
+                >
                   <PerformanceInfo />
                   {!isMobile && (
                     <div className='w-full'>
-                      {/* Performance mode toggle removed - always show full effects */}
-                      <div className='mt-4'>
-                        {/* Component loaded dynamically */}
+                      <div className='mt-4 text-center text-xs text-slate-500'>
+                        {t('info.system.note', 'Full visual mode enabled')}
                       </div>
                     </div>
                   )}
-                </div>
+                </motion.div>
               </TabsContent>
             </Tabs>
           </div>

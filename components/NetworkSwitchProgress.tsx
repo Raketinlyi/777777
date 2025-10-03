@@ -9,7 +9,7 @@ interface NetworkSwitchProgressProps {
   isSwitching: boolean;
   switchAttempts: number;
   maxAttempts: number;
-  isApeChain: boolean;
+  isMonadChain: boolean;
   onForceSwitch: () => void;
 }
 
@@ -17,12 +17,12 @@ export function NetworkSwitchProgress({
   isSwitching,
   switchAttempts,
   maxAttempts,
-  isApeChain,
+  isMonadChain,
   onForceSwitch,
 }: NetworkSwitchProgressProps) {
   const progress = (switchAttempts / maxAttempts) * 100;
 
-  if (isApeChain) {
+  if (isMonadChain) {
     return (
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -33,7 +33,7 @@ export function NetworkSwitchProgress({
           <CheckCircle className='w-5 h-5 text-green-400' />
           <div>
             <h3 className='text-green-300 font-semibold'>
-              Connected to ApeChain
+              Connected to Monad Testnet
             </h3>
             <p className='text-green-200 text-sm'>
               You&apos;re ready to use CrazyCube dApp! 🚀
@@ -56,7 +56,7 @@ export function NetworkSwitchProgress({
             <RefreshCw className='w-5 h-5 text-blue-400 animate-spin' />
             <div>
               <h3 className='text-blue-300 font-semibold'>
-                Switching to ApeChain
+                Switching to Monad Testnet
               </h3>
               <p className='text-blue-200 text-sm'>
                 Attempt {switchAttempts} of {maxAttempts}
@@ -87,7 +87,7 @@ export function NetworkSwitchProgress({
           <div>
             <h3 className='text-red-300 font-semibold'>Wrong Network</h3>
             <p className='text-red-200 text-sm'>
-              Please switch to ApeChain to use this dApp
+              Please switch to Monad Testnet to use this dApp
             </p>
           </div>
         </div>

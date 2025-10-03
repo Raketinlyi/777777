@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useMobile } from '@/hooks/use-mobile';
@@ -55,41 +55,6 @@ type MusicTrack = {
 // Enable audio - user confirmed that links are working
 const AUDIO_DISABLED = false;
 
-const musicTracks: MusicTrack[] = [
-  {
-    id: 'track1',
-    name: 'Space Walk',
-    url: '/myzzzz/678.mp3',
-    theme: 'party',
-    color: 'blue',
-    cubeIndices: [0, 4, 7],
-  },
-  {
-    id: 'track2',
-    name: 'Deep Bass',
-    url: '/myzzzz/890.mp3',
-    theme: 'retro',
-    color: 'purple',
-    cubeIndices: [0, 2, 6],
-  },
-  {
-    id: 'track3',
-    name: 'Neon Flux',
-    url: '/myzzzz/zzz55.mp3',
-    theme: 'chill',
-    color: 'green',
-    cubeIndices: [0, 5, 8],
-  },
-  {
-    id: 'track4',
-    name: 'Retro Wave',
-    url: '/myzzzz/456-1.mp3',
-    theme: 'dance',
-    color: 'pink',
-    cubeIndices: [0, 3, 7],
-  },
-];
-
 // Optimize animation theme functions by moving them outside the component
 const getAnimationForTheme = (theme: string) => {
   switch (theme) {
@@ -139,6 +104,10 @@ const getBackgroundForTheme = (theme: string) => {
 // Create a memoized music notes array
 const musicNotes = ['♩', '♪', '♫', '♬', '🎵', '🎶'];
 
+// Add new visual effect elements
+const soundWaveforms = ['~', '≈', '∽', '∿', '≃', '≅'];
+const musicEmojis = ['🎉', '🎊', '✨', '💫', '🌟', '⚡', '🔥', '💥'];
+
 // Updated array of cube images with new pictures
 const cubeImages = [
   '/images/cube1.png', // 0: Blue sad cube (main)
@@ -157,6 +126,7 @@ type CubeAnimationProps = {
 };
 
 export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
+  const { t, i18n } = useTranslation();
   const [isClient, setIsClient] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [cubesLeft, setCubesLeft] = useState<boolean[]>([
@@ -187,8 +157,118 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
     useState(false);
   const waitingPhraseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Add new state for enhanced music visualization
+  const [musicIntensity, setMusicIntensity] = useState(0);
+  const [soundWaves, setSoundWaves] = useState<Array<{id: number, x: number, y: number, size: number, opacity: number}>>([]);
+  const [energyParticles, setEnergyParticles] = useState<Array<{id: number, x: number, y: number, size: number, color: string}>>([]);
+
+  // Effect for enhanced music visualization
+  useEffect(() => {
+    // This effect will only run when isMusicPlaying changes
+    if (!isMusicPlaying) {
+      // Clear any existing intervals when music stops
+      return;
+    }
+
+    // Create sound waves
+    const waveInterval = setInterval(() => {
+      setSoundWaves(prev => {
+        const newWaves = [...prev];
+        // Add new wave
+        newWaves.push({
+          id: Date.now(),
+          x: 50 + (Math.random() - 0.5) * 30,
+          y: 70,
+          size: 10 + Math.random() * 40,
+          opacity: 0.8
+        });
+        // Remove old waves
+        return newWaves.filter(wave => wave.opacity > 0.1).map(wave => ({
+          ...wave,
+          opacity: wave.opacity - 0.02,
+          size: wave.size + 1
+        }));
+      });
+    }, 200);
+
+    // Create energy particles
+    const particleInterval = setInterval(() => {
+      setEnergyParticles(prev => {
+        const newParticles = [...prev];
+        // Add new particles
+        for (let i = 0; i < 3; i++) {
+          newParticles.push({
+            id: Date.now() + i,
+            x: 50 + (Math.random() - 0.5) * 40,
+            y: 30 + Math.random() * 40,
+            size: 2 + Math.random() * 6,
+            color: `hsl(${Math.random() * 360}, 80%, 60%)`
+          });
+        }
+        // Remove old particles
+        return newParticles.filter(p => p.size > 0.5).map(p => ({
+          ...p,
+          size: p.size - 0.1,
+          y: p.y - 0.5
+        }));
+      });
+    }, 100);
+
+    // Update music intensity
+    const intensityInterval = setInterval(() => {
+      setMusicIntensity(prev => {
+        // Random intensity changes to simulate music beats
+        const change = (Math.random() - 0.5) * 0.4;
+        return Math.max(0.2, Math.min(1, prev + change));
+      });
+    }, 300);
+
+    return () => {
+      clearInterval(waveInterval);
+      clearInterval(particleInterval);
+      clearInterval(intensityInterval);
+    };
+  }, [isMusicPlaying]);
+
   const isMobile = useMobile();
-  const { t, i18n } = useTranslation();
+
+  const musicTracks = useMemo<MusicTrack[]>(
+    () => [
+      {
+        id: 'track1',
+        name: t('music.spaceWalk', 'Space Walk'),
+        url: '/myzzzz/678.mp3',
+        theme: 'party',
+        color: 'blue',
+        cubeIndices: [0, 4, 7],
+      },
+      {
+        id: 'track2',
+        name: t('music.deepBass', 'Deep Bass'),
+        url: '/myzzzz/890.mp3',
+        theme: 'retro',
+        color: 'purple',
+        cubeIndices: [0, 2, 6],
+      },
+      {
+        id: 'track3',
+        name: t('music.neonFlux', 'Neon Flux'),
+        url: '/myzzzz/zzz55.mp3',
+        theme: 'chill',
+        color: 'green',
+        cubeIndices: [0, 5, 8],
+      },
+      {
+        id: 'track4',
+        name: t('music.retroWave', 'Retro Wave'),
+        url: '/myzzzz/456-1.mp3',
+        theme: 'dance',
+        color: 'pink',
+        cubeIndices: [0, 3, 7],
+      },
+    ],
+    [t]
+  );
 
   // Function to get unique random cube indices
   const getUniqueRandomCubeIndices = useCallback(
@@ -229,7 +309,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
       // Set the first track as default
       setCurrentTrack(musicTracks[0] || null);
     }
-  }, [isClient, getUniqueRandomCubeIndices]);
+  }, [isClient, getUniqueRandomCubeIndices, musicTracks]);
 
   // Function for safe audio playback
   const safePlayAudio = useCallback(() => {
@@ -370,7 +450,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
 
     // Schedule showing the next phrase
     waitingPhraseTimerRef.current = setTimeout(showNextWaitingPhrase, 5000);
-  }, [t, i18n.language]);
+  }, [t]);
 
   // Optimize startPartyPhrasesCycle with useCallback
   const startPartyPhrasesCycle = useCallback(() => {
@@ -397,7 +477,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
 
     // Start the cycle
     showNextPhrase();
-  }, [t, i18n.language]);
+  }, [t]);
 
   // Initialize client state
   useEffect(() => {
@@ -545,7 +625,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
     if (audioRef.current) {
       const audioElement = audioRef.current;
 
-      const handleError = (e: Event) => {
+  const handleError = () => {
         setIsMusicPlaying(false);
         setShowBoombox(false);
         audioPlayPromiseRef.current = null;
@@ -586,7 +666,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
   const languageKey = i18n.language;
 
   // Determine cube size - responsive + desktop scaling
-  let cubeSize = isMobile ? 120 : Math.round(450 * Math.max(0.5, desktopScale));
+  const cubeSize = isMobile ? 120 : Math.round(450 * Math.max(0.5, desktopScale));
 
   return (
     <motion.div
@@ -602,8 +682,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
           preload='metadata'
           onError={(error: unknown) => {
             const errorMessage = error instanceof Error ? error.message : 'Audio error';
-            // Удаляем console.error для production безопасности
-            // console.error('Audio error:', errorMessage);
+            console.error('Audio error:', errorMessage);
           }}
         >
           <source src={currentTrack?.url || musicTracks[0]?.url || ''} type='audio/mpeg' />
@@ -696,28 +775,61 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
           className='absolute inset-0'
         />
 
-        {/* Several glowing orbs */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY }}
-          className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-cyan-500/20 blur-3xl'
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 7,
-            repeat: Number.POSITIVE_INFINITY,
-            delay: 1,
-          }}
-          className='absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-blue-500/20 blur-3xl'
-        />
+        {/* Pulsing background based on music intensity */}
+        {isMusicPlaying && (
+          <motion.div
+            animate={{
+              opacity: [0.1, 0.3 * musicIntensity, 0.1],
+              scale: [1, 1 + 0.1 * musicIntensity, 1],
+            }}
+            transition={{
+              duration: 0.5,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'easeInOut',
+            }}
+            className='absolute inset-0 bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-cyan-500/20'
+          />
+        )}
       </div>
+
+      {/* Sound waves visualization */}
+      {isMusicPlaying && soundWaves.map(wave => (
+        <motion.div
+          key={wave.id}
+          className='absolute text-4xl font-bold z-10'
+          style={{
+            left: `${wave.x}%`,
+            top: `${wave.y}%`,
+            opacity: wave.opacity,
+            fontSize: `${wave.size}px`,
+            color: `hsl(${(wave.id % 360)}, 80%, 60%)`,
+            textShadow: '0 0 10px rgba(255,255,255,0.7)',
+          }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+        >
+          {soundWaveforms[wave.id % soundWaveforms.length]}
+        </motion.div>
+      ))}
+
+      {/* Energy particles */}
+      {isMusicPlaying && energyParticles.map(particle => (
+        <motion.div
+          key={particle.id}
+          className='absolute rounded-full z-15'
+          style={{
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            backgroundColor: particle.color,
+            boxShadow: `0 0 ${particle.size}px ${particle.color}`,
+          }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1 }}
+        />
+      ))}
 
       {/* Musical notes that appear when music is turned on */}
       {isMusicPlaying && (
@@ -763,8 +875,111 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
               {musicNotes[Math.floor(Math.random() * musicNotes.length)]}
             </motion.div>
           ))}
+
+          {/* Additional music emojis for more excitement */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <motion.div
+              key={`emoji-${i}`}
+              className='absolute text-xl z-25'
+              initial={{
+                opacity: 0,
+                scale: 0,
+                x: 0,
+                y: 0,
+              }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0, 1.5, 0],
+                x: [0, (Math.random() - 0.5) * 200],
+                y: [0, -100 - Math.random() * 100],
+              }}
+              transition={{
+                duration: 1.5 + Math.random() * 2,
+                repeat: Number.POSITIVE_INFINITY,
+                delay: Math.random() * 3,
+                ease: 'easeOut',
+              }}
+              style={{
+                left: `${50 + (Math.random() - 0.5) * 30}%`,
+                bottom: '40%',
+                color: `hsl(${Math.floor(Math.random() * 360)}, 80%, 70%)`,
+                textShadow: '0 0 8px rgba(255,255,255,0.8)',
+              }}
+            >
+              {musicEmojis[Math.floor(Math.random() * musicEmojis.length)]}
+            </motion.div>
+          ))}
         </>
       )}
+
+      {/* Enhanced boombox effect when music is playing */}
+      <AnimatePresence>
+        {showBoombox && isMusicPlaying && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0,
+              rotate: -30,
+            }}
+            animate={{
+              opacity: 1,
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0],
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0,
+              rotate: 30,
+            }}
+            transition={{
+              scale: {
+                duration: 0.5,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: 'mirror',
+              },
+              rotate: {
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+              },
+            }}
+            className={`absolute ${isMobile ? 'bottom-24 right-4' : 'bottom-8 right-12'} z-10`}
+          >
+            <motion.div
+              animate={{
+                y: [0, -10, 0],
+              }}
+              transition={{
+                duration: 0.8,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className='relative'>
+                <Image
+                  src='/images/boombox.png'
+                  alt='Boombox'
+                  width={isMobile ? 80 : 120}
+                  height={isMobile ? 60 : 90}
+                  className='object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.9)]'
+                  priority={true}
+                />
+                {/* Pulsing light effects from boombox */}
+                <motion.div
+                  className='absolute -inset-4 rounded-full bg-cyan-400/30 blur-xl'
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    repeat: Number.POSITIVE_INFINITY,
+                  }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Cube characters with enhanced effects */}
       <div className='relative flex flex-wrap items-center justify-center gap-6 md:gap-12 z-10'>
@@ -1009,9 +1224,9 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
       </div>
 
       {/* */}
-      {/* Boombox that appears when music is turned on - IMPROVED MOBILE POSITIONING */}
+      {/* Boombox that appears when music is turned on - ENHANCED WITH PULSING EFFECTS */}
       <AnimatePresence>
-        {showBoombox && (
+        {showBoombox && isMusicPlaying && (
           <motion.div
             initial={{
               opacity: 0,
@@ -1022,8 +1237,8 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
             animate={{
               opacity: 1,
               y: [50, 0],
-              scale: [0, 1.2, 1],
-              rotate: [-20, 10, 0],
+              scale: [0, 1.2, 1, 1.1, 1],
+              rotate: [-20, 10, 0, 5, 0],
             }}
             exit={{
               opacity: 0,
@@ -1043,6 +1258,7 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
               animate={{
                 rotate: [-5, 5, -5],
                 y: [0, -5, 0],
+                scale: [1, 1.05, 1],
               }}
               transition={{
                 duration: 1,
@@ -1056,8 +1272,20 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
                   alt='Boombox'
                   width={isMobile ? 80 : 120}
                   height={isMobile ? 60 : 90}
-                  className='object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.7)]'
+                  className='object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.9)]'
                   priority={true}
+                />
+                {/* Pulsing light effects from boombox */}
+                <motion.div
+                  className='absolute -inset-4 rounded-full bg-cyan-400/30 blur-xl'
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    repeat: Number.POSITIVE_INFINITY,
+                  }}
                 />
               </div>
             </motion.div>
@@ -1186,6 +1414,124 @@ export function CubeAnimation({ desktopScale = 1 }: CubeAnimationProps) {
             } blur-sm`}
           />
         ))}
+
+      {/* Visualizer bars that respond to music */}
+      {isMusicPlaying && (
+        <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex items-end gap-1 z-20'>
+          {Array.from({ length: 15 }).map((_, i) => (
+            <motion.div
+              key={`bar-${i}`}
+              className='w-2 bg-gradient-to-t from-cyan-400 to-purple-500 rounded-t'
+              animate={{
+                height: [10, 20 + Math.random() * 60 * musicIntensity, 10],
+              }}
+              transition={{
+                duration: 0.3,
+                repeat: Number.POSITIVE_INFINITY,
+                delay: i * 0.1,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Rotating energy ring when music is playing */}
+      {isMusicPlaying && (
+        <motion.div
+          className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border-2 border-cyan-400/30'
+          animate={{
+            rotate: 360,
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            rotate: {
+              duration: 20,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'linear',
+            },
+            scale: {
+              duration: 2,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'easeInOut',
+            },
+          }}
+          style={{
+            boxShadow: '0 0 30px rgba(34, 211, 238, 0.3)',
+          }}
+        >
+          {/* Pulsing dots around the ring */}
+          {Array.from({ length: 12 }).map((_, i) => (
+            <motion.div
+              key={`ring-dot-${i}`}
+              className='absolute w-3 h-3 rounded-full bg-cyan-400'
+              style={{
+                left: '50%',
+                top: '0%',
+                transform: 'translate(-50%, -50%)',
+                transformOrigin: '0 128px',
+              }}
+              animate={{
+                rotate: i * 30,
+                scale: [1, 1.5, 1],
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{
+                rotate: {
+                  duration: 20,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                },
+                scale: {
+                  duration: 1,
+                  repeat: Number.POSITIVE_INFINITY,
+                  delay: i * 0.1,
+                },
+              }}
+            />
+          ))}
+        </motion.div>
+      )}
+
+      {/* Floating music notes that orbit around the center */}
+      {isMusicPlaying && (
+        <>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <motion.div
+              key={`orbit-note-${i}`}
+              className='absolute text-2xl z-15'
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+              animate={{
+                rotate: [0, 360],
+                x: Math.cos((i * 45 * Math.PI) / 180) * 100,
+                y: Math.sin((i * 45 * Math.PI) / 180) * 100,
+              }}
+              transition={{
+                rotate: {
+                  duration: 10,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                },
+                x: {
+                  duration: 8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                },
+                y: {
+                  duration: 8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                },
+              }}
+            >
+              {musicNotes[i % musicNotes.length]}
+            </motion.div>
+          ))}
+        </>
+      )}
     </motion.div>
   );
 }

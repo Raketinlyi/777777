@@ -25,7 +25,7 @@ import { formatWithCommas } from '@/utils/formatNumber';
 export default function Denis3LiveData() {
   const { stats: contractStats, isLoading, error } = useGameStats();
 
-  const formatCRAA = (amount: string) => {
+  const formatOCTAA = (amount: string) => {
     const num = parseFloat(amount);
     if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
     if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
@@ -140,7 +140,7 @@ export default function Denis3LiveData() {
                   </div>
                 </div>
                 <div className='text-3xl font-bold text-orange-400'>
-                  {formatCRAA(contractStats.totalCRAABurned)} CRAA
+                  {formatOCTAA(contractStats.totalOCTAABurned)} OCTAA
                 </div>
               </Card>
             </motion.div>
@@ -238,8 +238,8 @@ export default function Denis3LiveData() {
                     </div>
                   </div>
                 </div>
-                <div className='text-2xl font-bold text-cyan-400'>
-                  {formatCRAA(contractStats.currentMonthlyPool)} CRAA
+                <div className='text-2xl font-bold text-black'>
+                  {formatOCTAA(contractStats.currentMonthlyPool)} OCTAA
                 </div>
               </Card>
             </motion.div>
@@ -262,7 +262,7 @@ export default function Denis3LiveData() {
                   </div>
                 </div>
                 <div className='text-2xl font-bold text-purple-400'>
-                  {formatCRAA(contractStats.currentLockedPool)} CRAA
+                  {formatOCTAA(contractStats.currentLockedPool)} OCTAA
                 </div>
               </Card>
             </motion.div>
@@ -287,7 +287,7 @@ export default function Denis3LiveData() {
                   </div>
                 </div>
                 <div className='text-2xl font-bold text-emerald-400'>
-                  {formatCRAA(contractStats.mainTreasury)} CRAA
+                  {formatOCTAA(contractStats.mainTreasury)} OCTAA
                 </div>
               </Card>
             </motion.div>
@@ -341,11 +341,11 @@ export default function Denis3LiveData() {
                     </div>
                   </div>
                 </div>
-                <div className='text-xl font-bold text-pink-400'>
+                <div className='text-xl font-bold text-black'>
                   {formatWithCommas(
                     parseFloat(contractStats.currentBreedCost).toFixed(2)
                   )}{' '}
-                  CRAA
+                  OCTAA
                 </div>
               </Card>
             </motion.div>
@@ -369,9 +369,9 @@ export default function Denis3LiveData() {
                     </div>
                   </div>
                 </div>
-                <div className='text-xl font-bold text-amber-400'>
+                <div className='text-xl font-bold text-black'>
                   {parseFloat(contractStats.rewardRatePerSecond).toFixed(0)}{' '}
-                  CRAA/s
+                  OCTAA/s
                 </div>
               </Card>
             </motion.div>
@@ -382,7 +382,7 @@ export default function Denis3LiveData() {
       {/* Data Source Info */}
       <div className='text-center'>
         <p className='text-slate-400 text-sm'>
-          Data pulled directly from CrazyCubeUltimate3_Safe on ApeChain •
+          Data pulled directly from CrazyCubeUltimate3_Safe on Monad Testnet •
           Updates every 2 minutes
         </p>
       </div>

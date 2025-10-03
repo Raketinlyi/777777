@@ -8,10 +8,12 @@ import { SocialSidebar } from '@/components/social-sidebar';
 import { setupGlobalErrorHandling } from '@/utils/logger';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion'; // Added motion import
 // Import i18n
 import '@/lib/i18n';
 // Import Web3 provider
 import { WagmiProvider } from 'wagmi';
+
 import { config } from '@/config/wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createWeb3Modal } from '@web3modal/wagmi/react';
@@ -20,9 +22,11 @@ import { useWalletEvents } from '@/hooks/use-wallet-events';
 import { EthereumProviderSafe } from '@/components/ethereum-provider-safe';
 import { GlobalLanguageSwitcher } from '@/components/global-language-switcher';
 import EthereumGuard from '@/components/EthereumGuard';
-import { useRef } from 'react';
 import { getGlobalAudioElement } from '@/lib/globalAudio';
 import { SparkProjectiles } from '@/components/SparkProjectiles';
+import { usePathname } from 'next/navigation';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { BurnStateProvider } from '@/hooks/use-burn-state';
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -33,13 +37,12 @@ function WalletEventHandler({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Initialize Web3Modal (always, using placeholder if no Project ID)
-// Purpose: ensure `useWeb3Modal` calls won't crash before init; avoids 403 config fetch by
-// falling back to local defaults when projectId is placeholder.
-if (typeof window !== 'undefined' && !(window as any).web3modal_initialized) {
-  const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'crazycube-project-id';
+// Initialize Web3Modal only when a real WalletConnect project ID is present
+// This avoids noisy 401/403 logs when developing without credentials.
+if (typeof window !== 'undefined' && !(window as unknown as { web3modal_initialized?: boolean }).web3modal_initialized) {
+  const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
   const isEnabled = process.env.NEXT_PUBLIC_WEB3_MODAL_ENABLED !== 'false';
-  if (isEnabled) {
+  if (isEnabled && projectId && projectId !== 'crazycube-project-id') {
     try {
       createWeb3Modal({
         wagmiConfig: config,
@@ -57,8 +60,8 @@ if (typeof window !== 'undefined' && !(window as any).web3modal_initialized) {
           '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0',
         ],
       });
-      (window as any).web3modal_initialized = true;
-    } catch (error) {}
+      (window as unknown as { web3modal_initialized?: boolean }).web3modal_initialized = true;
+    } catch {}
   }
 }
 
@@ -108,6 +111,8 @@ export default function ClientLayout({
   children: React.ReactNode;
 }>) {
   const [mounted, setMounted] = useState(false);
+  const [chaosMode, setChaosMode] = useState(false); // New state for site-wide chaos
+  const pathname = usePathname();
 
   // Initialize on client side
   // Responsibilities:
@@ -125,7 +130,7 @@ export default function ClientLayout({
         if (i18n && !i18n.isInitialized) {
           await i18n.init();
         }
-      } catch (error) {}
+  } catch {}
     };
 
     // Initialize Trusted Types (opt-in via env to avoid mobile issues)
@@ -147,7 +152,7 @@ export default function ClientLayout({
             createScript: (input: string) => input,
             createScriptURL: (input: string) => input,
           });
-        } catch (_) {
+  } catch {
           /* already exists */
         }
       }
@@ -174,6 +179,15 @@ export default function ClientLayout({
     };
   }, []);
 
+  // Trigger site-wide chaos after a delay
+  useEffect(() => {
+    const chaosTimer = setTimeout(() => {
+      setChaosMode(true);
+    }, 19000); // start chaos tilt after 19s (was 9s)
+
+    return () => clearTimeout(chaosTimer);
+  }, []);
+
   return (
     <>
       {!mounted ? null : (
@@ -182,24 +196,43 @@ export default function ClientLayout({
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
                 <PerformanceProvider>
-                  <EthereumProviderSafe>
-                    <WalletEventHandler>
-                      <SimpleToastProvider>
+                  <BurnStateProvider>
+                    <EthereumProviderSafe>
+                      <WalletEventHandler>
+                        <SimpleToastProvider>
                         <EthereumGuard />
-                        <div className='relative flex min-h-screen flex-col'>
-                          <GlobalLanguageSwitcher />
-                          <SocialSidebar />
-                           <SparkProjectiles />
-                           {/* Ensure global audio exists */}
-                           <div id='__global_audio_mount' className='hidden'>
-                             {/* global <audio> is injected into document.body by getGlobalAudioElement() */}
-                           </div>
-                          {children}
-                          <BuildErrorDisplay />
-                        </div>
-                      </SimpleToastProvider>
-                    </WalletEventHandler>
-                  </EthereumProviderSafe>
+                        <TooltipProvider delayDuration={120}>
+                          <motion.div
+                            className='relative flex min-h-screen flex-col'
+                            animate={chaosMode && pathname === '/' ? {
+                            // Ещё сильнее (~+30% к предыдущему)
+                            rotate: [0, -1.7, -1.7, 1.7, 1.7],
+                          } : {
+                            rotate: 0,
+                          }}
+                            transition={chaosMode && pathname === '/' ? {
+                            // Цикл 50 секунд и повтор снова
+                            duration: 50,
+                            repeat: Infinity,
+                            ease: "linear",
+                            times: [0, 0.038, 0.5, 0.538, 1]
+                          } : {
+                            duration: 1.5, ease: 'easeInOut'
+                          }}
+                          >
+                            <GlobalLanguageSwitcher />
+                            <SocialSidebar />
+                             <SparkProjectiles />
+                             {/* Audio mount node */}
+                             <div id='__global_audio_mount' className='hidden' />
+                            {children}
+                            <BuildErrorDisplay />
+                          </motion.div>
+                        </TooltipProvider>
+                        </SimpleToastProvider>
+                      </WalletEventHandler>
+                    </EthereumProviderSafe>
+                  </BurnStateProvider>
                 </PerformanceProvider>
               </ErrorBoundary>
             </QueryClientProvider>

@@ -18,7 +18,7 @@ interface AshRainProps {
  */
 export default function AshRain({
   density = 18,
-  color = '#9ca3af',
+  color = '#b8b8d1', // Lighter grayish-purple color for better contrast with darker background
   className = '',
 }: AshRainProps) {
   const prefersReduced =
@@ -40,8 +40,8 @@ export default function AshRain({
       delay: Math.random() * (isMobile ? 10 : 6), // longer delays on mobile
       duration: (isMobile ? 10 : 6) + Math.random() * (isMobile ? 8 : 6), // slower on mobile
       opacity: isMobile
-        ? 0.2 + Math.random() * 0.3
-        : 0.25 + Math.random() * 0.4, // less opacity on mobile
+        ? 0.3 + Math.random() * 0.3
+        : 0.4 + Math.random() * 0.4, // slightly higher opacity for better visibility
       tilt: (Math.random() - 0.5) * 45, // initial rotation deg
       sway: Math.random() > 0.5 ? 1 : -1, // horizontal sway dir
     }));

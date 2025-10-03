@@ -20,11 +20,21 @@ export default function EthereumGuard() {
     if (eth.__crazycube_guard_installed) return;
     eth.__crazycube_guard_installed = true;
 
+    // Build allowlist from known contracts and env-configured bridge addresses
+    const envAddresses = [
+      process.env.NEXT_PUBLIC_APE_ADAPTER,
+      process.env.NEXT_PUBLIC_MONAD_MIRROR,
+      process.env.NEXT_PUBLIC_CRAA_TOKEN,
+      process.env.NEXT_PUBLIC_MONAD_CRAA_TOKEN,
+      process.env.NEXT_PUBLIC_OCTAA_ADDRESS,
+    ].filter((x): x is string => !!x && x.length === 42);
+
     const allowlist = new Set<string>([
-      NFT_CONTRACT_ADDRESS.toLowerCase(),
-      TOKEN_CONTRACT_ADDRESS.toLowerCase(),
-      GAME_CONTRACT_ADDRESS.toLowerCase(),
-    ]);
+      NFT_CONTRACT_ADDRESS?.toLowerCase?.() || '',
+      TOKEN_CONTRACT_ADDRESS?.toLowerCase?.() || '',
+      GAME_CONTRACT_ADDRESS?.toLowerCase?.() || '',
+      ...envAddresses.map(a => a.toLowerCase()),
+    ].filter(Boolean));
 
     const originalRequest = eth.request?.bind(eth);
     if (!originalRequest) return;

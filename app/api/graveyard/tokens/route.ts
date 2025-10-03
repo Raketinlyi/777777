@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createPublicClient, http } from 'viem';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
 
-// CrazyCube game contract deployed on ApeChain mainnet
+// CrazyCube game contract deployed on Monad Testnet
 const GAME_ADDRESS = '0x7dFb75F1000039D650A4C2B8a068f53090e857dD' as const;
 
 // Minimal ABI fragments that we need
@@ -28,7 +28,7 @@ const GAME_ABI = [
 
 export async function GET() {
   try {
-    const client = createPublicClient({ chain: apeChain, transport: http() });
+    const client = createPublicClient({ chain: monadChain, transport: http() });
 
     const sizeBn = (await client.readContract({
       address: GAME_ADDRESS,

@@ -127,13 +127,15 @@ export default function CRABurnAnalytics() {
     return () => clearInterval(interval);
   }, []);
 
-  const formatCRAA = (amount: string) => {
+  const formatOCTAA = (amount: string) => {
     const num = parseFloat(amount) / 1e18;
     if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
     if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(0);
   };
+
+  const formatCRAA = (amount: string) => formatOCTAA(amount);
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num);
@@ -236,9 +238,9 @@ export default function CRABurnAnalytics() {
           <Card className='p-4 bg-green-900/20 border-green-500/30'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-green-300 text-sm'>CRAA distributed</p>
-                <p className='text-2xl font-bold text-white'>
-                  {formatCRAA(analytics.totalCRADistributed)} CRAA
+                <p className='text-green-300 text-sm'>OCTAA distributed</p>
+                <p className='text-2xl font-bold text-black'>
+                  {formatOCTAA(analytics.totalCRADistributed)} OCTAA
                 </p>
               </div>
               <TrendingUp className='h-8 w-8 text-green-400' />
@@ -352,7 +354,7 @@ export default function CRABurnAnalytics() {
               <div className='flex justify-between mb-1'>
                 <span className='text-slate-400 text-sm'>Distributed</span>
                 <span className='text-green-400 text-sm'>
-                  {formatCRAA(analytics.totalCRADistributed)} CRAA
+                  {formatOCTAA(analytics.totalCRADistributed)} OCTAA
                 </span>
               </div>
               <div className='w-full bg-slate-700 rounded-full h-2'>
@@ -404,13 +406,13 @@ export default function CRABurnAnalytics() {
                     </p>
                     <div className='mt-2 space-y-1'>
                       <p className='text-green-400 text-sm'>
-                        To player: {formatCRAA(claim.playerShare)} CRAA
+                        To player: {formatOCTAA(claim.playerShare)} OCTAA
                       </p>
                       <p className='text-red-400 text-sm'>
-                        Burned: {formatCRAA(claim.burnedShare)} CRAA
+                        Burned: {formatOCTAA(claim.burnedShare)} OCTAA
                       </p>
                       <p className='text-white text-sm'>
-                        Total: {formatCRAA(claim.totalAmount)} CRAA
+                        Total: {formatOCTAA(claim.totalAmount)} OCTAA
                       </p>
                     </div>
                   </div>

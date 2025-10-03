@@ -14,7 +14,7 @@ const getNavItems = (t: TFunction) => [
   { href: '/burn', label: t('tabs.burn', 'Burn'), icon: Flame },
   { href: '/breed', label: t('tabs.breed', 'Breed'), icon: Heart },
   { href: '/graveyard', label: t('tabs.graveyard', 'Graveyard'), icon: Skull },
-  { href: '/claim', label: t('tabs.claim', 'Claim'), icon: Coins },
+  { href: '/rewards', label: t('tabs.rewards', 'Rewards'), icon: Coins },
   { href: '/info', label: t('tabs.info', 'Info'), icon: Info },
 ];
 
@@ -27,7 +27,7 @@ export function MobileNavigation() {
   if (!isMobile) return null;
 
   return (
-    <div className='fixed bottom-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-sm border-t border-slate-800'>
+    <div className='fixed bottom-0 left-0 right-0 z-40 bg-purple-900/80 backdrop-blur-sm border-t border-purple-700/50'>
       <nav className='mobile-nav'>
         <div className='flex justify-around items-center h-16 px-2'>
           {getNavItems(t).map(item => {

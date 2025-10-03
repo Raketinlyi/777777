@@ -1,0 +1,94 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fireGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#ea580c;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="smokeGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#374151;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#6b7280;stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:#9ca3af;stop-opacity:0.2" />
+    </linearGradient>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#1f2937" filter="url(#shadow)" opacity="0.9"/>
+  
+  <!-- Burned cube (darker, cracked) -->
+  <g transform="translate(100,110)">
+    <!-- Top face (burned) -->
+    <path d="M-25,-15 L0,-30 L25,-15 L0,0 Z" fill="#374151" opacity="0.8"/>
+    <!-- Left face (burned) -->
+    <path d="M-25,-15 L0,0 L0,30 L-25,15 Z" fill="#1f2937" opacity="0.9"/>
+    <!-- Right face (burned) -->
+    <path d="M0,0 L25,-15 L25,15 L0,30 Z" fill="#111827" opacity="0.9"/>
+    
+    <!-- Crack lines -->
+    <g stroke="#dc2626" stroke-width="1" opacity="0.6">
+      <line x1="-20" y1="-10" x2="15" y2="5"/>
+      <line x1="-10" y1="-20" x2="10" y2="20"/>
+      <line x1="0" y1="-25" x2="20" y2="10"/>
+    </g>
+  </g>
+  
+  <!-- Fire flames -->
+  <g transform="translate(100,80)" opacity="0.8">
+    <!-- Main flame -->
+    <path d="M0,40 Q-15,30 -10,10 Q-5,0 0,-10 Q5,0 10,10 Q15,30 0,40" fill="url(#fireGradient)">
+      <animateTransform attributeName="transform" type="scale" values="1,1;1.1,0.9;1,1" dur="1.5s" repeatCount="indefinite"/>
+    </path>
+    <!-- Left flame -->
+    <path d="M-20,35 Q-30,25 -25,10 Q-20,5 -15,0 Q-10,5 -15,15 Q-10,25 -20,35" fill="url(#fireGradient)" opacity="0.7">
+      <animateTransform attributeName="transform" type="scale" values="1,1;0.9,1.1;1,1" dur="1.8s" repeatCount="indefinite" begin="0.3s"/>
+    </path>
+    <!-- Right flame -->
+    <path d="M20,35 Q30,25 25,10 Q20,5 15,0 Q10,5 15,15 Q10,25 20,35" fill="url(#fireGradient)" opacity="0.7">
+      <animateTransform attributeName="transform" type="scale" values="1,1;0.9,1.1;1,1" dur="1.6s" repeatCount="indefinite" begin="0.6s"/>
+    </path>
+  </g>
+  
+  <!-- Smoke -->
+  <g transform="translate(100,50)" opacity="0.6" filter="url(#blur)">
+    <ellipse cx="0" cy="0" rx="8" ry="15" fill="url(#smokeGradient)">
+      <animateTransform attributeName="transform" type="translate" values="0,0;-5,-20;5,-40;0,-60" dur="4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;0.3;0.1;0" dur="4s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="10" cy="5" rx="6" ry="12" fill="url(#smokeGradient)">
+      <animateTransform attributeName="transform" type="translate" values="0,0;3,-15;-3,-35;2,-55" dur="3.5s" repeatCount="indefinite" begin="1s"/>
+      <animate attributeName="opacity" values="0.5;0.2;0.1;0" dur="3.5s" repeatCount="indefinite" begin="1s"/>
+    </ellipse>
+    <ellipse cx="-10" cy="5" rx="5" ry="10" fill="url(#smokeGradient)">
+      <animateTransform attributeName="transform" type="translate" values="0,0;-2,-18;4,-38;-1,-58" dur="3.8s" repeatCount="indefinite" begin="0.5s"/>
+      <animate attributeName="opacity" values="0.4;0.2;0.1;0" dur="3.8s" repeatCount="indefinite" begin="0.5s"/>
+    </ellipse>
+  </g>
+  
+  <!-- Embers -->
+  <g opacity="0.7">
+    <circle cx="80" cy="120" r="1.5" fill="#f59e0b">
+      <animateTransform attributeName="transform" type="translate" values="0,0;-10,-30;-5,-60" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.7;0.3;0" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="120" cy="125" r="1" fill="#dc2626">
+      <animateTransform attributeName="transform" type="translate" values="0,0;8,-25;3,-50" dur="2.5s" repeatCount="indefinite" begin="0.8s"/>
+      <animate attributeName="opacity" values="0.6;0.2;0" dur="2.5s" repeatCount="indefinite" begin="0.8s"/>
+    </circle>
+    <circle cx="95" cy="130" r="0.8" fill="#ea580c">
+      <animateTransform attributeName="transform" type="translate" values="0,0;-3,-20;-8,-45" dur="2.8s" repeatCount="indefinite" begin="1.5s"/>
+      <animate attributeName="opacity" values="0.5;0.2;0" dur="2.8s" repeatCount="indefinite" begin="1.5s"/>
+    </circle>
+  </g>
+  
+  <!-- "BURNED" text -->
+  <text x="100" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#dc2626" opacity="0.9">
+    BURNED
+  </text>
+</svg>

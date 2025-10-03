@@ -1,18 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import Image from 'next/image';
 import {
   useUserNFTs,
-  getTokenIdAsDecimal,
   getNFTImage,
   getNFTName,
+  type AlchemyNFT,
 } from '@/hooks/useUserNFTs';
-import { useMultipleNFTGameInfo } from '@/hooks/useNFTGameData';
-import { useCrazyCubeGame } from '@/hooks/useCrazyCubeGame';
+import {
+  useMultipleNFTGameInfo,
+  type NFTGameInfo,
+} from '@/hooks/useNFTGameData';
+import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
+import { motion } from 'framer-motion';
 import { Zap, Clock, Star, TrendingUp, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getRarityColor as rarityColor, getRarityLabel } from '@/lib/rarity';
@@ -21,16 +25,9 @@ import { useNetwork } from '@/hooks/use-network';
 import DOMPurify from 'isomorphic-dompurify';
 
 interface PingableNFTProps {
-  nft: { id: { tokenId: string } };
-  gameInfo?: { 
-    canPing?: boolean; 
-    isActivated?: boolean; 
-    rarity?: number; 
-    currentStars?: number; 
-    lockedCRAAFormatted?: string;
-    [key: string]: unknown 
-  } | undefined;
-  onPing: (tokenId: string) => void;
+  nft: AlchemyNFT;
+  gameInfo: NFTGameInfo | undefined;
+  onPing: (tokenId: string) => Promise<void> | void;
   isLoading: boolean;
 }
 
@@ -40,7 +37,7 @@ const PingableNFT = ({
   onPing,
   isLoading,
 }: PingableNFTProps) => {
-  const { isApeChain, requireApeChain } = useNetwork();
+  const { isMonadChain, requireMonadChain } = useNetwork();
   const { t } = useTranslation();
 
   const formatTimeLeft = (seconds: number): string => {
@@ -59,6 +56,9 @@ const PingableNFT = ({
   };
 
   const canPing = gameInfo?.canPing && !isLoading;
+  const imageSrc =
+    getNFTImage(nft) ||
+    'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=';
 
   return (
     <motion.div
@@ -71,14 +71,18 @@ const PingableNFT = ({
             ? 'border-blue-500/30 bg-slate-900/50 hover:border-blue-500/50 cursor-pointer'
             : 'border-slate-600/30 bg-slate-800/30 opacity-60'
         }`}
-        onClick={requireApeChain(() => onPing(nft.id.tokenId))}
+        onClick={() => {
+          void requireMonadChain(() => onPing(nft.id.tokenId))();
+        }}
       >
         <CardContent className='p-4'>
-          <div className='relative'>
-            <img
-              src={getNFTImage(nft as any)}
-              alt={getNFTName(nft as any)}
-              className='w-full h-40 object-cover rounded-lg mb-3'
+          <div className='relative mb-3 h-40'>
+            <Image
+              src={imageSrc}
+              alt={getNFTName(nft)}
+              fill
+              className='object-cover rounded-lg'
+              sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
             />
 
             {/* Status badges */}
@@ -101,13 +105,13 @@ const PingableNFT = ({
               <Badge className='bg-yellow-500/80 text-black font-bold text-xs'>
                 ⭐ {gameInfo?.currentStars || 0}
               </Badge>
-              {gameInfo && gameInfo.lockedCRAAFormatted && parseFloat(gameInfo.lockedCRAAFormatted) > 0 && (
+              {gameInfo && gameInfo.lockedOctaFormatted && parseFloat(gameInfo.lockedOctaFormatted) > 0 && (
                 <Badge className='bg-green-500/80 text-white text-xs'>
                   💰{' '}
                   {new Intl.NumberFormat('en-US', {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1,
-                  }).format(parseFloat(gameInfo.lockedCRAAFormatted))}
+                  }).format(parseFloat(gameInfo.lockedOctaFormatted))}
                 </Badge>
               )}
             </div>
@@ -133,7 +137,7 @@ const PingableNFT = ({
                   ? new Intl.NumberFormat('en-US', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
-                    }).format(parseFloat(gameInfo.lockedCRAAFormatted || '0'))
+                    }).format(parseFloat(gameInfo.lockedOctaFormatted || '0'))
                   : '0.00'}
               </span>
             </div>
@@ -142,11 +146,11 @@ const PingableNFT = ({
             <div className='mt-3'>
               {gameInfo?.canPing ? (
                 <Button
-                  onClick={e => {
+                  onClick={async e => {
                     e.stopPropagation();
-                    onPing(nft.id.tokenId);
+                    await requireMonadChain(() => onPing(nft.id.tokenId))();
                   }}
-                  disabled={!isApeChain || isLoading}
+                  disabled={!isMonadChain || isLoading}
                   className='w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs py-2'
                 >
                   {isLoading ? (
@@ -195,7 +199,7 @@ export const PingSection = () => {
 
   const {
     pingNFT,
-    craaBalance,
+    octaaBalance,
     isWritePending,
     isTxLoading,
     isTxSuccess,
@@ -203,7 +207,7 @@ export const PingSection = () => {
     txHash,
     writeError,
     txError,
-  } = useCrazyCubeGame();
+  } = useCrazyOctagonGame();
 
   const handlePing = async (tokenId: string) => {
     try {
@@ -212,10 +216,16 @@ export const PingSection = () => {
         title: 'Ping Initiated! ⚡',
         description: `Ping transaction sent for NFT #${tokenId}. You'll earn CRAA based on rarity!`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+          ? error
+          : 'Failed to ping NFT';
       toast({
         title: 'Ping Failed',
-        description: DOMPurify.sanitize(error.message || 'Failed to ping NFT'),
+        description: DOMPurify.sanitize(message),
         variant: 'destructive',
       });
     }
@@ -265,7 +275,7 @@ export const PingSection = () => {
               {new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              }).format(parseFloat(craaBalance))}{' '}
+              }).format(parseFloat(octaaBalance))}{' '}
               CRAA
             </div>
             <div className='text-slate-400'>Your Balance</div>
@@ -324,7 +334,7 @@ export const PingSection = () => {
               <PingableNFT
                 key={nft.id.tokenId}
                 nft={nft}
-                gameInfo={gameInfo as any}
+                gameInfo={gameInfo}
                 onPing={handlePing}
                 isLoading={isWritePending || isTxLoading}
               />

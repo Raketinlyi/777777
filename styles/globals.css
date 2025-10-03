@@ -5,6 +5,12 @@
 /* Import Monad theme */
 @import './monad-theme.css';
 
+/* Global keyframes */
+@keyframes sheen {
+  0% { background-position: 200% 0%; }
+  100% { background-position: -200% 0%; }
+}
+
 @layer base {
   :root {
     /* Monad Design System - Professional Deep Purple/Blue Theme */
@@ -96,7 +102,7 @@
   /* Luxe gold CTA button */
   @apply bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 text-slate-900 font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-amber-400/40 border border-amber-300/30 hover:border-amber-200/40;
   background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
+  animation: gradient-shift 4.5s ease infinite;
   position: relative;
   overflow: hidden;
   transform: translateZ(0);
@@ -288,6 +294,55 @@
   .nft-card-grid {
     @apply grid gap-2;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  /* Burn page: более широкие карточки, чтобы не схлопывались */
+  .burn-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  @media (min-width: 1024px) {
+    .burn-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+  }
+
+  /* Золотая обводка для NFT карточек на burn странице */
+  .burn-card-grid .group > div {
+    border: 2px solid #fbbf24 !important; /* золотая обводка */
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 
+                0 0 40px rgba(251, 191, 36, 0.1),
+                inset 0 0 20px rgba(251, 191, 36, 0.05) !important;
+    background: linear-gradient(135deg, 
+                rgba(0, 0, 0, 0.9) 0%, 
+                rgba(20, 20, 20, 0.95) 50%, 
+                rgba(0, 0, 0, 0.9) 100%) !important;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .burn-card-grid .group:hover > div {
+    border-color: #f59e0b !important; /* более яркое золото при hover */
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), 
+                0 0 60px rgba(245, 158, 11, 0.2),
+                inset 0 0 30px rgba(245, 158, 11, 0.1) !important;
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Улучшенная видимость содержимого карточек */
+  .burn-card-grid .group .text-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 
+                 0 0 20px rgba(255, 255, 255, 0.4) !important;
+  }
+
+  .burn-card-grid .group .bg-gradient-to-br {
+    background: linear-gradient(135deg, 
+                rgba(30, 30, 30, 0.95) 0%, 
+                rgba(50, 50, 50, 0.9) 50%, 
+                rgba(30, 30, 30, 0.95) 100%) !important;
+    border: 1px solid rgba(251, 191, 36, 0.3);
   }
 
   @media (min-width: 640px) {
@@ -757,6 +812,14 @@ html.telegram body {
     letter-spacing: -0.025em;
   }
 
+  /* Monospaced/tabular numeric font for stable number width */
+  .number-monospace {
+    font-family:
+      ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
   /* Auto-sizing text for different container sizes */
   .auto-size-text {
     font-size: clamp(0.75rem, 2vw, 1rem);
@@ -971,4 +1034,285 @@ html.telegram body {
     background-position: 0% 50%; 
     box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
   }
+}
+
+/* Enhanced burn background animations */
+@keyframes burnGlow {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    opacity: 0.85;
+    transform: scale(1.01) rotate(0.5deg);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02) rotate(0deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: scale(1.015) rotate(-0.5deg);
+  }
+}
+
+@keyframes burnShimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.2;
+  }
+  70% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes heatWave {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scaleY(1.1) scaleX(0.95);
+    opacity: 0.4;
+  }
+}
+
+/* Burn background utility classes */
+.burn-glow {
+  animation: burnGlow 19.66s ease-in-out infinite;
+}
+
+.ember-float {
+  animation: emberFloat 9.83s ease-out infinite;
+}
+
+.heat-wave {
+  animation: heatWave 5.04s ease-in-out infinite;
+}
+
+/* Enhanced burn page background - Purple-cyan plasma theme */
+.burn-background {
+  background: 
+    /* Основной градиент - фиолетовый к индиго к черному */
+    linear-gradient(135deg, 
+      hsl(260, 100%, 8%) 0%,    /* Глубокий фиолетовый */
+      hsl(280, 80%, 6%) 25%,    /* Темно-пурпурный */
+      hsl(250, 70%, 5%) 50%,    /* Темно-индиго */
+      hsl(240, 60%, 6%) 75%,    /* Темно-синий */
+      hsl(260, 100%, 3%) 100%   /* Очень темный фиолетовый */
+    ),
+    /* Фиолетово-голубые акценты вместо огненных */
+    radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at top right, rgba(99, 102, 241, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(6, 182, 212, 0.2) 0%, transparent 60%);
+  position: relative;
+  overflow: hidden;
+}
+
+.burn-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    /* Динамические фиолетово-голубые пятна вместо огненных */
+    radial-gradient(circle at 15% 85%, rgba(139, 92, 246, 0.15) 0%, transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
+    /* Дополнительные фиолетовые акценты */
+    radial-gradient(circle at 70% 80%, rgba(196, 132, 252, 0.1) 0%, transparent 30%),
+    radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 35%);
+  animation: burnGlow 10.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.burn-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    /* Тонкие световые полосы для глубины - фиолетово-голубые вместо красных */
+    linear-gradient(45deg, transparent 48%, rgba(139, 92, 246, 0.05) 49%, rgba(139, 92, 246, 0.05) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(99, 102, 241, 0.03) 49%, rgba(99, 102, 241, 0.03) 51%, transparent 52%);
+  animation: burnShimmer 15.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Анимации для золотого свечения NFT карточек */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 
+                0 0 40px rgba(251, 191, 36, 0.1),
+                inset 0 0 20px rgba(251, 191, 36, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5), 
+                0 0 60px rgba(251, 191, 36, 0.2),
+                inset 0 0 30px rgba(251, 191, 36, 0.1);
+  }
+}
+
+@keyframes goldShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Дополнительные эффекты для burn карточек */
+.burn-card-grid .group > div::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(251, 191, 36, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.burn-card-grid .group:hover > div::before {
+  left: 100%;
+}
+
+/* Пульсирующее золотое свечение */
+.burn-card-grid .group > div {
+  animation: goldPulse 3s ease-in-out infinite;
+}
+
+/* Улучшенная видимость бейджей и текста */
+.burn-card-grid .group .bg-orange-600\/80,
+.burn-card-grid .group .bg-red-400\/80 {
+  background: rgba(251, 191, 36, 0.9) !important;
+  color: #000 !important;
+  font-weight: bold;
+  text-shadow: none !important;
+  border: 1px solid rgba(245, 158, 11, 0.8);
+}
+
+/* Дополнительные стили для улучшения контраста */
+.burn-card-grid .group h3,
+.burn-card-grid .group .text-lg,
+.burn-card-grid .group .text-xl {
+  color: #fff !important;
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.8), 
+               0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 600 !important;
+}
+
+.burn-card-grid .group .text-sm,
+.burn-card-grid .group .text-xs {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.6), 
+               0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Улучшение видимости кнопок */
+.burn-card-grid .group button {
+  background: linear-gradient(135deg, 
+              rgba(251, 191, 36, 0.9) 0%, 
+              rgba(245, 158, 11, 0.9) 100%) !important;
+  color: #000 !important;
+  border: 2px solid rgba(251, 191, 36, 0.8) !important;
+  font-weight: bold !important;
+  text-shadow: none !important;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4) !important;
+}
+
+.burn-card-grid .group button:hover {
+  background: linear-gradient(135deg, 
+              rgba(251, 191, 36, 1) 0%, 
+              rgba(245, 158, 11, 1) 100%) !important;
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.6) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Улучшение видимости иконок и изображений */
+.burn-card-grid .group img {
+  border: 2px solid rgba(251, 191, 36, 0.3);
+}
+
+/* Улучшенные стили для карточек на новом фоне */
+.burn-background .crypto-card {
+  background: rgba(10, 0, 20, 0.85) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(139, 92, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.burn-background .crypto-card:hover {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(139, 92, 246, 0.25),
+    0 0 60px rgba(251, 146, 60, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Улучшение текста на новом фоне */
+.burn-background h1,
+.burn-background h2,
+.burn-background h3 {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.burn-background p,
+.burn-background span {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+.burn-card-grid .group img:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
+}
+
+/* Кастомная замедленная пульсация для награды */
+@keyframes reward-pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-reward-pulse {
+  animation: reward-pulse-slow 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

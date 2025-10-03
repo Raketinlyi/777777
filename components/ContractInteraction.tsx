@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { formatEther, parseEther } from 'viem';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
 import { useTranslation } from 'react-i18next';
 
 const GAME_CONTRACT_ABI = [
@@ -61,7 +61,7 @@ const GAME_CONTRACT_ABI = [
     name: 'nftState',
     outputs: [
       { internalType: 'uint8', name: 'currentStars', type: 'uint8' },
-      { internalType: 'uint256', name: 'lockedCRAA', type: 'uint256' },
+      { internalType: 'uint256', name: 'lockedOcta', type: 'uint256' },
       { internalType: 'uint256', name: 'lastPingTime', type: 'uint256' },
       { internalType: 'uint256', name: 'lastBreedTime', type: 'uint256' },
       { internalType: 'bool', name: 'isInGraveyard', type: 'bool' },
@@ -114,19 +114,19 @@ export function ContractInteraction() {
 
   // Contract reads - using secure addresses from chain config
   const { data: graveyardSize } = useReadContract({
-    address: apeChain.contracts.gameProxy.address,
+    address: monadChain.contracts.gameProxy.address,
     abi: GAME_CONTRACT_ABI,
     functionName: 'getGraveyardSize',
   });
 
   const { data: breedCost } = useReadContract({
-    address: apeChain.contracts.gameProxy.address,
+    address: monadChain.contracts.gameProxy.address,
     abi: GAME_CONTRACT_ABI,
     functionName: 'getBreedCostCRAA',
   });
 
   const { data: nftData, refetch: refetchNftData } = useReadContract({
-    address: apeChain.contracts.gameProxy.address,
+    address: monadChain.contracts.gameProxy.address,
     abi: GAME_CONTRACT_ABI,
     functionName: 'nftData',
     args: queryTokenId ? [BigInt(queryTokenId)] : undefined,
@@ -134,7 +134,7 @@ export function ContractInteraction() {
   });
 
   const { data: nftState, refetch: refetchNftState } = useReadContract({
-    address: apeChain.contracts.gameProxy.address,
+    address: monadChain.contracts.gameProxy.address,
     abi: GAME_CONTRACT_ABI,
     functionName: 'nftState',
     args: queryTokenId ? [BigInt(queryTokenId)] : undefined,
@@ -169,7 +169,7 @@ export function ContractInteraction() {
 
     try {
       writeContract({
-        address: apeChain.contracts.gameProxy.address,
+        address: monadChain.contracts.gameProxy.address,
         abi: GAME_CONTRACT_ABI,
         functionName: 'ping',
         args: [BigInt(pingTokenId)],
@@ -197,7 +197,7 @@ export function ContractInteraction() {
 
     try {
       writeContract({
-        address: apeChain.contracts.gameProxy.address,
+        address: monadChain.contracts.gameProxy.address,
         abi: GAME_CONTRACT_ABI,
         functionName: 'burnNFT',
         args: [BigInt(burnTokenId), parseInt(burnWaitHours)],
@@ -225,7 +225,7 @@ export function ContractInteraction() {
 
     try {
       writeContract({
-        address: apeChain.contracts.gameProxy.address,
+        address: monadChain.contracts.gameProxy.address,
         abi: GAME_CONTRACT_ABI,
         functionName: 'breedNFTs',
         args: [BigInt(parent1Id), BigInt(parent2Id)],

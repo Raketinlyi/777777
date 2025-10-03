@@ -113,11 +113,11 @@
 
 /* Monad animation classes */
 .monad-pulse {
-  animation: monad-pulse 2s ease-in-out infinite;
+  animation: monad-pulse 3s ease-in-out infinite;
 }
 
 .monad-float {
-  animation: monad-float 3s ease-in-out infinite;
+  animation: monad-float 4.5s ease-in-out infinite;
 }
 
 /* Enhanced Monad hover effects */

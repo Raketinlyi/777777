@@ -1,6 +1,7 @@
 'use client';
 
 import { useRewardsData } from '@/hooks/useRewardsData';
+import NumberWithTooltip from '@/components/NumberWithTooltip';
 import { useUserNFTs } from '@/hooks/useUserNFTs';
 import { RewardCard } from './RewardCard';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,8 @@ export function RewardsGrid() {
   return (
     <div className='space-y-6'>
       <div className='flex items-center justify-between bg-black/20 border border-yellow-500/20 rounded-lg p-4'>
-        <div className='text-yellow-300 text-sm font-medium'>
-          Total Claimable: {totalClaimable.toFixed(2)} CRAA
+          <div className='text-yellow-300 text-sm font-medium'>
+            Total Claimable: <NumberWithTooltip value={totalClaimable} type='cr' fractionDigits={2} preciseDigits={6} suffix='CRAA' />
         </div>
         <Button
           size='sm'

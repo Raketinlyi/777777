@@ -4,6 +4,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   children: ReactNode;
@@ -69,12 +70,15 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
 
               <Button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  // Мягкий reset состояния без перезагрузки страницы
+                  this.setState({ hasError: false, error: null });
+                }}
                 variant='outline'
                 size='sm'
                 className='border-red-500/50 text-red-300 hover:bg-red-500/10'
               >
-                Refresh Page
+                Reset State
               </Button>
             </div>
           </CardContent>
@@ -89,10 +93,12 @@ export class ErrorBoundary extends Component<Props, State> {
 export const TransactionErrorBoundary: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
+  const queryClient = useQueryClient();
+  
   const fallback = (
-    <Card className='max-w-md mx-auto mt-4 border-orange-500/50 bg-orange-900/20'>
+    <Card className='border-orange-500/50 bg-orange-950/20'>
       <CardHeader>
-        <CardTitle className='flex items-center gap-2 text-orange-400'>
+        <CardTitle className='text-orange-400 flex items-center gap-2'>
           <AlertTriangle className='w-5 h-5' />
           Transaction Error
         </CardTitle>
@@ -103,13 +109,19 @@ export const TransactionErrorBoundary: React.FC<{ children: ReactNode }> = ({
           funds are safe.
         </p>
         <Button
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            // Мягкий reset состояния и обновление данных
+            queryClient.invalidateQueries();
+            // Перерендер компонента
+            window.location.hash = '#refresh';
+            window.location.hash = '';
+          }}
           variant='outline'
           size='sm'
           className='border-orange-500/50 text-orange-300 hover:bg-orange-500/10'
         >
           <RefreshCw className='w-4 h-4 mr-2' />
-          Refresh Page
+          Reset & Refresh
         </Button>
       </CardContent>
     </Card>

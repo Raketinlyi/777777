@@ -14,6 +14,8 @@ import {
   Info,
   ArrowRightLeft,
   Loader2,
+  Gift,
+  Shuffle,
 } from 'lucide-react';
 
 /**
@@ -46,11 +48,9 @@ export const TabNavigation = React.memo(function TabNavigation() {
 
   useEffect(() => {
     // safe prefetch
-    // @ts-ignore
-    if (typeof router.prefetch === 'function') {
+    if ('prefetch' in router && typeof router.prefetch === 'function') {
       tabs.forEach((tab) => {
         try {
-          // @ts-ignore
           router.prefetch(tab.path);
         } catch {}
       });

@@ -1,71 +1,23 @@
 'use client';
 
-import { useAlchemyNfts } from '@/hooks/useAlchemyNfts';
+import { useAlchemyNftsQuery } from '@/hooks/useAlchemyNftsQuery';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useCallback } from 'react';
-import {
-  useReadContract,
-  useAccount,
-  useConnect, // useConnect is imported but not used
-  usePublicClient,
-} from 'wagmi';
+import { useState, useEffect } from 'react';
+import { useAccount, useConnect } from 'wagmi';
 import { formatEther } from 'viem';
 import type { NFT as NFTType } from '@/types/nft';
 import { getRarityColor, getRarityLabel } from '@/lib/rarity';
 import { useNFTContractInfo } from '@/hooks/useNFTContractInfo';
-import { Loader2, Star, Zap, Clock, Eye } from 'lucide-react';
+// import { Loader2 } from 'lucide-react';
 import { useTranslation, Trans } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { useMobile } from '@/hooks/use-mobile';
-import Link from 'next/link';
-import { apeChain } from '@/config/chains';
-
-// Import address from config instead of hardcoding
-const GAME_CONTRACT_ADDRESS = apeChain.contracts.gameProxy.address;
-
-const GAME_ABI_MINIMAL = [
-  {
-    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
-    name: 'nftState',
-    outputs: [
-      { internalType: 'uint8', name: 'currentStars', type: 'uint8' },
-      { internalType: 'uint256', name: 'lockedCRAA', type: 'uint256' },
-      { internalType: 'uint256', name: 'lastPingTime', type: 'uint256' },
-      { internalType: 'uint256', name: 'lastBreedTime', type: 'uint256' },
-      { internalType: 'bool', name: 'isInGraveyard', type: 'bool' },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
-    name: 'nftData',
-    outputs: [
-      { internalType: 'uint8', name: 'rarity', type: 'uint8' },
-      { internalType: 'uint8', name: 'initialStars', type: 'uint8' },
-      { internalType: 'bool', name: 'isActivated', type: 'bool' },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'pingInterval',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'breedCooldown',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const;
+// import { useMobile } from '@/hooks/use-mobile';
+// import Link from 'next/link';
+import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Helper to show duration in human friendly form
 const formatDuration = (seconds: number) => {
@@ -92,28 +44,12 @@ export function UserNFTsPreview() {
   const { t } = useTranslation();
   const { isConnected: connected } = useAccount();
   const { connect, connectors } = useConnect();
-  const { nfts: userNFTs, isLoading, error } = useAlchemyNfts();
+  const { data: userNFTs = [], isLoading, error, refetch } = useAlchemyNftsQuery();
+  const { pingInterval, breedCooldown } = useCrazyOctagonGame();
+  const queryClient = useQueryClient();
 
   // Determine how many NFTs to show based on screen width (5 on mobile, 6 on md, 7 on lg+)
   const [displayCount, setDisplayCount] = useState(6);
-
-  // Read global pingInterval & breedCooldown once (hooks must be unconditional)
-  const { data: pingIntervalData } = useReadContract({
-    address: GAME_CONTRACT_ADDRESS,
-    abi: GAME_ABI_MINIMAL,
-    functionName: 'pingInterval',
-    query: { enabled: true },
-  });
-
-  const { data: breedCooldownData } = useReadContract({
-    address: GAME_CONTRACT_ADDRESS,
-    abi: GAME_ABI_MINIMAL,
-    functionName: 'breedCooldown',
-    query: { enabled: true },
-  });
-
-  const pingInterval = pingIntervalData ? Number(pingIntervalData) : null;
-  const breedCooldown = breedCooldownData ? Number(breedCooldownData) : null;
 
   useEffect(() => {
     const calculateCount = () => {
@@ -148,7 +84,7 @@ export function UserNFTsPreview() {
             <div className='text-center text-slate-400'>
               {t(
                 'userNFTs.connectToView',
-                'Connect your wallet to view your CRAAzyCube NFTs'
+                'Connect your wallet to view your OCTAAzyCube NFTs'
               )}
             </div>
             {connectors.length > 0 && (
@@ -201,7 +137,11 @@ export function UserNFTsPreview() {
             {t('userNFTs.errorLoading', 'Error loading NFTs')}: {error.message}
             <br />
             <Button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                // Фоновое обновление данных без перезагрузки страницы
+                refetch();
+                queryClient.invalidateQueries({ queryKey: ['nfts'] });
+              }}
               className='mt-2 bg-red-600 hover:bg-red-700'
             >
               {t('common.retry', 'Retry')}
@@ -223,7 +163,7 @@ export function UserNFTsPreview() {
         <CardContent>
           <div className='text-center text-orange-400'>
             <Trans i18nKey="userNFTs.noNFTs">
-              You do not own any CrazyCube NFTs yet.
+              You do not own any OCTAAzyCube NFTs yet.
             </Trans>
           </div>
         </CardContent>
@@ -231,14 +171,15 @@ export function UserNFTsPreview() {
     );
   }
 
-  const displayNfts = userNFTs.slice(0, displayCount); // Show responsive number of NFTs
+  // Be defensive: filter out any null/undefined items before slicing
+  const displayNfts = userNFTs.filter(Boolean).slice(0, displayCount);
 
   return (
     <div className="relative rounded-2xl bg-slate-900/50 border border-cyan-500/30 backdrop-blur-sm p-4 md:p-6">
       {/* Title and total count */}
       <div className='flex items-center justify-between mb-4'>
         <h2 className='text-xl md:text-2xl font-bold text-cyan-300'>
-          {t('userNFTs.yourCRAAzyCubeNFTs', 'Your CRAAzyCube NFTs')}
+          {t('userNFTs.yourOCTAAzyCubeNFTs', 'Your OCTAAzyCube NFTs')}
         </h2>
         <Badge variant="outline" className='border-cyan-400/40 text-cyan-300 bg-cyan-900/30'>
           {userNFTs.length} {t('common.total', 'total')}
@@ -247,19 +188,19 @@ export function UserNFTsPreview() {
 
       {/* Grid of NFTs */}
       <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3'>
-          {displayNfts.map((nft, idx) => {
-            // Use a more robust key
-            const keyVal = nft.tokenId ? `${nft.contract.address}-${nft.tokenId}` : `idx-${idx}`;
-            return (
-              <NFTCard
-                key={keyVal}
-                nft={nft}
-                pingInterval={pingInterval}
-                breedCooldown={breedCooldown}
-              />
-            );
-          })}
-        </div>
+        {displayNfts.map((nft, idx) => {
+          // Use a robust key without relying on contract fields (not present in our NFT type)
+          const keyVal = nft.id ? `id-${nft.id}` : `tok-${nft.tokenId}-${idx}`;
+          return (
+            <NFTCard
+              key={keyVal}
+              nft={nft}
+              pingInterval={pingInterval && pingInterval > 0 ? pingInterval : null}
+              breedCooldown={breedCooldown && breedCooldown > 0 ? breedCooldown : null}
+            />
+          );
+        })}
+      </div>
 
       {/* "Show More" button */}
         {userNFTs.length > displayCount && (
@@ -286,24 +227,23 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
 
   // Use centralised hook (same as Burn section) to always fetch initialStars/rarity
-  const { nftInfo, isLoading: stateLoading } = useNFTContractInfo(
-    getTokenIdAsDecimal(nft)
-  );
+  // Pass a safe decimal tokenId string (our NFT type already has numeric tokenId)
+  const { nftInfo, isLoading: stateLoading } = useNFTContractInfo(String(nft.tokenId));
 
   const initialStars = nftInfo ? nftInfo.static.initialStars : (nft.stars ?? 0);
   const currentStars = nftInfo
     ? nftInfo.dynamic.currentStars
     : (nft.stars ?? 0);
-  const lockedCRAA = nftInfo
+  const lockedOcta = nftInfo
     ? (() => {
         try {
-          const CRAAaWei = nftInfo.dynamic.lockedCRAA;
-          const CRAAaEther = Number(formatEther(CRAAaWei));
-          if (!isFinite(CRAAaEther) || CRAAaEther > 1e12) {
+          const rewardWei = nftInfo.dynamic.lockedOcta;
+          const rewardEther = Number(formatEther(rewardWei));
+          if (!Number.isFinite(rewardEther) || rewardEther < 0 || rewardEther > 1e12) {
             return 0;
           }
-          return CRAAaEther;
-        } catch (error) {
+          return rewardEther;
+        } catch {
           return 0;
         }
       })()
@@ -314,12 +254,15 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
   const rarityLabel = getRarityLabel(initialStars);
   const rarityColorClass = getRarityColor(initialStars);
 
+  const effectivePingInterval = typeof pingInterval === 'number' && pingInterval > 0 ? pingInterval : null;
+  const effectiveBreedCooldown = typeof breedCooldown === 'number' && breedCooldown > 0 ? breedCooldown : null;
+
   const pingReady =
-    pingInterval != null ? nowSec > lastPing + pingInterval : false;
+    effectivePingInterval != null ? nowSec > lastPing + effectivePingInterval : false;
   const breedReady =
-    breedCooldown != null ? nowSec > lastBreed + breedCooldown : false;
+    effectiveBreedCooldown != null ? nowSec > lastBreed + effectiveBreedCooldown : false;
   const burnable =
-    lockedCRAA > 0 && !(nftInfo ? nftInfo.dynamic.isInGraveyard : false);
+    lockedOcta > 0 && !(nftInfo ? nftInfo.dynamic.isInGraveyard : false);
 
   // Update time every 5 seconds for countdowns
   useEffect(() => {
@@ -334,7 +277,8 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
     >
       {/* NFT Image */}
       <div className='relative mb-1.5 aspect-square'>
-        <img
+  {/* eslint-disable-next-line @next/next/no-img-element */}
+  <img
           src={resolveImageSrc(nft.image)}
           alt={nft.name || `NFT #${nft.tokenId}`}
           className='w-full h-full object-cover rounded-md'
@@ -373,20 +317,20 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
           )}
         </div>
         <div className='flex items-center justify-between'>
-          <span className='text-slate-400'>CRAA:</span>
+          <span className='text-slate-400'>{t('labels.lockedOcta', 'Locked OCTAA')}:</span>
           {stateLoading ? (
             <Skeleton className='h-3 w-12 bg-slate-700' />
           ) : (
             <span className='text-green-400'>
-              {lockedCRAA >= 1e12
-                ? `${(lockedCRAA / 1e12).toFixed(2)}T`
-                : lockedCRAA >= 1e9
-                  ? `${(lockedCRAA / 1e9).toFixed(2)}B`
-                  : lockedCRAA >= 1e6
-                    ? `${(lockedCRAA / 1e6).toFixed(2)}M`
-                    : lockedCRAA >= 1e3
-                      ? `${(lockedCRAA / 1e3).toFixed(2)}K`
-                      : lockedCRAA.toFixed(2)}
+              {lockedOcta >= 1e12
+                ? `${(lockedOcta / 1e12).toFixed(2)}T`
+                : lockedOcta >= 1e9
+                  ? `${(lockedOcta / 1e9).toFixed(2)}B`
+                  : lockedOcta >= 1e6
+                    ? `${(lockedOcta / 1e6).toFixed(2)}M`
+                    : lockedOcta >= 1e3
+                      ? `${(lockedOcta / 1e3).toFixed(2)}K`
+                      : lockedOcta.toFixed(2)}
             </span>
           )}
         </div>
@@ -395,7 +339,7 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
           <span className={pingReady ? 'text-green-400' : 'text-orange-400'}>
             {pingReady
               ? t('status.ready', 'Ready')
-              : `⏳ ${pingInterval ? formatDuration(lastPing + pingInterval - nowSec) : ''}`}
+              : `⏳ ${effectivePingInterval ? formatDuration(lastPing + effectivePingInterval - nowSec) : ''}`}
           </span>
         </div>
         <div className='flex items-center justify-between'>
@@ -403,7 +347,7 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
           <span className={breedReady ? 'text-green-400' : 'text-orange-400'}>
             {breedReady
               ? t('status.ready', 'Ready')
-              : `⏳ ${breedCooldown ? formatDuration(lastBreed + breedCooldown - nowSec) : ''}`}
+              : `⏳ ${effectiveBreedCooldown ? formatDuration(lastBreed + effectiveBreedCooldown - nowSec) : ''}`}
           </span>
         </div>
         <div className='flex items-center justify-between'>

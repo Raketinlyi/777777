@@ -13,7 +13,7 @@ import {
   Vault,
   TrendingUp,
 } from 'lucide-react';
-import { useCrazyCubeGame } from '@/hooks/useCrazyCubeGame';
+import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 import { useGameStats } from '@/hooks/useGameStats';
 import { formatEther } from 'viem';
 import { formatWithCommas, formatSmart } from '@/utils/formatNumber';
@@ -77,7 +77,7 @@ const StatCard = ({
 };
 
 export const GameDashboard = () => {
-  const { craaBalance, breedCost, isConnected } = useCrazyCubeGame();
+  const { octaaBalance, breedCost, isConnected } = useCrazyOctagonGame();
 
   const { stats: gameStats, isLoading: statsLoading } = useGameStats();
 
@@ -182,7 +182,7 @@ export const GameDashboard = () => {
         <div className='flex flex-wrap justify-center gap-6 text-center'>
           <div>
             <div className='text-lg font-bold text-cyan-300'>
-              {parseFloat(craaBalance).toFixed(2)} CRAA
+              {parseFloat(octaaBalance).toFixed(2)} OCTAA
             </div>
             <div className='text-xs text-slate-400'>Your Balance</div>
           </div>

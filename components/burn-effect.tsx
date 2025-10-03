@@ -19,7 +19,7 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
       className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'
       onAnimationComplete={() => {
         if (onComplete) {
-          setTimeout(onComplete, 3000); // Complete after 3 seconds
+          setTimeout(onComplete, 3900); // Complete after 3.9 seconds (30% slower)
         }
       }}
     >
@@ -28,12 +28,12 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: [0, 1.2, 1, 1.5, 0.8, 1.8, 0] }}
-          transition={{ duration: 3, ease: 'easeInOut' }}
+          transition={{ duration: 3.9, ease: 'easeInOut' }}
           className='w-32 h-32 bg-gradient-radial from-yellow-400 via-orange-500 to-red-600 rounded-full'
         />
 
-        {/* Flame particles */}
-        {[...Array(12)].map((_, i) => (
+        {/* Flame particles - ОПТИМИЗАЦИЯ: уменьшено с 12 до 8 */}
+        {[...Array(8)].map((_, i) => (
           <motion.div
             key={i}
             initial={{
@@ -49,8 +49,8 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
               opacity: [0, 1, 0],
             }}
             transition={{
-              duration: 2 + Math.random(),
-              delay: Math.random() * 0.5,
+              duration: (2 + Math.random()) * 1.3,
+              delay: Math.random() * 0.65,
               repeat: 2,
               ease: 'easeOut',
             }}
@@ -65,8 +65,8 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
           </motion.div>
         ))}
 
-        {/* Sparks */}
-        {[...Array(20)].map((_, i) => (
+        {/* Sparks - ОПТИМИЗАЦИЯ: уменьшено с 20 до 12 */}
+        {[...Array(12)].map((_, i) => (
           <motion.div
             key={`spark-${i}`}
             initial={{
@@ -82,8 +82,8 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
               opacity: [0, 1, 0],
             }}
             transition={{
-              duration: 1.5 + Math.random(),
-              delay: Math.random() * 1,
+              duration: (1.5 + Math.random()) * 1.3,
+              delay: Math.random() * 1.3,
               ease: 'easeOut',
             }}
             className='absolute top-1/2 left-1/2 w-1 h-1 bg-yellow-400 rounded-full'
@@ -94,7 +94,7 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: [0, 1, 1, 0], y: [20, 0, 0, -20] }}
-          transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
+          transition={{ duration: 3.9, times: [0, 0.3, 0.7, 1] }}
           className='absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center'
         >
           <h3 className='text-2xl font-bold text-orange-400 mb-2'>
@@ -106,9 +106,9 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
         </motion.div>
       </div>
 
-      {/* Background fire effects */}
+      {/* Background fire effects - ОПТИМИЗАЦИЯ: уменьшено с 8 до 6 */}
       <div className='absolute inset-0 pointer-events-none'>
-        {[...Array(8)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <motion.div
             key={`bg-fire-${i}`}
             initial={{ opacity: 0, scale: 0 }}
@@ -117,8 +117,8 @@ export function BurnEffect({ isActive, onComplete }: BurnEffectProps) {
               scale: [0, 2, 4],
             }}
             transition={{
-              duration: 4,
-              delay: Math.random() * 2,
+              duration: 5.2,
+              delay: Math.random() * 2.6,
               ease: 'easeOut',
             }}
             className='absolute bg-gradient-radial from-orange-500/30 to-transparent rounded-full w-64 h-64'

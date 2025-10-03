@@ -278,7 +278,7 @@ export function ContractFullStats() {
       <div className='text-center mt-8'>
         <p className='text-slate-400 text-sm'>
           Data retrieved directly from CrazyCubeUltimate3_Safe contract on
-          ApeChain. Last updated:{' '}
+          Monad Testnet. Last updated:{' '}
           {new Date(contractStats.lastUpdated).toLocaleString()}
         </p>
       </div>

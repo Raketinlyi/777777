@@ -1,8 +1,9 @@
- // Trusted Types polyfill insertion moved to <head> for early execution
+// Trusted Types polyfill insertion moved to <head> for early execution
 import type React from 'react';
 import ClientLayout from './ClientLayout';
 import '../styles/globals.css';
 import '../styles/mobile-fixes.css';
+import '../styles/burn-effects.css';
 import { Inter } from 'next/font/google';
 import { MobileNavigation } from '@/components/mobile-navigation';
 import ViewportFix from '@/components/ViewportFix';
@@ -14,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'CrazyCube - NFT Platform',
+  title: 'CrazyOctagon - NFT Platform',
   description: 'Where cubes cry and joke!',
   manifest: '/manifest.json',
   icons: {

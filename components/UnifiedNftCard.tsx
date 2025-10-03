@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import React from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export interface UnifiedNftCardProps {
   imageSrc: string | null;
@@ -14,6 +15,8 @@ export interface UnifiedNftCardProps {
   highlight?: boolean; // e.g. selected
   delay?: number; // animation delay sec
   onClick?: () => void;
+  imageOverlay?: ReactNode;
+  imageOverlayClassName?: string;
 }
 
 // Security: Convert ipfs:// URLs to HTTPS gateway with validation
@@ -72,6 +75,8 @@ export const UnifiedNftCard = React.memo(function UnifiedNftCard({
   highlight = false,
   delay = 0,
   onClick,
+  imageOverlay,
+  imageOverlayClassName,
 }: UnifiedNftCardProps) {
   return (
     <motion.div
@@ -111,6 +116,16 @@ export const UnifiedNftCard = React.memo(function UnifiedNftCard({
                 />
               ) : (
                 <span className='text-xl font-bold text-white'>#{tokenId}</span>
+              )}
+              {imageOverlay && (
+                <div
+                  className={cn(
+                    'absolute inset-0 pointer-events-none',
+                    imageOverlayClassName
+                  )}
+                >
+                  {imageOverlay}
+                </div>
               )}
             </div>
             {rarityLabel && (

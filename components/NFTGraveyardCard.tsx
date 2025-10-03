@@ -10,10 +10,10 @@ import {
   getTokenIdAsDecimal,
 } from '@/hooks/useUserNFTs';
 import {
-  useCrazyCubeGame,
-  type BurnRecord,
+  useCrazyOctagonGame,
   type NFTGameData,
-} from '@/hooks/useCrazyCubeGame';
+  type BurnRecord,
+} from '@/hooks/useCrazyOctagonGame';
 import { useToast } from '@/hooks/use-toast';
 
 import { useTranslation } from 'react-i18next';
@@ -32,7 +32,7 @@ export default function NFTGraveyardCard({
   const { t } = useTranslation();
   const tokenIdDec = getTokenIdAsDecimal(nft);
   const { getBurnRecord, claimBurnRewards, isConnected, getNFTGameData } =
-    useCrazyCubeGame();
+    useCrazyOctagonGame();
   const { toast } = useToast();
   const [burnRecord, setBurnRecord] = useState<BurnRecord | null>(null);
   const [gameData, setGameData] = useState<NFTGameData | null>(null);

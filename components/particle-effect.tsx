@@ -49,6 +49,9 @@ export function ParticleEffect({
   const lastTimeRef = useRef<number>(0);
   const frameCount = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
+  // Ring buffer pointers to cap maximum particles under stress
+  const maxParticlesRef = useRef<number>(600); // absolute upper bound
+  const writeIndexRef = useRef<number>(0);
   const prefersReduced =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -168,7 +171,7 @@ export function ParticleEffect({
     return Array.from({ length: actualCount }, () =>
       createParticle(dimensions.width, dimensions.height, colors, size)
     );
-  }, [isClient, dimensions, count, colors, size, enabled, createParticle]);
+  }, [isClient, dimensions, count, colors, size, enabled, createParticle, prefersReduced]);
 
   // Set initial particles
   useEffect(() => {
@@ -188,7 +191,7 @@ export function ParticleEffect({
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    const animate = (time: number) => {
+  const animate = (time: number) => {
       if (!lastTimeRef.current) lastTimeRef.current = time;
       const deltaTime = time - lastTimeRef.current;
       lastTimeRef.current = time;
@@ -201,7 +204,7 @@ export function ParticleEffect({
       frameCount.current = (frameCount.current + 1) % 1000;
 
       if (shouldRender) {
-        const updatedParticles = particlesRef.current.map(particle => {
+  const updatedParticles = particlesRef.current.map(particle => {
           // Update position
           const newX =
             particle.x + particle.velocity.x * speed * (deltaTime / 16);
@@ -237,7 +240,9 @@ export function ParticleEffect({
             newY < -particle.size ||
             newY > canvas.height + particle.size
           ) {
-            return createParticle(canvas.width, canvas.height, colors, size);
+            // Reuse slot in a bounded ring buffer to avoid unbounded growth
+            const next = createParticle(canvas.width, canvas.height, colors, size);
+            return next;
           }
 
           // Return updated particle
@@ -250,7 +255,18 @@ export function ParticleEffect({
           };
         });
 
-        particlesRef.current = updatedParticles;
+        // Apply a hard cap using a ring buffer approach in extreme cases
+        if (updatedParticles.length > maxParticlesRef.current) {
+          // Drop oldest by slicing from writeIndex to maintain approximate FIFO
+          const start = writeIndexRef.current % updatedParticles.length;
+          particlesRef.current = updatedParticles
+            .slice(start)
+            .concat(updatedParticles.slice(0, start))
+            .slice(0, maxParticlesRef.current);
+          writeIndexRef.current = (start + 1) % maxParticlesRef.current;
+        } else {
+          particlesRef.current = updatedParticles;
+        }
       }
 
       animationRef.current = requestAnimationFrame(animate);
@@ -261,7 +277,7 @@ export function ParticleEffect({
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [isClient, dimensions, speed, colors, size, enabled, createParticle]);
+  }, [isClient, dimensions, speed, colors, size, enabled, createParticle, prefersReduced]);
 
   if (!isClient || !enabled) return null;
 

@@ -35,11 +35,14 @@ export function NFTCard({
     getColorByStars,
     getStarsBurnedCount,
     isNFTDead,
+    getGenderIcon,
+    getGenderText,
     rarity,
     currentStars,
     initialStars,
+    gender,
     isInGraveyard,
-    lockedCRAA,
+    lockedOcta,
   } = useNFTContractInfo(tokenIdDecimal);
 
   const imageUrl = getNFTImage(nft);
@@ -86,11 +89,18 @@ export function NFTCard({
 
           {/* Rarity Badge - LIVE DATA FROM CONTRACT */}
           {nftInfo && (
-            <Badge
-              className={`absolute top-2 right-2 ${getColorByStars(initialStars)} text-white text-xs px-1`}
-            >
-              {getRarityByStars(initialStars)}
-            </Badge>
+            <div className="absolute top-2 right-2 flex flex-col gap-1">
+              <Badge
+                className={`${getColorByStars(initialStars)} text-white text-xs px-1`}
+              >
+                {getRarityByStars(initialStars)}
+              </Badge>
+              {/* Gender Badge */}
+              <Badge className="bg-purple-600 text-white text-xs px-1 flex items-center gap-1">
+                <span>{getGenderIcon()}</span>
+                <span>{gender}</span>
+              </Badge>
+            </div>
           )}
 
           {/* Graveyard indicator */}
@@ -140,11 +150,19 @@ export function NFTCard({
                 <span className='text-white'>{tokenIdDecimal}</span>
               </div>
 
-              {lockedCRAA > 0 && (
+              <div className='flex justify-between text-gray-400'>
+                <span>Gender:</span>
+                <span className='text-purple-400 flex items-center gap-1'>
+                  <span>{getGenderIcon()}</span>
+                  <span>{getGenderText()}</span>
+                </span>
+              </div>
+
+              {lockedOcta > 0 && (
                 <div className='flex justify-between text-gray-400'>
-                  <span>Locked CRAA:</span>
-                  <span className='text-orange-400'>
-                    {parseFloat(formatEther(lockedCRAA)).toFixed(2)}
+                    <span>Locked OCTAA:</span>
+                    <span className='text-yellow-400 font-mono'>
+                      {parseFloat(formatEther(lockedOcta)).toFixed(2)}
                   </span>
                 </div>
               )}

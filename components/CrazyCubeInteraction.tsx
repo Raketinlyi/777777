@@ -76,10 +76,10 @@ export function CrazyCubeInteraction() {
     return <p>Please connect your wallet.</p>;
   }
 
-  // Check that user is connected to the desired chain (ApeChain)
+  // Check that user is connected to the desired chain (Monad Testnet)
   // To enable, import MAIN_CHAIN_ID from '../config/wagmi'
   // if (chain?.id !== MAIN_CHAIN_ID) {
-  //   return <p>Please switch to ApeChain network in your wallet.</p>;
+  //   return <p>Please switch to Monad Testnet network in your wallet.</p>;
   // }
 
   return (

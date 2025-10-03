@@ -8,7 +8,9 @@ import {
   getNFTName,
 } from '@/hooks/useUserNFTs';
 import { useMultipleNFTGameInfo } from '@/hooks/useNFTGameData';
-import { useCrazyCubeGame } from '@/hooks/useCrazyCubeGame';
+import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
+import { useAccount, useBalance } from 'wagmi';
+import { monadChain } from '@/config/chains';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +22,7 @@ import { ShyCubes } from '@/components/ShyCubes';
 import { useTranslation } from 'react-i18next';
 import {
   formatWithCommas,
-  formatCRAA,
+  formatOCTAA,
   formatSmart,
 } from '@/utils/formatNumber';
 
@@ -165,8 +167,17 @@ export const BreedingSection = () => {
   const { nfts, loading: isLoadingNfts, error: nftsError } = useUserNFTs();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { address } = useAccount();
 
   const [selectedParents, setSelectedParents] = useState<string[]>([]);
+
+  // Get OCTAA balance
+  const { data: octaBalance } = useBalance({
+    address,
+    token: monadChain.contracts.octaToken.address as `0x${string}`,
+    chainId: monadChain.id,
+    query: { enabled: !!address },
+  });
 
   // Get game info for all NFTs
   const tokenIds = nfts.map(nft => nft.id.tokenId);
@@ -175,9 +186,9 @@ export const BreedingSection = () => {
 
   const {
     breedNFTs,
-    approveCRAA,
+    approveOCTAA,
     breedCost,
-    craaBalance,
+    octaaBalance,
     graveyardSize,
     isWritePending,
     isTxLoading,
@@ -186,7 +197,7 @@ export const BreedingSection = () => {
     txHash,
     writeError,
     txError,
-  } = useCrazyCubeGame();
+  } = useCrazyOctagonGame();
 
   const handleSelectParent = (tokenId: string) => {
     setSelectedParents(prev => {
@@ -215,7 +226,7 @@ export const BreedingSection = () => {
     }
 
     const breedCostNum = parseFloat(breedCost);
-    const craBalanceNum = parseFloat(craaBalance);
+    const craBalanceNum = parseFloat(octaaBalance);
 
     if (craBalanceNum < breedCostNum) {
       toast({
@@ -244,7 +255,7 @@ export const BreedingSection = () => {
 
     try {
       // First approve CRAA (approve function itself adds +10% buffer)
-      await approveCRAA(breedCost);
+      await approveOCTAA(breedCost);
 
       toast({
         title: 'Approval Sent',
@@ -337,10 +348,18 @@ export const BreedingSection = () => {
           </div>
           <div className='text-center'>
             <div className='text-green-300 font-bold'>
-              {formatSmart(craaBalance || '0', 8)} CRAA
+              {formatSmart(octaaBalance || '0', 8)} OCTAA
             </div>
             <div className='text-slate-400'>
-              {t('sections.breed.yourBalance', 'Your Balance')}
+              {t('sections.breed.yourOctaaBalance', 'Your OCTAA Balance')}
+            </div>
+          </div>
+          <div className='text-center'>
+            <div className='text-black font-bold'>
+              {formatSmart(octaBalance?.formatted || '0', 8)} OCTAA
+            </div>
+            <div className='text-slate-400'>
+              {t('sections.breed.yourOctaaBalance', 'Your OCTAA Balance')}
             </div>
           </div>
           <div className='text-center'>

@@ -5,6 +5,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Wallet, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useMobile } from '@/hooks/use-mobile';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAccount, useReconnect } from 'wagmi';
 
 interface EthereumProviderSafeProps {
   children: React.ReactNode;
@@ -17,6 +19,8 @@ export function EthereumProviderSafe({ children }: EthereumProviderSafeProps) {
   const [walletInfo, setWalletInfo] = useState<string>('');
   const [showAlert, setShowAlert] = useState(false);
   const { isMobile, isTelegram } = useMobile();
+  const queryClient = useQueryClient();
+  const { reconnect } = useReconnect();
 
   useEffect(() => {
     const checkEthereumProvider = () => {
@@ -170,10 +174,19 @@ export function EthereumProviderSafe({ children }: EthereumProviderSafeProps) {
               <Button
                 variant='outline'
                 size='sm'
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  // Переподключение кошелька без перезагрузки страницы
+                  try {
+                    reconnect();
+                    queryClient.invalidateQueries();
+                    setWalletStatus('checking');
+                  } catch (error) {
+                    console.error('Reconnection failed:', error);
+                  }
+                }}
                 className='ml-2'
               >
-                Refresh Page
+                Reconnect Wallet
               </Button>
             )}
           </AlertDescription>

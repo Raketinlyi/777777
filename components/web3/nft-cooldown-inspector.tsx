@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +15,14 @@ import {
   Info,
   Search,
   RefreshCw,
+  Layers,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useCrazyCubeGame } from '@/hooks/useCrazyCubeGame';
+import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 import { useTranslation } from 'react-i18next';
 import { createPublicClient, http, formatEther } from 'viem';
-import { apeChain } from '@/config/chains';
+import { monadChain } from '@/config/chains';
+import { CRAZY_OCTAGON_READER_ABI } from '@/lib/abi/crazyOctagon';
 
 interface NFTCooldownData {
   tokenId: string;
@@ -29,7 +31,7 @@ interface NFTCooldownData {
   currentStars: number;
   isActivated: boolean;
   isInGraveyard: boolean;
-  lockedCRAA: string;
+  lockedOcta: string;
   lastPingTime: number;
   lastBreedTime: number;
   canPing: boolean;
@@ -38,28 +40,32 @@ interface NFTCooldownData {
   breedCooldownLeft: number;
   expectedReward: string;
   pendingPeriods: number;
-  pendingCRAA: string;
+  pendingOCTAA: string;
   rarityBonusPct: number;
   burnLockedAmount?: string | undefined;
   burnTimeLeft?: number | undefined;
   canClaim?: boolean | undefined;
+  gender: number; // 1 = boy, 2 = girl
+  bonusStars: number; // Add bonus stars field
+}
+
+interface LPInfo {
+  lpAmount: string;
+  octaDeposited: string;
+  pairDeposited: string;
 }
 
 export default function NFTCooldownInspector() {
   const { t } = useTranslation();
   const [tokenId, setTokenId] = useState('');
   const [nftData, setNftData] = useState<NFTCooldownData | null>(null);
+  const [lpInfo, setLpInfo] = useState<LPInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000));
 
-  const {
-    getNFTGameData,
-    getBurnRecord,
-    pingInterval,
-    breedCooldown,
-    isConnected,
-  } = useCrazyCubeGame();
+  const { getNFTGameData, pingInterval, breedCooldown, isConnected } =
+    useCrazyOctagonGame();
 
   // Update current time every second for live countdown
   useEffect(() => {
@@ -75,14 +81,40 @@ export default function NFTCooldownInspector() {
     try {
       setLoading(true);
       setError(null);
+      setNftData(null);
+      setLpInfo(null);
 
+      // Step 1: Fetch core data from the hook
       const gameData = await getNFTGameData(tokenId);
+
       if (!gameData) {
-        setError('NFT not found or not activated');
+        setError(
+          'NFT not found. It might not exist or has not been activated in the game yet.'
+        );
+        setLoading(false);
         return;
       }
 
-      const now = nowSec; // Use live time from state
+      const client = createPublicClient({ chain: monadChain, transport: http() });
+      const READER_ADDRESS = monadChain.contracts.reader?.address as `0x${string}`;
+
+      // Step 2: Fetch LP Info
+      const lpData = (await client.readContract({
+        address: READER_ADDRESS,
+        abi: CRAZY_OCTAGON_READER_ABI,
+        functionName: 'getLPInfo',
+        args: [BigInt(tokenId)],
+      })) as readonly [unknown, unknown, bigint, bigint, bigint];
+
+      setLpInfo({
+        lpAmount: formatEther(lpData[2]),
+        octaDeposited: formatEther(lpData[3]),
+        pairDeposited: formatEther(lpData[4]),
+      });
+
+      // For now, we will just display the direct data from the hook
+      // We can add complex reward calculations in the next step.
+      const now = Math.floor(Date.now() / 1000);
       const pingCooldownLeft = Math.max(
         0,
         pingInterval - (now - gameData.lastPingTime)
@@ -92,125 +124,39 @@ export default function NFTCooldownInspector() {
         breedCooldown - (now - gameData.lastBreedTime)
       );
 
-      // --- NEW REWARD CALCULATION (matches Ping section) ---
-      // Minimal ABI for only the required functions
-      const MINI_ABI = [
-        {
-          name: 'sharePerPing',
-          type: 'function',
-          stateMutability: 'view',
-          inputs: [],
-          outputs: [{ type: 'uint256' }],
-        },
-        {
-          name: 'rarityBonusBps',
-          type: 'function',
-          stateMutability: 'view',
-          inputs: [{ type: 'uint8' }],
-          outputs: [{ type: 'uint256' }],
-        },
-        {
-          name: 'currentMultiplierBps',
-          type: 'function',
-          stateMutability: 'view',
-          inputs: [{ type: 'uint256' }],
-          outputs: [{ type: 'uint256' }],
-        },
-      ] as const;
-
-      const GAME_ADDR = apeChain.contracts.gameProxy.address as `0x${string}`;
-
-      const client = createPublicClient({ chain: apeChain, transport: http() });
-
-      const [sharePerPingWei, rarityBps, multiplierBps] = await Promise.all([
-        client.readContract({
-          address: GAME_ADDR,
-          abi: MINI_ABI,
-          functionName: 'sharePerPing',
-        }) as Promise<bigint>,
-        client.readContract({
-          address: GAME_ADDR,
-          abi: MINI_ABI,
-          functionName: 'rarityBonusBps',
-          args: [gameData.rarity],
-        }) as Promise<bigint>,
-        client.readContract({
-          address: GAME_ADDR,
-          abi: MINI_ABI,
-          functionName: 'currentMultiplierBps',
-          args: [BigInt(tokenId)],
-        }) as Promise<bigint>,
-      ]);
-
-      // Base reward per ping
-      const basePerPingWei = sharePerPingWei;
-      // Apply rarity bonus
-      const withRarityWei =
-        basePerPingWei + (basePerPingWei * rarityBps) / 10000n;
-      // Apply streak multiplier
-      const totalPerPingWei = (withRarityWei * multiplierBps) / 10000n;
-
-      const expectedRewardWei = totalPerPingWei;
-
-      // Calculate pending periods & CRAA since last ping
-      const periodsSinceLastPing = Math.floor(
-        (now - gameData.lastPingTime) / pingInterval
-      );
-      const pendingPeriods =
-        gameData.lastPingTime > 0 ? Math.max(0, periodsSinceLastPing) : 0;
-
-      // Calculate partial pending for NFTs in cooldown (show accumulated even if period not complete)
-      const partialPendingWei =
-        gameData.lastPingTime > 0 && pingInterval > 0
-          ? (expectedRewardWei * BigInt(now - gameData.lastPingTime)) /
-            BigInt(pingInterval)
-          : 0n;
-
-      const pendingCRAAWei =
-        gameData.lastPingTime > 0
-          ? expectedRewardWei * BigInt(pendingPeriods)
-          : 0n;
-
-      // Use partial pending for cooldown NFTs, full pending for ready NFTs
-      const displayPendingWei =
-        pingCooldownLeft > 0 ? partialPendingWei : pendingCRAAWei;
-      const pendingCRAA = Number(formatEther(displayPendingWei)).toFixed(2);
-
-      // Bonus percentage (rarity + streak)
-      const rarityPercent = Number(rarityBps) / 100;
-      const streakPercent = (Number(multiplierBps) - 10000) / 100;
-      const bonus = rarityPercent + streakPercent;
-
-      const burn = await getBurnRecord(tokenId);
-
-      const cooldownData: NFTCooldownData = {
+      const simplifiedData: NFTCooldownData = {
         tokenId: gameData.tokenId,
         rarity: gameData.rarity,
         initialStars: gameData.initialStars,
         currentStars: gameData.currentStars,
-        isActivated: gameData.lastPingTime > 0, // Fix: check if NFT was ever pinged
+        isActivated: gameData.isActivated,
         isInGraveyard: gameData.isInGraveyard,
-        lockedCRAA: gameData.lockedCRAA,
+        lockedOcta: gameData.lockedOcta,
         lastPingTime: gameData.lastPingTime,
         lastBreedTime: gameData.lastBreedTime,
         canPing: pingCooldownLeft === 0,
         canBreed: breedCooldownLeft === 0,
         pingCooldownLeft,
         breedCooldownLeft,
-        expectedReward: Number(formatEther(expectedRewardWei)).toFixed(2),
-        pendingPeriods,
-        pendingCRAA,
-        rarityBonusPct: bonus,
-        burnLockedAmount: burn
-          ? (Number(burn.lockedAmount) / 1e18).toFixed(2)
-          : undefined,
-        burnTimeLeft: burn ? burn.timeLeft : undefined,
-        canClaim: burn ? burn.canClaim : undefined,
+        // Placeholder values for data we will calculate next
+        expectedReward: '0',
+        pendingPeriods: 0,
+        pendingOCTAA: '0',
+        rarityBonusPct: 0,
+        gender: gameData.gender ?? ((Number(gameData.tokenId) % 2) + 1), // 1 = boy, 2 = girl
+        bonusStars: gameData.bonusStars ?? 0,
       };
 
-      setNftData(cooldownData);
-    } catch {
-      setError('Error fetching NFT data');
+      setNftData(simplifiedData);
+    } catch (err: unknown) {
+      console.error('Error fetching NFT data:', err);
+      const errorDetails =
+        err instanceof Error
+          ? `${err.name}: ${err.message}${err.stack ? `\n${err.stack}` : ''}`
+          : JSON.stringify(err);
+      setError(
+        `RAW ERROR: ${errorDetails}. Please send this full text for debugging.`
+      );
     } finally {
       setLoading(false);
     }
@@ -248,19 +194,32 @@ export default function NFTCooldownInspector() {
     return `${minutes}m`;
   };
 
-  // Add function to format CRAA amounts
-  const formatCRAA = (amount: string | number) => {
+  // Gender display functions
+  const getGenderIcon = (gender: number) => {
+    return gender === 1 ? '♂️' : '♀️'; // 1 = boy, 2 = girl
+  };
+
+  const getGenderText = (gender: number) => {
+    return gender === 1 ? 'Boy' : 'Girl';
+  };
+
+  const formatSmallNumber = (amount: string | number): string => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (num === 0) return '0.00';
+    if (num > 0 && num < 0.0001) {
+      return num.toFixed(18).replace(/\.?0+$/, '');
+    }
+    return num.toFixed(4);
+  };
+
+  // Add function to format OCTAA amounts
+  const formatOCTAA = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
     if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
     if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
-    return num.toFixed(2);
-  };
-
-  const formatTimestamp = (timestamp: number) => {
-    if (timestamp === 0) return 'Never';
-    return new Date(timestamp * 1000).toLocaleString('en-US');
+    return num.toFixed(4);
   };
 
   const getRarityColor = (rarity: number) => {
@@ -321,15 +280,15 @@ export default function NFTCooldownInspector() {
   }, [nftData, pingInterval, breedCooldown]);
 
   return (
-    <Card className='w-full p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700'>
-      <div className='flex items-center justify-between mb-4'>
-        <h3 className='text-lg font-bold text-white flex items-center'>
-          <Clock className='h-5 w-5 mr-2 text-blue-400' />
-          {t('info.nftInspector', 'NFT Cooldown Inspector')}
+    <Card className='w-full p-3 bg-slate-800/50 backdrop-blur-sm border-4 border-yellow-400/80 shadow-2xl shadow-yellow-400/40 ring-2 ring-yellow-300/30'>
+      <div className='flex items-center justify-between mb-3'>
+        <h3 className='text-base font-bold text-white flex items-center'>
+          <Clock className='h-4 w-4 mr-2 text-pink-400' />
+          {t('info.nftInspector', 'NFT Cooldown Inspector 1')}
           {/* Live indicator */}
           <div className='flex items-center ml-2'>
-            <div className='w-2 h-2 rounded-full bg-green-400 animate-pulse'></div>
-            <span className='text-xs text-green-300 ml-1'>
+            <div className='w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse'></div>
+            <span className='text-xs text-pink-300 ml-1'>
               {t('sections.ping.live', 'Live')}
             </span>
           </div>
@@ -337,33 +296,33 @@ export default function NFTCooldownInspector() {
       </div>
 
       {/* Search Input */}
-      <div className='flex gap-2 mb-4'>
+      <div className='flex gap-2 mb-3'>
         <Input
           type='number'
-          placeholder='Enter any NFT ID (1-5000)'
+          placeholder='Enter any NFT ID (1-9700)'
           value={tokenId}
           onChange={e => setTokenId(e.target.value)}
-          className='bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400 h-9'
+          className='bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400 h-8 text-sm'
           onKeyPress={e => e.key === 'Enter' && inspectNFT()}
         />
         <Button
           onClick={inspectNFT}
           disabled={loading || !tokenId.trim()}
-          className='bg-blue-600 hover:bg-blue-700 h-9 px-3'
+          className='bg-pink-600 hover:bg-pink-700 h-8 px-3'
         >
           {loading ? (
-            <RefreshCw className='h-4 w-4 animate-spin' />
+            <RefreshCw className='h-3 w-3 animate-spin' />
           ) : (
-            <Search className='h-4 w-4' />
+            <Search className='h-3 w-3' />
           )}
         </Button>
       </div>
 
       {/* Info Message */}
-      <div className='bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 mb-4 text-sm'>
+      <div className='bg-pink-900/20 border border-pink-500/30 rounded-lg p-2 mb-3 text-xs'>
         <div className='flex items-center'>
-          <Info className='h-5 w-5 text-blue-400 mr-2' />
-          <span className='text-blue-300'>
+          <Info className='h-4 w-4 text-pink-400 mr-2' />
+          <span className='text-pink-300'>
             {isConnected
               ? t(
                   'info.inspectorReady',
@@ -379,8 +338,8 @@ export default function NFTCooldownInspector() {
 
       {/* Error Display */}
       {error && (
-        <div className='bg-red-900/20 border border-red-500/30 rounded-lg p-3 mb-4'>
-          <p className='text-red-300 text-sm'>{error}</p>
+        <div className='bg-red-900/20 border border-red-500/30 rounded-lg p-2 mb-3'>
+          <p className='text-red-300 text-xs'>{error}</p>
         </div>
       )}
 
@@ -389,38 +348,39 @@ export default function NFTCooldownInspector() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className='space-y-3'
+          className='space-y-2'
         >
           {/* Basic Info */}
-          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2'>
-            <div className='bg-slate-900/50 rounded-lg p-2'>
-              <div className='flex items-center justify-between mb-1'>
+          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1.5'>
+            <div className='bg-slate-900/50 rounded-lg p-1.5'>
+              <div className='flex items-center justify-between mb-0.5'>
                 <span className='text-slate-400 text-xs'>NFT ID</span>
-                <Star className='h-3 w-3 text-yellow-400' />
               </div>
-              <p className='text-lg font-bold text-white'>#{nftData.tokenId}</p>
+              <p className='text-sm font-bold text-white'>#{nftData.tokenId}</p>
             </div>
 
-            <div className='bg-slate-900/50 rounded-lg p-2'>
-              <div className='flex items-center justify-between mb-1'>
+            <div className='bg-slate-900/50 rounded-lg p-1.5'>
+              <div className='flex items-center justify-between mb-0.5'>
                 <span className='text-slate-400 text-xs'>
                   {t('info.rarity', 'Rarity')}
                 </span>
                 <div
-                  className={`w-2 h-2 rounded-full ${getRarityColor(nftData.rarity)}`}
+                  className={`w-1.5 h-1.5 rounded-full ${getRarityColor(
+                    nftData.rarity
+                  )}`}
                 ></div>
               </div>
-              <p className='text-base font-bold text-white'>
+              <p className='text-xs font-bold text-white'>
                 {getRarityName(nftData.rarity)}
               </p>
             </div>
 
-            <div className='bg-slate-900/50 rounded-lg p-2'>
-              <div className='flex items-center justify-between mb-1'>
+            <div className='bg-slate-900/50 rounded-lg p-1.5'>
+              <div className='flex items-center justify-between mb-0.5'>
                 <span className='text-slate-400 text-xs'>
                   {t('info.stars', 'Stars')}
                 </span>
-                <span className='text-yellow-400 font-bold text-sm'>
+                <span className='text-yellow-400 font-bold text-xs'>
                   {nftData.currentStars}/{nftData.initialStars}
                 </span>
               </div>
@@ -428,25 +388,39 @@ export default function NFTCooldownInspector() {
                 {Array.from({ length: nftData.initialStars }).map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-3 w-3 ${i < nftData.currentStars ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`}
+                    className={`h-4 w-4 ${i < nftData.currentStars
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-slate-600'
+                      }`}
                   />
                 ))}
               </div>
+              {nftData.bonusStars > 0 && (
+                <div className='flex items-center justify-between mb-0.5 mt-1'>
+                  <span className='text-slate-400 text-xs'>
+                    {t('info.bonusStars', 'Bonus Stars')}
+                  </span>
+                  <span className='text-yellow-400 font-bold text-xs'>
+                    {nftData.bonusStars}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className='bg-slate-900/50 rounded-lg p-2'>
-              <div className='flex items-center justify-between mb-1'>
+            <div className='bg-slate-900/50 rounded-lg p-1.5'>
+              <div className='flex items-center justify-between mb-0.5'>
                 <span className='text-slate-400 text-xs'>
                   {t('info.status', 'Status')}
                 </span>
                 {nftData.isInGraveyard ? (
-                  <Skull className='h-3 w-3 text-red-400' />
+                  <Skull className='h-2.5 w-2.5 text-red-400' />
                 ) : (
-                  <Zap className='h-3 w-3 text-green-400' />
+                  <Zap className='h-2.5 w-2.5 text-green-400' />
                 )}
               </div>
               <p
-                className={`text-base font-bold ${nftData.isInGraveyard ? 'text-red-400' : 'text-green-400'}`}
+                className={`text-xs font-bold ${nftData.isInGraveyard ? 'text-red-400' : 'text-green-400'
+                  }`}
               >
                 {nftData.isInGraveyard
                   ? t('info.graveyard', 'Graveyard')
@@ -454,42 +428,78 @@ export default function NFTCooldownInspector() {
               </p>
             </div>
 
-            <div className='bg-slate-900/50 rounded-lg p-2'>
-              <div className='flex items-center justify-between mb-1'>
+            <div className='bg-slate-900/50 rounded-lg p-1.5'>
+              <div className='flex items-center justify-between mb-0.5'>
                 <span className='text-slate-400 text-xs'>
-                  {t('info.lockedCra', 'Locked CRAA')}
+                  {t('info.lockedCra', 'Locked OCTAA')}
                 </span>
               </div>
-              <p className='text-base font-bold text-white'>
-                {formatCRAA(nftData.lockedCRAA)}
+              <p className='text-xs font-bold text-white'>
+                {formatOCTAA(nftData.lockedOcta)}
+              </p>
+            </div>
+
+            <div className='bg-slate-900/50 rounded-lg p-1.5'>
+              <div className='flex items-center justify-between mb-0.5'>
+                <span className='text-slate-400 text-xs'>Gender</span>
+                <span className='text-sm'>
+                  {getGenderIcon(nftData.gender)}
+                </span>
+              </div>
+              <p className='text-xs font-bold text-white'>
+                {getGenderText(nftData.gender)}
               </p>
             </div>
           </div>
 
-          {/* Ping Analytics */}
-          <div className='grid grid-cols-2 gap-4 mb-4'>
-            <div className='bg-cyan-900/20 rounded-lg p-4 border border-cyan-500/30'>
-              <h4 className='text-sm font-semibold text-cyan-300 mb-1 flex items-center'>
-                <Zap className='h-4 w-4 mr-1' />
-                Pending CRAA
+          {/* LP Info Card */}
+          {lpInfo && (
+            <Card className='bg-pink-900/20 rounded-lg p-2 border border-pink-500/30'>
+              <h4 className='text-xs font-semibold text-pink-300 mb-1 flex items-center'>
+                <Layers className='h-3 w-3 mr-1' />
+                LP Details
               </h4>
-              <p className='text-lg font-mono text-white text-center'>
-                {formatCRAA(nftData.pendingCRAA)} CRAA
+              <div className='text-xs text-slate-300 space-y-0.5'>
+                <div className='flex justify-between'>
+                  <span>LP Tokens:</span>
+                  <span className='font-mono text-white'>{formatSmallNumber(lpInfo.lpAmount)}</span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>OCTAA Deposited:</span>
+                  <span className='font-mono text-white'>{formatSmallNumber(lpInfo.octaDeposited)}</span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>{monadChain.nativeCurrency.symbol} Deposited:</span>
+                  <span className='font-mono text-white'>{formatSmallNumber(lpInfo.pairDeposited)}</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Ping Analytics */}
+          <div className='grid grid-cols-2 gap-2 mb-2'>
+            <div className='bg-pink-900/20 rounded-lg p-2 border border-pink-500/30'>
+              <h4 className='text-xs font-semibold text-pink-300 mb-0.5 flex items-center'>
+                <Zap className='h-3 w-3 mr-1' />
+                Pending OCTAA
+              </h4>
+              <p className='text-sm font-mono text-white text-center'>
+                {formatOCTAA(nftData.pendingOCTAA)} OCTAA
               </p>
               {/* Time accumulation info */}
               {nftData.isActivated && (
-                <div className='text-xs text-cyan-200 text-center mt-1'>
+                <div className='text-xs text-pink-200 text-center mt-0.5'>
                   ⏰ {t('sections.ping.accumulated', 'Accumulated')}:{' '}
                   {formatTimeAccumulation(nowSec - nftData.lastPingTime)}
                 </div>
               )}
             </div>
-            <div className='bg-purple-900/20 rounded-lg p-4 border border-purple-500/30'>
-              <h4 className='text-sm font-semibold text-purple-300 mb-1 flex items-center'>
-                <Timer className='h-4 w-4 mr-1' />
+            <div className='bg-purple-900/20 rounded-lg p-2 border border-purple-500/30'>
+              <h4 className='text-xs font-semibold text-purple-300 mb-0.5 flex items-center'>
+                <Timer className='h-3 w-3 mr-1' />
                 Periods
               </h4>
-              <p className='text-lg font-mono text-white text-center'>
+              <p className='text-sm font-mono text-white text-center'>
                 {nftData.pendingPeriods}
               </p>
             </div>
@@ -497,50 +507,50 @@ export default function NFTCooldownInspector() {
 
           {/* Cooldown Information */}
           {!nftData.isInGraveyard && (
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              <div className='bg-blue-900/20 rounded-lg p-4 border border-blue-500/30'>
-                <div className='flex items-center justify-between mb-1'>
-                  <h4 className='text-sm font-semibold text-blue-300 flex items-center'>
-                    <Zap className='h-4 w-4 mr-1' />
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-2'>
+              <div className='bg-blue-900/20 rounded-lg p-2 border border-blue-500/30'>
+                <div className='flex items-center justify-between mb-0.5'>
+                  <h4 className='text-xs font-semibold text-blue-300 flex items-center'>
+                    <Zap className='h-3 w-3 mr-1' />
                     {t('ping.title', 'Ping')}
                   </h4>
                   <Badge
                     variant={nftData.canPing ? 'default' : 'secondary'}
-                    className='h-5 text-xs px-1.5'
+                    className='h-4 text-xs px-1'
                   >
                     {nftData.canPing
                       ? t('status.ready', 'Ready')
                       : t('status.waiting', 'Waiting')}
                   </Badge>
                 </div>
-                <p className='text-lg font-mono text-white text-center'>
+                <p className='text-sm font-mono text-white text-center'>
                   {formatTime(nftData.pingCooldownLeft)}
                 </p>
                 {/* Time until next ping */}
                 {!nftData.canPing && (
-                  <div className='text-xs text-blue-200 text-center mt-1'>
+                  <div className='text-xs text-blue-200 text-center mt-0.5'>
                     ⏳ {t('sections.ping.nextPing', 'Next Ping')}:{' '}
                     {formatTimeUntilPing(nftData.pingCooldownLeft)}
                   </div>
                 )}
               </div>
 
-              <div className='bg-green-900/20 rounded-lg p-4 border border-green-500/30'>
-                <div className='flex items-center justify-between mb-1'>
-                  <h4 className='text-sm font-semibold text-green-300 flex items-center'>
-                    <Heart className='h-4 w-4 mr-1' />
+              <div className='bg-green-900/20 rounded-lg p-2 border border-green-500/30'>
+                <div className='flex items-center justify-between mb-0.5'>
+                  <h4 className='text-xs font-semibold text-green-300 flex items-center'>
+                    <Heart className='h-3 w-3 mr-1' />
                     {t('breed.title', 'Breed')}
                   </h4>
                   <Badge
                     variant={nftData.canBreed ? 'default' : 'secondary'}
-                    className='h-5 text-xs px-1.5'
+                    className='h-4 text-xs px-1'
                   >
                     {nftData.canBreed
                       ? t('status.ready', 'Ready')
                       : t('status.waiting', 'Waiting')}
                   </Badge>
                 </div>
-                <p className='text-lg font-mono text-white text-center'>
+                <p className='text-sm font-mono text-white text-center'>
                   {formatTime(nftData.breedCooldownLeft)}
                 </p>
               </div>
@@ -549,16 +559,16 @@ export default function NFTCooldownInspector() {
 
           {/* Graveyard & Burn Info */}
           {nftData.isInGraveyard && (
-            <div className='bg-red-900/20 rounded-lg p-4 border border-red-500/30'>
-              <div className='flex items-center justify-between mb-1'>
-                <h4 className='text-sm font-semibold text-red-300 flex items-center'>
-                  <Skull className='h-4 w-4 mr-1' />
+            <div className='bg-red-900/20 rounded-lg p-2 border border-red-500/30'>
+              <div className='flex items-center justify-between mb-0.5'>
+                <h4 className='text-xs font-semibold text-red-300 flex items-center'>
+                  <Skull className='h-3 w-3 mr-1' />
                   {t('graveyard.title', 'Graveyard')}
                 </h4>
                 {nftData.burnLockedAmount && (
                   <Badge
                     variant={nftData.canClaim ? 'default' : 'secondary'}
-                    className='h-5 text-xs px-1.5'
+                    className='h-4 text-xs px-1'
                   >
                     {nftData.canClaim
                       ? t('status.claimable', 'Claimable')
@@ -567,11 +577,11 @@ export default function NFTCooldownInspector() {
                 )}
               </div>
               {nftData.burnLockedAmount && (
-                <div className='text-xs text-slate-300 space-y-1'>
+                <div className='text-xs text-slate-300 space-y-0.5'>
                   <div className='flex justify-between'>
                     <span>{t('info.locked', 'Locked')}:</span>{' '}
                     <span className='font-mono'>
-                      {formatCRAA(nftData.burnLockedAmount)} CRAA
+                      {formatOCTAA(nftData.burnLockedAmount)} OCTAA
                     </span>
                   </div>
                   <div className='flex justify-between'>
@@ -591,9 +601,9 @@ export default function NFTCooldownInspector() {
 
       {/* Compact placeholder when no data */}
       {!nftData && !error && (
-        <div className='text-center py-8'>
-          <Timer className='h-8 w-8 text-slate-500 mx-auto mb-2' />
-          <p className='text-slate-400 text-sm'>
+        <div className='text-center py-4'>
+          <Timer className='h-6 w-6 text-slate-500 mx-auto mb-1' />
+          <p className='text-slate-400 text-xs'>
             {t('info.enterNftId', 'Enter NFT ID to inspect')}
           </p>
         </div>

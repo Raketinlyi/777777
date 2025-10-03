@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ShatterImage } from './shatter-image';
 import { motion } from 'framer-motion';
 import {
-  useCrazyCubeGame,
+  useCrazyOctagonGame,
   type NFTGameData,
   type BurnRecord,
-} from '@/hooks/useCrazyCubeGame';
+} from '@/hooks/useCrazyOctagonGame';
 import { getLabel } from '@/lib/rarity';
 import { Timer, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,7 @@ export const GraveyardCubeCard = memo(function GraveyardCubeCard({
   tokenId,
   index,
 }: GraveyardCubeCardProps) {
-  const { getNFTGameData, getBurnRecord } = useCrazyCubeGame();
+  const { getNFTGameData, getBurnRecord } = useCrazyOctagonGame();
   const [gameData, setGameData] = useState<NFTGameData | null>(null);
   const [record, setRecord] = useState<BurnRecord | null>(null);
   const [now, setNow] = useState<number>(Math.floor(Date.now() / 1000));
