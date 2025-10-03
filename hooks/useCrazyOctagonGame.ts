@@ -69,24 +69,20 @@ export interface BurnRecord {
 export type BurnWaitMinutes = 30 | 120 | 480;
 
 const randomUint256 = (): bigint => {
-  try {
-    if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
-      const bytes = new Uint8Array(32);
-      window.crypto.getRandomValues(bytes);
-      return BigInt(
-        '0x' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
-      );
-    }
-  } catch {
-    // fall through to Math.random fallback below
+  const cryptoSource =
+    (typeof globalThis !== 'undefined' &&
+      (globalThis.crypto ?? (globalThis as unknown as { crypto?: Crypto }).crypto)) ||
+    undefined;
+
+  if (!cryptoSource?.getRandomValues) {
+    throw new Error('Secure randomness unavailable');
   }
-  let hex = '0x';
-  for (let i = 0; i < 32; i += 1) {
-    hex += Math.floor(Math.random() * 256)
-      .toString(16)
-      .padStart(2, '0');
-  }
-  return BigInt(hex);
+
+  const bytes = new Uint8Array(32);
+  cryptoSource.getRandomValues(bytes);
+  return BigInt(
+    `0x${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`
+  );
 };
 
 const toFixedSafe = (value: string, decimals = 2): string => {

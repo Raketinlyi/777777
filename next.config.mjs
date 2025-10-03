@@ -96,7 +96,7 @@ const nextConfig = {
   },
   
   // Webpack configuration for Netlify compatibility
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -105,13 +105,26 @@ const nextConfig = {
         tls: false,
         crypto: false,
       };
+      
+      // Use stub for React Native modules
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@react-native-async-storage/async-storage': path.resolve(__dirname, 'lib/react-native-async-storage-stub.js'),
+      };
+      
+      // Ignore React Native modules completely
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^@react-native-async-storage\/async-storage$/,
+        })
+      );
     }
     return config;
   },
   
   // Environment variables
   env: {
-    NEXT_PUBLIC_CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID || '33139',
+    NEXT_PUBLIC_CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID || process.env.NEXT_PUBLIC_MONAD_CHAIN_ID || '10143',
   },
 };
 

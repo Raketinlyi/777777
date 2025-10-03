@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "target": "es2020",
     "skipLibCheck": true,
@@ -27,7 +31,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -35,7 +41,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    "out/types/**/*.ts"
+    "out/types/**/*.ts",
+    "./.next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
@@ -48,7 +55,7 @@
     "scripts/**",
     "floor-oracle-bot/**",
     "bots/**",
-    "craa-token/**",
+    "octaa-token/**",
     "sat6-gl-main/**"
   ]
 }

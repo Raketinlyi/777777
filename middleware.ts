@@ -19,6 +19,41 @@ const botPatterns = [
   /insomnia/i,
 ];
 
+const extractIp = (value?: string | null): string | undefined => {
+  if (!value) return undefined;
+  const first = value.split(',').map(part => part.trim()).find(Boolean);
+  return first && first !== '127.0.0.1' ? first : undefined;
+};
+
+const hashString = (value: string): string => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (hash >>> 0).toString(16);
+};
+
+const getClientKey = (request: NextRequest): { ip: string; key: string } => {
+  const headers = request.headers;
+  const ipSources = [
+    extractIp(headers.get('x-nf-client-connection-ip')),
+    extractIp(headers.get('cf-connecting-ip')),
+    extractIp(headers.get('x-real-ip')),
+    extractIp(headers.get('x-forwarded-for')),
+  ];
+
+  const ip = ipSources.find(Boolean) ?? '127.0.0.1';
+
+  const userAgent = headers.get('user-agent') ?? 'unknown';
+  const acceptLanguage = headers.get('accept-language') ?? '';
+  const forwardedProto = headers.get('x-forwarded-proto') ?? '';
+
+  const fingerprintSource = `${userAgent}|${acceptLanguage}|${forwardedProto}`;
+
+  return { ip, key: `${ip}:${hashString(fingerprintSource)}` };
+};
+
 // Rate limiting configuration
 const RATE_LIMITS = {
   GENERAL: { max: 100, window: 60000 }, // 100 requests per minute
@@ -30,10 +65,7 @@ const RATE_LIMITS = {
 };
 
 export function middleware(request: NextRequest) {
-  const ip =
-    request.headers.get('x-forwarded-for') ||
-    request.headers.get('x-real-ip') ||
-    '127.0.0.1';
+  const { key } = getClientKey(request);
   const userAgent = request.headers.get('user-agent') || '';
 
   // Bot detection
@@ -42,7 +74,7 @@ export function middleware(request: NextRequest) {
   const windowMs = isBot ? RATE_LIMITS.BOT.window : RATE_LIMITS.GENERAL.window;
 
   const now = Date.now();
-  const timestamps = requestTimestamps.get(ip) || [];
+  const timestamps = requestTimestamps.get(key) || [];
 
   // Remove timestamps older than the window
   const relevantTimestamps = timestamps.filter(ts => now - ts < windowMs);
@@ -62,30 +94,34 @@ export function middleware(request: NextRequest) {
 
   // Add the current timestamp and update the store
   relevantTimestamps.push(now);
-  requestTimestamps.set(ip, relevantTimestamps);
+  requestTimestamps.set(key, relevantTimestamps);
 
   // Transaction-specific rate limiting for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    const transactionType = request.nextUrl.pathname.includes('burn') ? 'burn' : 
-                          request.nextUrl.pathname.includes('approve') ? 'approve' : null;
+    let transactionType: keyof typeof RATE_LIMITS.TRANSACTION | null = null;
+    const path = request.nextUrl.pathname;
+    if (path.includes('burn')) {
+      transactionType = 'burn';
+    } else if (path.includes('approve')) {
+      transactionType = 'approve';
+    }
     
     if (transactionType) {
-      const userLimits = transactionLimits.get(ip) || { burn: [], approve: [] };
-      const transactionTimestamps = userLimits[transactionType as keyof typeof userLimits];
-      const limit = RATE_LIMITS.TRANSACTION[transactionType as keyof typeof RATE_LIMITS.TRANSACTION];
+      const userLimits = transactionLimits.get(key) || { burn: [], approve: [] };
+      const transactionTimestamps = userLimits[transactionType];
+      const limit = RATE_LIMITS.TRANSACTION[transactionType];
       
       // Remove old timestamps
       const recentTimestamps = transactionTimestamps.filter(ts => now - ts < limit.window);
       
       if (recentTimestamps.length >= limit.max) {
         return new NextResponse(`Too many ${transactionType} transactions.`, { status: 429 });
-
       }
-      
+
       // Add current timestamp
       recentTimestamps.push(now);
-      userLimits[transactionType as keyof typeof userLimits] = recentTimestamps;
-      transactionLimits.set(ip, userLimits);
+      userLimits[transactionType] = recentTimestamps;
+      transactionLimits.set(key, userLimits);
     }
   }
 
@@ -109,82 +145,6 @@ export function middleware(request: NextRequest) {
   );
 
   // Enhanced, environment-aware Content Security Policy
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
-  // Define trusted domains
-  const trustedDomains = [
-    'https://*.netlify.app',
-    'https://*.alchemy.com',
-    'https://*.walletconnect.com',
-    'https://*.monad.xyz',
-    'https://*.opensea.io',
-    'https://*.magiceden.io',
-    'https://*.ipfs.io',
-    'https://*.ipfs.dweb.link',
-    'https://*.gateway.pinata.cloud',
-  ];
-
-  const scriptSrc = [
-    `'self'`,
-    ...trustedDomains,
-    `https://www.google.com/recaptcha/`,
-    `https://www.gstatic.com/recaptcha/`,
-    `https://cdn.jsdelivr.net`,
-    `https://unpkg.com`,
-    `https://*.metamask.io`,
-    `https://*.walletconnect.org`,
-    `https://*.walletconnect.com`,
-    `https://*.rainbow.me`,
-    `https://*.coinbase.com`,
-    `https://*.trustwallet.com`,
-  ];
-
-  const styleSrc = [
-    `'self'`,
-    `'unsafe-inline'`, // Required for dynamic styles
-    `https://fonts.googleapis.com`,
-    `https://cdn.jsdelivr.net`,
-    `https://unpkg.com`,
-    ...trustedDomains,
-  ];
-
-  // Image sources are handled by netlify.toml CSP
-
-  const connectSrc = [
-    `'self'`,
-    `https:`,
-    `wss:`,
-    `ws:`,
-    ...trustedDomains,
-    `https://*.alchemy.com`,
-    `https://*.walletconnect.com`,
-    `https://*.walletconnect.org`,
-    `https://*.monad.xyz`,
-    `https://*.metamask.io`,
-    `https://*.rainbow.me`,
-    `https://*.coinbase.com`,
-    `https://*.trustwallet.com`,
-    `https://*.infura.io`,
-    `https://*.quicknode.com`,
-    `https://api.web3modal.org`,
-    `https://pulse.walletconnect.org`,
-    `https://cloud.reown.com`,
-  ];
-
-  // CSP adjustments
-  if (isDevelopment) {
-    // Development: more permissive for debugging
-    scriptSrc.push(`'unsafe-eval'`);
-    scriptSrc.push(`'unsafe-inline'`);
-    connectSrc.push(`http:`);
-    connectSrc.push(`ws:`);
-  } else {
-    // Production: secure but compatible with Next.js
-    scriptSrc.push(`'unsafe-inline'`); // Required for Next.js
-    scriptSrc.push(`'unsafe-eval'`);   // Required for some Web3 libraries
-    styleSrc.push(`'unsafe-inline'`);  // Required for dynamic styles
-  }
-
   // CRITICAL: CSP header for production - Netlify compatible
   const cspHeader = [
     `default-src 'self'`,

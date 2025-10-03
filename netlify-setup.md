@@ -25,11 +25,9 @@
 ```env
 NODE_ENV=production
 NEXT_TELEMETRY_DISABLED=1
-NEXTAUTH_URL=https://aaaaarnaaa.netlify.app
-NEXTAUTH_SECRET=your-secret-here
 ```
 
-> **Важно:** В файле `netlify.toml` также обновите `NEXTAUTH_URL`, чтобы он совпадал с доменом Netlify.
+> **Примечание:** NextAuth не используется — дополнительных auth‑переменных не требуется.
 
 ### 3. Настройка GitHub Secrets (для автоматического деплоя)
 

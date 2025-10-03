@@ -6,8 +6,6 @@
   NODE_VERSION = "18"
   NODE_ENV = "production"
   NEXT_TELEMETRY_DISABLED = "1"
-  # IMPORTANT: NEXTAUTH_URL and NEXTAUTH_SECRET are set in Netlify UI Environment Variables
-  # DO NOT store secrets in this file - use Netlify UI instead
   NPM_CONFIG_PRODUCTION = "false"
   NPM_FLAGS = "--include=dev"
   
