@@ -1,0 +1,154 @@
+/* Monad Theme - Authentic Purple/Blue Design System */
+
+/* Monad-specific color variables - Updated for authentic Monad branding */
+:root {
+  --monad-primary: #8B5CF6; /* Signature Monad Purple */
+  --monad-primary-light: #A78BFA; /* Light Purple */
+  --monad-secondary: #3B82F6; /* Deep Blue */
+  --monad-accent: #C084FC; /* Light Purple Accent */
+  --monad-background: #0A0014; /* Deep Purple-Black */
+  --monad-surface: #1A0B33; /* Purple Surface */
+  --monad-text: #EEEEF2; /* Light Purple-White */
+  --monad-text-muted: #A78BFA; /* Purple Muted */
+}
+
+/* Monad button styles - Purple focus */
+.monad-button {
+  @apply bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] hover:from-[#8B5CF6]/90 hover:to-[#A78BFA]/90 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-[#8B5CF6]/25;
+}
+
+.monad-button-secondary {
+  @apply bg-gradient-to-r from-[#3B82F6] to-[#C084FC] hover:from-[#3B82F6]/90 hover:to-[#C084FC]/90 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-[#3B82F6]/25;
+}
+
+/* Monad card styles - Purple themed */
+.monad-card {
+  @apply bg-gradient-to-br from-[#1A0B33]/90 to-[#0A0014]/80 border border-[#8B5CF6]/20 backdrop-blur-md rounded-2xl shadow-xl shadow-black/20;
+}
+
+.monad-card-breed {
+  @apply bg-gradient-to-br from-violet-800/90 via-purple-700/85 to-pink-600/80 border border-violet-400/30 backdrop-blur-lg shadow-xl shadow-violet-500/20;
+}
+
+.monad-card-burn {
+  @apply bg-gradient-to-br from-purple-800/90 via-violet-700/85 to-indigo-600/80 border border-purple-400/30 backdrop-blur-lg shadow-xl shadow-purple-500/20;
+}
+
+.monad-card-claim {
+  @apply bg-gradient-to-br from-indigo-700/90 via-purple-600/85 to-violet-600/80 border border-indigo-400/30 backdrop-blur-lg shadow-xl shadow-indigo-500/20;
+}
+
+.monad-card-ping {
+  @apply bg-gradient-to-br from-blue-700/90 via-indigo-700/85 to-purple-600/80 border border-blue-400/30 backdrop-blur-lg shadow-xl shadow-blue-500/20;
+}
+
+.monad-card-graveyard {
+  @apply bg-gradient-to-br from-purple-900/90 via-violet-800/85 to-purple-700/80 border border-purple-400/30 backdrop-blur-lg shadow-xl shadow-purple-500/20;
+}
+
+.monad-card-game {
+  @apply bg-gradient-to-br from-indigo-700/90 via-purple-700/85 to-violet-700/80 border border-indigo-400/30 backdrop-blur-lg shadow-xl shadow-indigo-500/20;
+}
+
+.monad-card-bridge {
+  @apply bg-gradient-to-br from-violet-700/90 via-purple-700/85 to-pink-600/80 border border-violet-400/30 backdrop-blur-lg shadow-xl shadow-violet-500/20;
+}
+
+/* Monad text styles - Purple themed */
+.monad-title {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] font-bold;
+}
+
+.monad-subtitle {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] to-[#DDD6FE] font-semibold;
+}
+
+/* Monad glow effects - Purple variants */
+.monad-glow {
+  @apply shadow-lg shadow-[#8B5CF6]/30;
+}
+
+.monad-glow-purple {
+  @apply shadow-lg shadow-[#A78BFA]/30;
+}
+
+.monad-glow-blue {
+  @apply shadow-lg shadow-[#3B82F6]/30;
+}
+
+/* Monad border styles - Purple themed */
+.monad-border {
+  @apply border border-[#8B5CF6]/30;
+}
+
+.monad-border-purple {
+  @apply border border-[#A78BFA]/30;
+}
+
+/* Monad background patterns - Purple noise */
+.monad-noise {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(192, 132, 252, 0.05) 0%, transparent 50%);
+}
+
+/* Monad animation keyframes - Purple glow */
+@keyframes monad-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px 5px rgba(139, 92, 246, 0.7);
+  }
+}
+
+@keyframes monad-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+}
+
+/* Monad animation classes */
+.monad-pulse {
+  animation: monad-pulse 3s ease-in-out infinite;
+}
+
+.monad-float {
+  animation: monad-float 4.5s ease-in-out infinite;
+}
+
+/* Enhanced Monad hover effects */
+.monad-hover-glow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+.monad-card-hover:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Monad responsive utilities */
+@media (max-width: 768px) {
+  .monad-card {
+    @apply rounded-xl;
+  }
+  
+  .monad-button {
+    @apply text-sm py-2 px-4;
+  }
+}
+
+/* Monad dark mode support - Purple theme optimized */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --monad-primary: #8B5CF6;
+    --monad-background: #0A0014;
+    --monad-surface: #1A0B33;
+  }
+}

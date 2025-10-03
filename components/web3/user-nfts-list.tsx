@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 import { useAlchemyNftsQuery } from '@/hooks/useAlchemyNftsQuery';
@@ -10,14 +10,24 @@ import { Loader2, Star, Lock, Skull } from 'lucide-react';
 import { formatEther } from 'viem';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import {
+  computeStarState,
+  getBaseStarsForRarity,
+  getStarsFromIndex,
+  normalizeStars,
+  rarityIndexByLabel,
+  starCountToIndex,
+} from '@/lib/stars';
+import type { StarState } from '@/lib/stars';
+import { StarMeter } from '@/components/star-meter';
 
 interface UserNFTInfo {
   tokenId: string;
-  rarity: number;
+  rarityIndex: number;
   baseStars: number;
   currentStars: number;
   bonusStars: number;
-  displayStars: number;
+  starState: StarState;
   lockedOcta: string; // formatted ether string
   lockedOctaWei: bigint; // raw wei for math
   isInGraveyard?: boolean;
@@ -33,26 +43,19 @@ const getRarityNames = (t: (key: string, fallback: string) => string) => [
   t('rarity.mythic', 'Mythic'),
 ];
 
-const rarityIndexByLabel: Record<string, number> = {
-  common: 0,
-  uncommon: 1,
-  rare: 2,
-  epic: 3,
-  legendary: 4,
-  mythic: 5,
-};
-
-const baseStarsByIndex = [1, 2, 3, 4, 5, 6];
-
-const normalizeStars = (value: number | null | undefined) =>
-  Math.max(0, Math.floor(Number(value ?? 0)));
-
 const formatOctaAmount = (value: string | number | null | undefined) => {
   const numeric = Number.parseFloat(String(value ?? '0'));
   if (!Number.isFinite(numeric)) {
     return '0.0000';
   }
   return numeric.toFixed(4);
+};
+
+const safeNormalizeStars = (value: unknown): number | null => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  return normalizeStars(value);
 };
 
 export default function UserNftsList() {
@@ -65,6 +68,17 @@ export default function UserNftsList() {
   const [nfts, setNfts] = useState<UserNFTInfo[]>([]);
   const [totalLockedOcta, setTotalLockedOcta] = useState<string>('0');
   const [error, setError] = useState<string | null>(null);
+
+  const safeGetGameData = useCallback(
+    async (tokenId: string) => {
+      try {
+        return await getNFTGameData(tokenId);
+      } catch {
+        return null;
+      }
+    },
+    [getNFTGameData]
+  );
 
   useEffect(() => {
     if (!isConnected || alchemyLoading) {
@@ -82,11 +96,8 @@ export default function UserNftsList() {
           return;
         }
 
-        // Parallel fetch of game data
         const gameDataList = await Promise.all(
-          alchemyNfts.map(n =>
-            getNFTGameData(n.tokenId.toString()).catch(() => null)
-          )
+          alchemyNfts.map(nftItem => safeGetGameData(nftItem.tokenId.toString()))
         );
 
         const tokens: UserNFTInfo[] = [];
@@ -97,26 +108,46 @@ export default function UserNftsList() {
           const tokenId = nft.tokenId.toString();
 
           const imageSrc = nft.image || '/favicon.ico';
-          const fallbackRarityIndex =
-            rarityIndexByLabel[nft.rarity?.toLowerCase?.() ?? ''] ?? 0;
+          const rarityKey =
+            typeof nft.rarity === 'string' ? nft.rarity.toLowerCase() : '';
+          const fallbackRarityIndex = rarityIndexByLabel[rarityKey] ?? 0;
+          const fallbackStars = getStarsFromIndex(fallbackRarityIndex);
 
           if (data) {
-            const rarityIndex = Math.min(
-              5,
-              Math.max(0, Number(data.rarity ?? fallbackRarityIndex))
-            );
-            const baseStars = normalizeStars(data.initialStars);
-            const currentStars = normalizeStars(data.currentStars);
-            const bonusStars = normalizeStars(data.bonusStars);
-            const displayStars = Math.max(currentStars, baseStars + bonusStars);
+            const chainInitialStars = safeNormalizeStars(data.initialStars);
+            const chainCurrentStars = safeNormalizeStars(data.currentStars);
+            const chainBonusStars = safeNormalizeStars(data.bonusStars);
+            const chainRarityStars = safeNormalizeStars(data.rarity);
+
+            let baseStars = fallbackStars;
+            if (chainRarityStars !== null) {
+              baseStars = getBaseStarsForRarity(chainRarityStars);
+            }
+            if (chainInitialStars !== null && chainInitialStars > 0) {
+              baseStars = chainInitialStars;
+            }
+
+            const currentStars =
+              chainCurrentStars !== null
+                ? chainCurrentStars
+                : normalizeStars(nft.stars ?? baseStars);
+            const inferredBonus = Math.max(0, currentStars - baseStars);
+            const bonusStars =
+              chainBonusStars !== null ? Math.max(0, chainBonusStars) : inferredBonus;
+            const rarityIndex = starCountToIndex(baseStars > 0 ? baseStars : fallbackStars);
+            const starState = computeStarState({
+              baseStars,
+              bonusStars,
+              currentStars,
+            });
 
             tokens.push({
               tokenId,
-              rarity: rarityIndex,
+              rarityIndex,
               baseStars,
               currentStars,
               bonusStars,
-              displayStars,
+              starState,
               lockedOcta: data.lockedOcta,
               lockedOctaWei: data.lockedOctaWei,
               isInGraveyard: data.isInGraveyard,
@@ -124,17 +155,22 @@ export default function UserNftsList() {
             });
             totalLocked += data.lockedOctaWei;
           } else {
-            const baseStars = baseStarsByIndex[fallbackRarityIndex] ?? 0;
+            const baseStars = fallbackStars;
             const currentStars = baseStars;
-            const displayStars = baseStars;
+            const bonusStars = 0;
+            const starState = computeStarState({
+              baseStars,
+              bonusStars,
+              currentStars,
+            });
 
             tokens.push({
               tokenId,
-              rarity: fallbackRarityIndex,
+              rarityIndex: fallbackRarityIndex,
               baseStars,
               currentStars,
-              bonusStars: 0,
-              displayStars,
+              bonusStars,
+              starState,
               lockedOcta: '0',
               lockedOctaWei: 0n,
               isInGraveyard: nft.isInGraveyard || nft.frozen,
@@ -155,7 +191,7 @@ export default function UserNftsList() {
     };
 
     load();
-  }, [isConnected, alchemyLoading, alchemyNfts, getNFTGameData]);
+  }, [isConnected, alchemyLoading, alchemyNfts, safeGetGameData]);
 
   if (!isConnected) {
     return (
@@ -167,154 +203,184 @@ export default function UserNftsList() {
     );
   }
 
-  // Separate live and graveyard NFTs for better display
   const liveNfts = nfts.filter(nft => !nft.isInGraveyard);
   const graveyardNfts = nfts.filter(nft => nft.isInGraveyard);
   const totalLockedNumber = Number.parseFloat(totalLockedOcta || '0');
   const rarityNames = getRarityNames(t);
 
+  let cardContent: JSX.Element;
+  if (loading || alchemyLoading) {
+    cardContent = (
+      <div className='flex items-center justify-center py-6'>
+        <Loader2 className='h-6 w-6 animate-spin text-violet-300' />
+      </div>
+    );
+  } else if (error) {
+    cardContent = <p className='text-red-400 text-sm text-center'>{error}</p>;
+  } else if (nfts.length === 0) {
+    cardContent = (
+      <p className='text-slate-300 text-sm text-center'>
+        {t('info.noNfts', "You don't own any CrazyCube NFTs.")}
+      </p>
+    );
+  } else {
+    cardContent = (
+      <>
+        <h3 className='text-lg font-bold text-white mb-3 text-center'>
+          {t('info.yourNfts', 'Your NFTs')} ({nfts.length})
+          {liveNfts.length > 0 && graveyardNfts.length > 0 && (
+            <span className='text-sm text-slate-400 ml-2'>
+              ({liveNfts.length} {t('info.live', 'live')}, {graveyardNfts.length}{' '}
+              {t('info.inGraveyard', 'in graveyard')})
+            </span>
+          )}
+        </h3>
+
+        {liveNfts.length > 0 && (
+          <div className='mb-4'>
+            <h4 className='text-sm font-semibold text-green-400 mb-2 flex items-center'>
+              <Star className='h-4 w-4 mr-1' />
+              {t('info.activeNfts', 'Active NFTs')} ({liveNfts.length})
+            </h4>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              {liveNfts.map((nft, idx) => (
+                <motion.div
+                  key={nft.tokenId}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className='p-3 rounded-lg bg-slate-900/50 border border-slate-600 space-y-1'
+                >
+                  <div className='flex items-center justify-between mb-1'>
+                    <span className='text-slate-400 text-xs flex items-center gap-1'>
+                      {nft.image && (
+                        <Image
+                          src={nft.image}
+                          alt={`NFT #${nft.tokenId}`}
+                          width={32}
+                          height={32}
+                          className='w-8 h-8 rounded-sm object-cover'
+                        />
+                      )}
+                      NFT #{nft.tokenId}
+                    </span>
+                    <span className='text-xs text-violet-300 font-semibold'>
+                      {rarityNames[nft.rarityIndex] || 'Common'}
+                    </span>
+                  </div>
+                  <div className='mb-1'>
+                    {nft.starState.totalCapacity > 0 ? (
+                      <StarMeter state={nft.starState} size='sm' />
+                    ) : (
+                      <span className='text-gray-500 text-xs'>
+                        {t('info.noStars', 'No stars')}
+                      </span>
+                    )}
+                  </div>
+                  <div className='text-xs text-slate-300 flex flex-wrap items-center gap-2'>
+                    <span>
+                      {t('info.starsActiveLabel', 'Active')}:{' '}
+                      {nft.starState.totalActive}/{nft.starState.totalCapacity}
+                    </span>
+                    {nft.starState.burnedBase > 0 && (
+                      <span className='text-red-300'>
+                        −{nft.starState.burnedBase}{' '}
+                        {t('info.starsBurned', 'burned')}
+                      </span>
+                    )}
+                    {nft.starState.bonusSlots > 0 && (
+                      <span className='text-sky-300'>
+                        {t('info.bonus', 'Bonus')}:{' '}
+                        {nft.starState.activeBonus}/{nft.starState.bonusSlots}
+                      </span>
+                    )}
+                  </div>
+                  <div className='text-[11px] text-slate-500'>
+                    {t('info.nominalBase', 'Nominal base')}: {nft.baseStars}
+                  </div>
+                  <div className='flex items-center text-green-400 text-sm'>
+                    <Lock className='h-4 w-4 mr-1' />
+                    {t('info.lockedCra', 'Locked OCTAA')}: {formatOctaAmount(nft.lockedOcta)}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {graveyardNfts.length > 0 && (
+          <div>
+            <h4 className='text-sm font-semibold text-red-400 mb-2 flex items-center'>
+              <Skull className='h-4 w-4 mr-1' />
+              {t('info.nftsInGraveyard', 'NFTs in Graveyard')} ({graveyardNfts.length})
+            </h4>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              {graveyardNfts.map((nft, idx) => (
+                <motion.div
+                  key={nft.tokenId}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: (liveNfts.length + idx) * 0.05 }}
+                  className='p-3 rounded-lg bg-red-900/20 border border-red-600/30 space-y-1 opacity-75'
+                >
+                  <div className='flex items-center justify-between mb-1'>
+                    <span className='text-red-400 text-xs flex items-center gap-1'>
+                      {nft.image && (
+                        <Image
+                          src={nft.image}
+                          alt={`NFT #${nft.tokenId}`}
+                          width={32}
+                          height={32}
+                          className='w-8 h-8 rounded-sm object-cover'
+                        />
+                      )}
+                      NFT #{nft.tokenId}
+                    </span>
+                    <span className='text-xs text-red-300 font-semibold flex items-center'>
+                      <Skull className='h-3 w-3 mr-1' />
+                      {rarityNames[nft.rarityIndex] || 'Common'}
+                    </span>
+                  </div>
+                  <div className='flex items-center text-gray-500 text-sm mb-1'>
+                    <span className='text-xs'>
+                      💀 {t('info.inGraveyard', 'In Graveyard')}
+                    </span>
+                  </div>
+                  {nft.starState.totalCapacity > 0 && (
+                    <div className='mb-1'>
+                      <StarMeter state={nft.starState} size='sm' className='opacity-70' />
+                    </div>
+                  )}
+                  <div className='text-[11px] text-slate-400 flex flex-wrap gap-2'>
+                    <span>
+                      {t('info.starsActiveLabel', 'Active')}:{' '}
+                      {nft.starState.totalActive}/{nft.starState.totalCapacity}
+                    </span>
+                    {nft.starState.burnedBase > 0 && (
+                      <span className='text-red-300'>
+                        −{nft.starState.burnedBase}{' '}
+                        {t('info.starsBurned', 'burned')}
+                      </span>
+                    )}
+                  </div>
+                  <div className='flex items-center text-red-400 text-sm'>
+                    <Lock className='h-4 w-4 mr-1' />
+                    {t('info.lockedCra', 'Locked OCTAA')}: {formatOctaAmount(nft.lockedOcta)}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className='space-y-4'>
-      <Card className='p-4 bg-slate-800/50 border-slate-700'>
-        {loading || alchemyLoading ? (
-          <div className='flex items-center justify-center py-6'>
-            <Loader2 className='h-6 w-6 animate-spin text-violet-300' />
-          </div>
-        ) : error ? (
-          <p className='text-red-400 text-sm text-center'>{error}</p>
-        ) : nfts.length === 0 ? (
-          <p className='text-slate-300 text-sm text-center'>
-            {t('info.noNfts', "You don't own any CrazyCube NFTs.")}
-          </p>
-        ) : (
-          <>
-            <h3 className='text-lg font-bold text-white mb-3 text-center'>
-              {t('info.yourNfts', 'Your NFTs')} ({nfts.length})
-              {liveNfts.length > 0 && graveyardNfts.length > 0 && (
-                <span className='text-sm text-slate-400 ml-2'>
-                  ({liveNfts.length} {t('info.live', 'live')},{' '}
-                  {graveyardNfts.length} {t('info.inGraveyard', 'in graveyard')}
-                  )
-                </span>
-              )}
-            </h3>
+      <Card className='p-4 bg-slate-800/50 border-slate-700'>{cardContent}</Card>
 
-            {/* Live NFTs */}
-            {liveNfts.length > 0 && (
-              <div className='mb-4'>
-                <h4 className='text-sm font-semibold text-green-400 mb-2 flex items-center'>
-                  <Star className='h-4 w-4 mr-1' />
-                  {t('info.activeNfts', 'Active NFTs')} ({liveNfts.length})
-                </h4>
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                  {liveNfts.map((nft, idx) => (
-                    <motion.div
-                      key={nft.tokenId}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className='p-3 rounded-lg bg-slate-900/50 border border-slate-600 space-y-1'
-                    >
-                      <div className='flex items-center justify-between mb-1'>
-                        <span className='text-slate-400 text-xs flex items-center gap-1'>
-                          {nft.image && (
-                            <Image
-                              src={nft.image}
-                              alt={`NFT #${nft.tokenId}`}
-                              width={32}
-                              height={32}
-                              className='w-8 h-8 rounded-sm object-cover'
-                            />
-                          )}
-                          NFT #{nft.tokenId}
-                        </span>
-                        <span className='text-xs text-violet-300 font-semibold'>
-                          {rarityNames[nft.rarity] || 'Common'}
-                        </span>
-                      </div>
-                      <div className='flex items-center text-yellow-400 text-sm mb-1 gap-1'>
-                        {nft.displayStars > 0 ? (
-                          Array.from({ length: nft.displayStars }).map((_, i) => (
-                            <Star key={i} className='h-4 w-4 fill-yellow-400' />
-                          ))
-                        ) : (
-                          <span className='text-gray-500 text-xs'>
-                            {t('info.noStars', 'No stars')}
-                          </span>
-                        )}
-                      </div>
-                      <div className='text-xs text-slate-400'>
-                        {t('info.starsBreakdown', 'Base')} {nft.baseStars}
-                        {nft.bonusStars > 0
-                          ? ` + ${nft.bonusStars} ${t('info.bonus', 'bonus')}`
-                          : ''}
-                      </div>
-                      <div className='flex items-center text-green-400 text-sm'>
-                        <Lock className='h-4 w-4 mr-1' />
-                        {t('info.lockedCra', 'Locked OCTAA')}:{' '}
-                        {formatOctaAmount(nft.lockedOcta)}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Graveyard NFTs */}
-            {graveyardNfts.length > 0 && (
-              <div>
-                <h4 className='text-sm font-semibold text-red-400 mb-2 flex items-center'>
-                  <Skull className='h-4 w-4 mr-1' />
-                  {t('info.nftsInGraveyard', 'NFTs in Graveyard')} (
-                  {graveyardNfts.length})
-                </h4>
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                  {graveyardNfts.map((nft, idx) => (
-                    <motion.div
-                      key={nft.tokenId}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: (liveNfts.length + idx) * 0.05 }}
-                      className='p-3 rounded-lg bg-red-900/20 border border-red-600/30 space-y-1 opacity-75'
-                    >
-                      <div className='flex items-center justify-between mb-1'>
-                        <span className='text-red-400 text-xs flex items-center gap-1'>
-                          {nft.image && (
-                            <Image
-                              src={nft.image}
-                              alt={`NFT #${nft.tokenId}`}
-                              width={32}
-                              height={32}
-                              className='w-8 h-8 rounded-sm object-cover'
-                            />
-                          )}
-                          NFT #{nft.tokenId}
-                        </span>
-                        <span className='text-xs text-red-300 font-semibold flex items-center'>
-                          <Skull className='h-3 w-3 mr-1' />
-                          {rarityNames[nft.rarity] || 'Common'}
-                        </span>
-                      </div>
-                      <div className='flex items-center text-gray-500 text-sm mb-1'>
-                        <span className='text-xs'>
-                          💀 {t('info.inGraveyard', 'In Graveyard')}
-                        </span>
-                      </div>
-                      <div className='flex items-center text-red-400 text-sm'>
-                        <Lock className='h-4 w-4 mr-1' />
-                        {t('info.lockedCra', 'Locked OCTAA')}:{' '}
-                        {formatOctaAmount(nft.lockedOcta)}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </Card>
-
-  {nfts.length > 0 && totalLockedNumber > 0 && (
+      {nfts.length > 0 && totalLockedNumber > 0 && (
         <Card className='p-6 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-2 border-yellow-500/50 text-center shadow-lg shadow-yellow-500/20'>
           <div className='mb-4'>
             <h3 className='text-2xl font-bold text-yellow-300 mb-2'>
@@ -329,9 +395,8 @@ export default function UserNftsList() {
               ⚠️{' '}
               {t(
                 'info.craLockedWarning',
-                'OCTAA locked inside an NFT are not burned and travel with the NFT when it is transferred, sold or moved in any way. They permanently belong to the NFT itself. You can obtain these tokens only by'
-              )}{' '}
-              <span className='text-red-400 font-bold'>OCTAA</span>
+                'OCTAA locked inside an NFT are not burned and travel with the NFT when it is transferred, sold or moved in any way. They permanently belong to the NFT itself. You can obtain these tokens only by burning the NFT.'
+              )}
             </p>
           </div>
         </Card>

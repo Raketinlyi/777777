@@ -53,11 +53,40 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const CORE_ADDRESS = process.env.NEXT_PUBLIC_CORE_PROXY as `0x${string}`;
 const READER_ADDRESS = process.env.NEXT_PUBLIC_READER_ADDRESS as `0x${string}`;
-const SUBGRAPH_URL = process.env.NEXT_PUBLIC_SUBGRAPH_URL || '';
+// Production subgraph endpoints (priority order)
+const PRODUCTION_SUBGRAPH_URLS = [
+  'https://api.studio.thegraph.com/query/121684/octaa/v0.0.4',
+  'https://gateway.thegraph.com/api/subgraphs/id/AnTbm7ijFdHSemsaECfNQ8onnc67T8zDrAB13wjMVq8B',
+];
 
-let readerUnsupported = false;
+// Legacy fallbacks
+const LEGACY_SUBGRAPH_FALLBACKS = [
+  'https://api.studio.thegraph.com/query/111010/denis-3/v0.0.3',
+];
 
-const isReaderUnavailableError = (error: unknown): boolean => {
+const SUBGRAPH_CANDIDATES = [
+  process.env.NEXT_PUBLIC_SUBGRAPH_URL,
+  process.env.SUBGRAPH_URL,
+  ...PRODUCTION_SUBGRAPH_URLS,
+  ...LEGACY_SUBGRAPH_FALLBACKS,
+]
+  .map((value) => (typeof value === 'string' ? value.trim() : ''))
+  .filter((value, index, array) => value && array.indexOf(value) === index);
+
+let resolvedSubgraphUrl: string | null = null;
+
+const readerUnsupportedByChain = new Map<number, boolean>();
+
+const getReaderKey = (chainId?: number | null) => (typeof chainId === 'number' ? chainId : -1);
+
+const isReaderMarkedUnsupported = (chainId?: number | null): boolean =>
+  readerUnsupportedByChain.get(getReaderKey(chainId)) === true;
+
+const markReaderUnsupported = (chainId?: number | null) => {
+  readerUnsupportedByChain.set(getReaderKey(chainId), true);
+};
+
+const isReaderZeroDataError = (error: unknown): boolean => {
   if (error instanceof ContractFunctionZeroDataError) return true;
   if (error instanceof ContractFunctionExecutionError) {
     const short = error.shortMessage?.toLowerCase() ?? '';
@@ -74,6 +103,31 @@ const isReaderUnavailableError = (error: unknown): boolean => {
     if (message.includes('returned no data') || message.includes('viewgravewindow')) {
       return true;
     }
+  }
+  return false;
+};
+
+const isReaderFatalError = (error: unknown): boolean => {
+  if (error instanceof ContractFunctionExecutionError) {
+    const short = error.shortMessage?.toLowerCase() ?? '';
+    if (
+      short.includes('function selector was not recognized') ||
+      (short.includes('execution reverted') && !short.includes('returned no data'))
+    ) {
+      return true;
+    }
+    const causeMessage = (error.cause as Error | undefined)?.message?.toLowerCase() ?? '';
+    if (
+      causeMessage.includes('function selector was not recognized') ||
+      (causeMessage.includes('execution reverted') && !causeMessage.includes('returned no data'))
+    ) {
+      return true;
+    }
+  }
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (message.includes('function selector was not recognized')) return true;
+    if (message.includes('execution reverted') && !message.includes('returned no data')) return true;
   }
   return false;
 };
@@ -155,7 +209,15 @@ interface GraphToken {
 }
 
 const fetchFromSubgraph = async (address: `0x${string}`): Promise<GraphToken[]> => {
-  if (!SUBGRAPH_URL) return [];
+  const urls = resolvedSubgraphUrl
+    ? [
+        resolvedSubgraphUrl,
+        ...SUBGRAPH_CANDIDATES.filter((candidate) => candidate !== resolvedSubgraphUrl),
+      ]
+    : SUBGRAPH_CANDIDATES;
+
+  if (urls.length === 0) return [];
+
   const owner = address.toLowerCase();
   const query = `
     query Rewards($owner: String!) {
@@ -176,65 +238,99 @@ const fetchFromSubgraph = async (address: `0x${string}`): Promise<GraphToken[]> 
     }
   `;
 
-  const resp = await fetch(SUBGRAPH_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query, variables: { owner } }),
-  });
+  let lastError: unknown = null;
 
-  if (!resp.ok) throw new Error(`Subgraph error: ${resp.status}`);
-  const json = await resp.json();
-  const tokens = json?.data?.tokens as any[] | undefined;
-  if (!tokens) return [];
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query, variables: { owner } }),
+      });
 
-  return tokens
-    .filter((token) => token?.burnEvent)
-    .map((token) => {
-      const burn = token.burnEvent;
-      const claimAt = Number(burn?.claimAvailableAt ?? 0);
-      const waitMinutes = Number(burn?.waitMinutes ?? 0);
-      const graveReleaseAt = Number(burn?.graveyardReleaseAt ?? 0);
-      return {
-        tokenId: String(token.id ?? '0'),
-        totalAmount: String(burn?.totalAmount ?? '0'),
-        claimAt,
-        graveReleaseAt,
-        waitMinutes,
-        claimed: Boolean(token.isClaimed),
-      } as GraphToken;
-    });
+      if (!resp.ok) {
+        throw new Error(`Subgraph error: ${resp.status}`);
+      }
+
+      const json = await resp.json();
+      const tokens = json?.data?.tokens as any[] | undefined;
+      if (!tokens) {
+        resolvedSubgraphUrl = url;
+        return [];
+      }
+
+      resolvedSubgraphUrl = url;
+
+      return tokens
+        .filter((token) => token?.burnEvent)
+        .map((token) => {
+          const burn = token.burnEvent;
+          const claimAt = Number(burn?.claimAvailableAt ?? 0);
+          const waitMinutes = Number(burn?.waitMinutes ?? 0);
+          const graveReleaseAt = Number(burn?.graveyardReleaseAt ?? 0);
+          return {
+            tokenId: String(token.id ?? '0'),
+            totalAmount: String(burn?.totalAmount ?? '0'),
+            claimAt,
+            graveReleaseAt,
+            waitMinutes,
+            claimed: Boolean(token.isClaimed),
+          } as GraphToken;
+        });
+    } catch (error) {
+      lastError = error;
+      console.warn(`Subgraph fetch failed via ${url}`, error);
+    }
+  }
+
+  if (lastError) {
+    console.warn(
+      'All configured subgraph endpoints failed',
+      SUBGRAPH_CANDIDATES,
+      lastError,
+    );
+  }
+
+  return [];
 };
 
 const discoverTokenIdsViaReader = async (
   publicClient: ReturnType<typeof usePublicClient>,
+  chainId?: number | null,
 ): Promise<string[]> => {
   const ids: string[] = [];
-  if (!publicClient || readerUnsupported) return ids;
+  if (!publicClient || isReaderMarkedUnsupported(chainId)) return ids;
+  
   let offset = 0n;
   const MAX = 800n;
-  for (let i = 0; i < 2000; i++) {
-    let res: unknown;
+  const MAX_PAGES = 10; // Ограничение: только 10 страниц (8000 токенов макс)
+  
+  for (let i = 0; i < MAX_PAGES; i++) {
     try {
-      res = await publicClient.readContract({
+      const res = await publicClient.readContract({
         address: READER_ADDRESS,
         abi: crazyOctagonReaderAbi as any,
         functionName: 'viewGraveWindow',
         args: [offset, MAX],
       });
+      const tuple = res as unknown as [readonly bigint[], bigint, bigint, number?];
+      const chunk = tuple?.[0] ?? [];
+      const cursor = tuple?.[2] ?? 0n;
+      for (const id of chunk) ids.push(id.toString());
+      if (cursor === 0n || chunk.length === 0) break;
+      offset = cursor;
     } catch (error) {
-      if (isReaderUnavailableError(error)) {
-        readerUnsupported = true;
-        console.warn('CrazyOctagon reader: viewGraveWindow unavailable, falling back to subgraph cache');
-        return [];
+      if (isReaderZeroDataError(error)) {
+        console.warn('CrazyOctagon reader: viewGraveWindow returned no data, stopping enumeration');
+        break;
+      }
+      if (isReaderFatalError(error)) {
+        markReaderUnsupported(chainId);
+        console.warn('CrazyOctagon reader unavailable, falling back to subgraph cache');
+        break;
       }
       throw error;
     }
-    const tuple = res as unknown as [readonly bigint[], bigint, bigint, number?];
-    const chunk = tuple?.[0] ?? [];
-    const cursor = tuple?.[2] ?? 0n;
-    for (const id of chunk) ids.push(id.toString());
-    if (cursor === 0n || chunk.length === 0) break;
-    offset = cursor;
   }
   return [...new Set(ids)];
 };
@@ -243,73 +339,80 @@ const loadRewardsFromReader = async (
   publicClient: ReturnType<typeof usePublicClient>,
   address: `0x${string}`,
   chainNow: number,
+  chainId: number | null | undefined,
   tokenIds?: string[],
 ): Promise<BurnReward[]> => {
-  if (!publicClient) return [];
+  if (!publicClient || isReaderMarkedUnsupported(chainId)) return [];
 
   const resolvedIds =
     tokenIds && tokenIds.length > 0
       ? [...new Set(tokenIds)]
-      : await discoverTokenIdsViaReader(publicClient);
+      : await discoverTokenIdsViaReader(publicClient, chainId);
 
   if (resolvedIds.length === 0) return [];
 
-  const calls = resolvedIds.map((id) => ({
-    address: READER_ADDRESS,
-    abi: crazyOctagonReaderAbi as any,
-    functionName: 'getBurnInfo',
-    args: [BigInt(id)],
-  }));
-
-  const results = await publicClient.multicall({ contracts: calls as any, allowFailure: true });
+  // Batching: делим на пачки по 50 токенов
+  const BATCH_SIZE = 50;
   const rewards: BurnReward[] = [];
 
-  results.forEach((result, index) => {
-    if (!result || result.status !== 'success') return;
-    const data = result.result as unknown as [
-      `0x${string}`,
-      bigint,
-      bigint,
-      bigint,
-      boolean,
-      number,
-      bigint,
-      bigint,
-      bigint,
-    ];
-    const owner = data?.[0];
-    if (!isAddressEqual(owner, address)) return;
-    const totalAmount = data?.[1] ?? 0n;
-    const claimAt = Number(data?.[2] ?? 0n);
-    const graveReleaseAt = Number(data?.[3] ?? 0n);
-    const claimed = Boolean(data?.[4]);
-    const waitMinutes = Number(data?.[5] ?? 0);
-    const playerAmount = data?.[6] ?? 0n;
-    const poolAmount = data?.[7] ?? 0n;
-    const burnedAmount = data?.[8] ?? 0n;
+  for (let i = 0; i < resolvedIds.length; i += BATCH_SIZE) {
+    const batch = resolvedIds.slice(i, i + BATCH_SIZE);
+    const calls = batch.map((id) => ({
+      address: READER_ADDRESS,
+      abi: crazyOctagonReaderAbi as any,
+      functionName: 'getBurnInfo',
+      args: [BigInt(id)],
+    }));
 
-  const tokenId = resolvedIds[index];
-  if (!tokenId) return;
+    const results = await publicClient.multicall({ contracts: calls as any, allowFailure: true });
 
-    rewards.push({
-      tokenId,
-      owner,
-      totalAmount: totalAmount.toString(),
-      playerAmount: playerAmount.toString(),
-      poolAmount: poolAmount.toString(),
-      burnedAmount: burnedAmount.toString(),
-      claimAt,
-      graveReleaseAt,
-      waitMinutes,
-      claimed,
-      isClaimable: !claimed && chainNow >= claimAt,
-      playerBps: 0,
-      poolBps: 0,
-      burnBps: 0,
-      lpInfo: null,
-      hasLpPayout: false,
+    results.forEach((result, index) => {
+      if (!result || result.status !== 'success') return;
+      const data = result.result as unknown as [
+        `0x${string}`,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        number,
+        bigint,
+        bigint,
+        bigint,
+      ];
+      const owner = data?.[0];
+      if (!isAddressEqual(owner, address)) return;
+      const totalAmount = data?.[1] ?? 0n;
+      const claimAt = Number(data?.[2] ?? 0n);
+      const graveReleaseAt = Number(data?.[3] ?? 0n);
+      const claimed = Boolean(data?.[4]);
+      const waitMinutes = Number(data?.[5] ?? 0);
+      const playerAmount = data?.[6] ?? 0n;
+      const poolAmount = data?.[7] ?? 0n;
+      const burnedAmount = data?.[8] ?? 0n;
+
+      const tokenId = batch[index];
+      if (!tokenId) return;
+
+      rewards.push({
+        tokenId,
+        owner,
+        totalAmount: totalAmount.toString(),
+        playerAmount: playerAmount.toString(),
+        poolAmount: poolAmount.toString(),
+        burnedAmount: burnedAmount.toString(),
+        claimAt,
+        graveReleaseAt,
+        waitMinutes,
+        claimed,
+        isClaimable: !claimed && chainNow >= claimAt,
+        playerBps: 0,
+        poolBps: 0,
+        burnBps: 0,
+        lpInfo: null,
+        hasLpPayout: false,
+      });
     });
-  });
+  }
 
   return rewards;
 };
@@ -367,6 +470,7 @@ export function usePendingBurnRewards(): HookState {
       setError(null);
 
       let chainNow = Math.floor(Date.now() / 1000);
+      const chainId = publicClient?.chain?.id ?? null;
       try {
         const block = await publicClient.getBlock();
         chainNow = Number(block.timestamp);
@@ -387,13 +491,13 @@ export function usePendingBurnRewards(): HookState {
       let baseRewards: BurnReward[] = [];
       const seenIds = new Set<string>();
 
-      // 1) Сначала пробуем субграф (если доступен)
-      if (SUBGRAPH_URL) {
+  // 1) Сначала пробуем субграф (если есть кандидаты URL)
+  if (SUBGRAPH_CANDIDATES.length > 0) {
         try {
           const graphTokens = await fetchFromSubgraph(address);
           if (graphTokens.length > 0) {
             const ids = graphTokens.map((token) => token.tokenId);
-            const readerData = await loadRewardsFromReader(publicClient, address, chainNow, ids);
+            const readerData = await loadRewardsFromReader(publicClient, address, chainNow, chainId, ids);
 
             readerData.forEach((reward) => {
               seenIds.add(reward.tokenId);
@@ -431,14 +535,14 @@ export function usePendingBurnRewards(): HookState {
 
       // 2) Fallback: Reader перечисление, если субграф ничего не дал
       if (baseRewards.length === 0) {
-        baseRewards = await loadRewardsFromReader(publicClient, address, chainNow);
+        baseRewards = await loadRewardsFromReader(publicClient, address, chainNow, chainId);
         baseRewards.forEach((reward) => seenIds.add(reward.tokenId));
       } else {
         // Подстрахуемся: вдруг в grave есть ещё id, которых нет в субграфе
-        const extraIds = await discoverTokenIdsViaReader(publicClient);
+        const extraIds = await discoverTokenIdsViaReader(publicClient, chainId);
         const missing = extraIds.filter((id) => !seenIds.has(id));
         if (missing.length > 0) {
-          const extra = await loadRewardsFromReader(publicClient, address, chainNow, missing);
+          const extra = await loadRewardsFromReader(publicClient, address, chainNow, chainId, missing);
           extra.forEach((reward) => {
             seenIds.add(reward.tokenId);
             baseRewards.push(reward);

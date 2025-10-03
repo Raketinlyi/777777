@@ -1,0 +1,1318 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Monad theme */
+@import './monad-theme.css';
+
+/* Global keyframes */
+@keyframes sheen {
+  0% { background-position: 200% 0%; }
+  100% { background-position: -200% 0%; }
+}
+
+@layer base {
+  :root {
+    /* Monad Design System - Professional Deep Purple/Blue Theme */
+    --background: 248 100% 3%; /* #0A0014 - Deep purple-black */
+    --foreground: 240 20% 95%; /* #EEEEF2 - Light purple-white */
+    --card: 248 50% 8%; /* #1A0B33 - Deep purple surface */
+    --card-foreground: 240 20% 95%;
+    --popover: 248 100% 5%; /* Slightly lighter than background */
+    --popover-foreground: 240 20% 95%;
+    --primary: 260 100% 70%; /* #8B5CF6 - Rich purple (Monad signature) */
+    --primary-foreground: 248 100% 3%;
+    --secondary: 225 100% 60%; /* #3B82F6 - Deep blue */
+    --secondary-foreground: 240 20% 95%;
+    --muted: 248 30% 12%; /* Muted purple surface */
+    --muted-foreground: 240 15% 70%;
+    --accent: 260 100% 70%; /* Same as primary */
+    --accent-foreground: 248 100% 3%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 240 20% 95%;
+    --border: 260 50% 25%; /* Deep purple border */
+    --input: 248 30% 12%;
+    --ring: 260 100% 70%; /* Purple focus ring */
+    --radius: 0.75rem; /* Increased border radius */
+
+    /* Custom Monad colors - authentic purple/blue palette */
+    --monad-purple: 260 100% 70%; /* #8B5CF6 - Signature purple */
+    --monad-blue: 225 100% 60%; /* #3B82F6 - Deep blue */
+    --monad-accent: 280 100% 65%; /* #C084FC - Light purple accent */
+    --monad-dark: 248 100% 3%; /* #0A0014 - Deep purple-black */
+    --monad-darker: 248 100% 2%; /* #050007 - Darker purple */
+    --monad-surface: 248 50% 8%; /* #1A0B33 - Purple surface */
+    --monad-glow: 260 100% 80%; /* #A78BFA - Glow purple */
+
+    /* Chart colors - updated for authentic Monad theme */
+    --chart-1: 260 100% 70%; /* Signature purple */
+    --chart-2: 225 100% 60%; /* Deep blue */
+    --chart-3: 280 100% 65%; /* Light purple */
+    --chart-4: 38 92% 50%; /* Gold accent */
+    --chart-5: 0 84% 60%; /* Red accent */
+  }
+
+  .dark {
+    /* Use same colors for dark mode since we're Monad-themed */
+    --background: 220 15% 8%;
+    --foreground: 220 15% 95%;
+    --card: 220 15% 12%;
+    --card-foreground: 220 15% 95%;
+    --popover: 220 15% 10%;
+    --popover-foreground: 220 15% 95%;
+    --primary: 195 100% 50%;
+    --primary-foreground: 220 15% 8%;
+    --secondary: 258 92% 61%;
+    --secondary-foreground: 220 15% 95%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 15% 70%;
+    --accent: 195 100% 50%;
+    --accent-foreground: 220 15% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 220 15% 95%;
+    --border: 195 100% 20%;
+    --input: 220 15% 18%;
+    --ring: 195 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Monad Design System Utilities */
+.neon-border {
+  @apply border border-primary/50 shadow-lg shadow-primary/20;
+}
+
+.neon-glow {
+  @apply shadow-lg shadow-primary/30;
+}
+
+.neon-text {
+  @apply font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary;
+}
+
+.neon-button {
+  /* Luxe gold CTA button */
+  @apply bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 text-slate-900 font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-amber-400/40 border border-amber-300/30 hover:border-amber-200/40;
+  background-size: 200% 200%;
+  animation: gradient-shift 4.5s ease infinite;
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+/* Premium gloss and inner stroke */
+.neon-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  opacity: 0.4;
+  pointer-events: none;
+}
+.neon-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+  opacity: 0.25;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+.neon-button:hover {
+  transform: translateY(-2px);
+}
+
+.crypto-card {
+  @apply bg-card/80 border border-border backdrop-blur-md rounded-2xl shadow-xl shadow-black/20;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Premium subtle accents for cards */
+.crypto-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.6), transparent);
+  pointer-events: none;
+}
+.crypto-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+.crypto-card:hover {
+  box-shadow:
+    0 20px 50px rgba(139, 92, 246, 0.18),
+    0 6px 20px rgba(251, 191, 36, 0.12);
+}
+
+.surface-elevated {
+  @apply bg-card border border-border/50 rounded-xl;
+}
+
+/* Neon outline for active elements */
+.neon-outline {
+  @apply ring-2 ring-primary/60 ring-offset-2 ring-offset-background;
+}
+
+/* Typography hierarchy */
+.heading-1 {
+  @apply text-5xl font-bold tracking-tight;
+}
+
+.heading-2 {
+  @apply text-3xl font-semibold tracking-tight;
+}
+
+.heading-3 {
+  @apply text-xl font-medium;
+}
+
+.body-text {
+  @apply text-base leading-relaxed;
+}
+
+/* Updated legacy classes to use new system */
+.ape-border {
+  @apply neon-border;
+}
+
+.ape-glow {
+  @apply neon-glow;
+}
+
+.ape-text {
+  @apply neon-text;
+}
+
+.ape-button {
+  @apply neon-button;
+}
+
+.ape-card {
+  @apply crypto-card;
+}
+
+/* Add these mobile optimizations at the end of the file */
+
+@layer utilities {
+  /* Hide scrollbar but allow scrolling */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Mobile touch optimizations */
+  @media (max-width: 768px) {
+    /* Increase touch target sizes */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Optimize font sizes for mobile */
+    .text-mobile-sm {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+
+    .text-mobile-base {
+      font-size: 1rem;
+      line-height: 1.5rem;
+    }
+
+    .text-mobile-lg {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+
+    .text-mobile-xl {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+
+    /* Reduce animation intensity on mobile */
+    .reduce-motion {
+      animation-duration: 50% !important;
+      transition-duration: 50% !important;
+    }
+
+    /* Optimize padding and margins for mobile */
+    .p-mobile {
+      padding: 0.75rem;
+    }
+
+    .m-mobile {
+      margin: 0.75rem;
+    }
+
+    .gap-mobile {
+      gap: 0.5rem;
+    }
+  }
+
+  /* Add smooth scrolling for better mobile experience */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent content from being hidden under fixed headers on mobile */
+  .scroll-margin-top {
+    scroll-margin-top: 4rem;
+  }
+
+  /* Mobile viewport fixes */
+  .mobile-safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* NFT Card responsive sizing - compact version */
+  .nft-card-grid {
+    @apply grid gap-2;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  /* Burn page: более широкие карточки, чтобы не схлопывались */
+  .burn-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  @media (min-width: 1024px) {
+    .burn-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+  }
+
+  /* Золотая обводка для NFT карточек на burn странице */
+  .burn-card-grid .group > div {
+    border: 2px solid #fbbf24 !important; /* золотая обводка */
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 
+                0 0 40px rgba(251, 191, 36, 0.1),
+                inset 0 0 20px rgba(251, 191, 36, 0.05) !important;
+    background: linear-gradient(135deg, 
+                rgba(0, 0, 0, 0.9) 0%, 
+                rgba(20, 20, 20, 0.95) 50%, 
+                rgba(0, 0, 0, 0.9) 100%) !important;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .burn-card-grid .group:hover > div {
+    border-color: #f59e0b !important; /* более яркое золото при hover */
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), 
+                0 0 60px rgba(245, 158, 11, 0.2),
+                inset 0 0 30px rgba(245, 158, 11, 0.1) !important;
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Улучшенная видимость содержимого карточек */
+  .burn-card-grid .group .text-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 
+                 0 0 20px rgba(255, 255, 255, 0.4) !important;
+  }
+
+  .burn-card-grid .group .bg-gradient-to-br {
+    background: linear-gradient(135deg, 
+                rgba(30, 30, 30, 0.95) 0%, 
+                rgba(50, 50, 50, 0.9) 50%, 
+                rgba(30, 30, 30, 0.95) 100%) !important;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  @media (min-width: 640px) {
+    .nft-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      @apply gap-3;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .nft-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      @apply gap-4;
+    }
+  }
+
+  /* Telegram Browser specific */
+  .telegram {
+    /* Disable pull-to-refresh */
+    overscroll-behavior: none;
+  }
+
+  .telegram body {
+    /* Fix viewport issues in Telegram */
+    height: 100vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile touch optimizations */
+  .mobile button,
+  .mobile a {
+    @apply min-h-[44px] min-w-[44px];
+    touch-action: manipulation;
+  }
+
+  /* Reduce animations on mobile */
+  .mobile .animate-pulse,
+  .reduce-motion .animate-pulse {
+    animation: none;
+    @apply opacity-90;
+  }
+
+  .mobile .animate-spin,
+  .reduce-motion .animate-spin {
+    animation: spin 2s linear infinite;
+  }
+
+  /* Mobile-optimized text sizes */
+  .mobile h1 {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  .mobile h2 {
+    @apply text-xl sm:text-2xl;
+  }
+
+  .mobile p {
+    @apply text-sm sm:text-base;
+  }
+
+  /* NFT card mobile styles */
+  .mobile .nft-card {
+    @apply p-2 sm:p-3;
+  }
+
+  .mobile .nft-card img {
+    @apply rounded-md;
+  }
+
+  /* Mobile navigation */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t z-50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Add bottom padding for mobile navigation */
+  .mobile .min-h-screen {
+    padding-bottom: 4rem; /* 64px for mobile nav */
+  }
+
+  /* Ensure content doesn't get hidden behind mobile nav */
+  .mobile .container {
+    padding-bottom: 1rem;
+  }
+
+  /* Disable hover effects on mobile */
+  @media (hover: none) {
+    .hover\:scale-105:hover {
+      transform: none;
+    }
+
+    .hover\:shadow-2xl:hover {
+      box-shadow: none;
+    }
+  }
+
+  /* iOS specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    input,
+    textarea {
+      font-size: 16px; /* Prevent zoom on input focus */
+    }
+  }
+
+  /* Mobile-first optimizations */
+  /* Touch-friendly button sizes */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Mobile-optimized text sizes */
+  .mobile-text-xs {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .mobile-text-sm {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .mobile-text-base {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .mobile-text-lg {
+    font-size: 18px;
+    line-height: 28px;
+  }
+  .mobile-text-xl {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .mobile-text-2xl {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  /* Responsive spacing for mobile */
+  .mobile-p-2 {
+    padding: 8px;
+  }
+  .mobile-p-3 {
+    padding: 12px;
+  }
+  .mobile-p-4 {
+    padding: 16px;
+  }
+  .mobile-gap-2 {
+    gap: 8px;
+  }
+  .mobile-gap-3 {
+    gap: 12px;
+  }
+  .mobile-gap-4 {
+    gap: 16px;
+  }
+
+  /* Mobile-specific NFT card optimizations */
+  @media (max-width: 768px) {
+    .nft-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    .nft-rewards-text {
+      font-size: 12px !important;
+      line-height: 16px !important;
+    }
+
+    .nft-card-padding {
+      padding: 12px !important;
+    }
+
+    /* Larger touch targets for mobile */
+    .mobile-button {
+      min-height: 48px;
+      padding: 12px 16px;
+      font-size: 16px;
+    }
+
+    /* Tab navigation mobile optimization */
+    .mobile-tab {
+      min-height: 44px;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    /* Wallet button mobile optimization */
+    .mobile-wallet {
+      min-height: 44px;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+  }
+
+  /* Extra small devices optimization */
+  @media (max-width: 375px) {
+    .nft-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .mobile-text-compact {
+      font-size: 11px;
+      line-height: 14px;
+    }
+
+    .mobile-compact-padding {
+      padding: 6px 8px;
+    }
+  }
+
+  /* Prevent text selection on touch devices */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Optimize for one-handed usage */
+  .thumb-zone {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    pointer-events: none;
+  }
+
+  .thumb-zone > * {
+    pointer-events: auto;
+  }
+}
+
+/* Ignite effect for CTA buttons */
+.ignite-active {
+  position: relative;
+  box-shadow:
+    0 0 16px rgba(56, 189, 248, 0.6),
+    0 0 32px rgba(59, 130, 246, 0.5),
+    inset 0 0 18px rgba(14, 165, 233, 0.4);
+  transform: translateZ(0) scale(1.02);
+  transition: box-shadow 250ms ease, transform 250ms ease;
+}
+
+
+/* Add optimizations for reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 200ms !important;
+    /* keep animations but make them faster on reduce */
+    transition-duration: 200ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Lite Mode Styles - Simplified interface for weak devices */
+.lite-mode {
+  /* Disable heavy animations */
+  --animation-duration: 0.1s;
+  --transition-duration: 0.1s;
+}
+
+.lite-mode * {
+  animation-duration: var(--animation-duration) !important;
+  transition-duration: var(--transition-duration) !important;
+}
+
+/* Simplify cards in lite mode */
+.lite-mode .ape-card {
+  @apply bg-slate-800 border border-slate-600;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Remove complex gradients in lite mode */
+.lite-mode .ape-text {
+  @apply text-cyan-400;
+  background: none;
+  -webkit-background-clip: unset;
+}
+
+/* Simplify buttons in lite mode */
+.lite-mode .ape-button {
+  @apply bg-blue-600 hover:bg-blue-700;
+  background-image: none;
+}
+
+/* Remove particle effects in lite mode */
+.lite-mode .particle-effect {
+  display: none !important;
+}
+
+/* Simplify hover effects in lite mode */
+.lite-mode *:hover {
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Mobile optimizations for lite mode */
+@media (max-width: 768px) {
+  .lite-mode .ape-card {
+    @apply p-3;
+  }
+
+  .lite-mode .ape-button {
+    @apply text-base py-2 px-4;
+  }
+
+  .lite-mode .text-mobile-lg {
+    @apply text-base;
+  }
+
+  .lite-mode .text-mobile-xl {
+    @apply text-lg;
+  }
+}
+
+.burned-img {
+  position: relative;
+}
+
+.burned-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2NkYGBgAAAABAABJzQnCgAAAABJRU5ErkJggg==');
+  background-repeat: repeat;
+  mix-blend-mode: multiply;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* --- 🔥 Burn button flame effect --- */
+@keyframes flameFlicker {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1) translateY(0);
+  }
+  25% {
+    opacity: 0.9;
+    transform: scale(1.05) translateY(-2px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.95) translateY(1px);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-1px);
+  }
+}
+.btn-flames {
+  position: absolute;
+  inset: -4px;
+  background:
+    radial-gradient(
+      ellipse at bottom,
+      #ff6b00 0%,
+      #ff0000 25%,
+      transparent 70%
+    ),
+    radial-gradient(ellipse at bottom, #ffaa00 0%, #ff4500 35%, transparent 80%);
+  filter: blur(4px);
+  animation: flameFlicker 0.5s ease-in-out infinite alternate;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+/* --- end flame effect --- */
+
+/* 3D Perspective for game page */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Gradient radial background */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* --- Telegram in-app browser and general mobile tweaks --- */
+.telegram *,
+.mobile.reduce-motion *,
+.reduce-motion.telegram * {
+  animation-duration: 0.6s !important;
+  transition-duration: 0.6s !important;
+}
+
+/* Ensure full-width layout inside Telegram WebView (it sometimes adds paddings) */
+html.telegram body {
+  margin: 0;
+  padding: 0;
+}
+/* --- end Telegram tweaks --- */
+
+/* Performance mode styles */
+.lite-mode * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* Scrollbar styles */
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+/* Hide mobile navigation on desktop devices */
+@media (min-width: 1024px) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+/* Additional desktop detection */
+@media (min-width: 1024px) and (hover: hover) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+/* Force hide on large screens */
+@media (min-width: 1200px) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+/* Adaptive text classes for CRAA amounts and other numbers */
+@layer utilities {
+  /* Adaptive text that automatically adjusts based on content length */
+  .adaptive-text {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Compact number display for buttons and small spaces */
+  .compact-number {
+    font-family:
+      ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono',
+      Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  /* Monospaced/tabular numeric font for stable number width */
+  .number-monospace {
+    font-family:
+      ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* Auto-sizing text for different container sizes */
+  .auto-size-text {
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    line-height: 1.2;
+  }
+
+  .auto-size-text-lg {
+    font-size: clamp(1rem, 3vw, 1.25rem);
+    line-height: 1.3;
+  }
+
+  .auto-size-text-xl {
+    font-size: clamp(1.25rem, 4vw, 1.5rem);
+    line-height: 1.4;
+  }
+
+  /* Responsive text for breed section */
+  .breed-cost-text {
+    font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Button text that adapts to content */
+  .button-adaptive-text {
+    font-size: clamp(0.75rem, 2vw, 0.875rem);
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Container query support for modern browsers */
+  @supports (container-type: inline-size) {
+    .container-adaptive {
+      container-type: inline-size;
+    }
+
+    .container-adaptive .adaptive-text {
+      font-size: clamp(0.75rem, 8cqw, 1rem);
+    }
+
+    .container-adaptive .adaptive-text-lg {
+      font-size: clamp(1rem, 10cqw, 1.25rem);
+    }
+  }
+
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    .container-adaptive .adaptive-text {
+      font-size: clamp(0.75rem, 2vw, 1rem);
+    }
+
+    .container-adaptive .adaptive-text-lg {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+    }
+  }
+
+  /* Mobile-specific text sizing for breed section */
+  @media (max-width: 640px) {
+    .breed-mobile-text {
+      font-size: 0.75rem;
+      line-height: 1rem;
+    }
+
+    .breed-mobile-button {
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .breed-mobile-cost {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+  }
+
+  /* Extra small screens */
+  @media (max-width: 375px) {
+    .breed-mobile-text {
+      font-size: 0.7rem;
+      line-height: 0.9rem;
+    }
+
+    .breed-mobile-cost {
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Text truncation with tooltip support */
+  .truncate-with-tooltip {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: help;
+  }
+
+  /* Number formatting utilities */
+  .number-compact {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  .number-monospace {
+    font-family:
+      ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono',
+      Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes neonFlicker {
+  0%, 100% {
+    text-shadow:
+      0 0 8px #00fff7,
+      0 0 16px #00eaff,
+      0 0 32px #00eaff,
+      0 0 64px #00eaff;
+  }
+  50% {
+    text-shadow:
+      0 0 16px #00fff7,
+      0 0 32px #00eaff,
+      0 0 64px #00eaff,
+      0 0 128px #00eaff;
+  }
+}
+.neon-flicker {
+  color: #00fff7;
+  text-shadow:
+    0 0 8px #00fff7,
+    0 0 16px #00eaff,
+    0 0 32px #00eaff,
+    0 0 64px #00eaff;
+  animation: neonFlicker 2s infinite alternate;
+}
+
+/* Crypto-styled text utilities */
+.text-gradient-crypto {
+  background-image: linear-gradient(90deg, #fbbf24, #f59e0b 25%, #d97706 55%, #a78bfa 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: shimmer-sweep 8s linear infinite;
+}
+
+.crypto-title {
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 6px rgba(251, 191, 36, 0.45),
+    0 0 14px rgba(167, 139, 250, 0.35),
+    0 0 28px rgba(245, 158, 11, 0.25);
+  filter: saturate(1.25) brightness(1.05);
+}
+
+.crypto-title.glitch-soft {
+  animation: crypto-glitch 3.6s ease-in-out infinite;
+}
+
+.crypto-body {
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  color: rgba(226, 242, 255, 0.92);
+  text-shadow: 0 0 6px rgba(14, 165, 233, 0.15);
+}
+
+.holo-underline {
+  position: relative;
+}
+.holo-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.8), rgba(245, 158, 11, 0.8), rgba(217, 119, 6, 0.8), transparent);
+  background-size: 200% 100%;
+  filter: blur(0.5px);
+  animation: shimmer-sweep 5.5s linear infinite;
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes crypto-glitch {
+  0% { transform: translateX(0); filter: hue-rotate(0deg) brightness(1); }
+  2% { transform: translateX(0.6px); filter: hue-rotate(8deg) brightness(1.15); }
+  4% { transform: translateX(-0.6px); filter: hue-rotate(-6deg) brightness(1.05); }
+  6% { transform: translateX(0.3px); filter: hue-rotate(4deg) brightness(1.1); }
+  8% { transform: translateX(0); filter: hue-rotate(0deg) brightness(1); }
+  100% { transform: translateX(0); filter: hue-rotate(0deg) brightness(1); }
+}
+
+/* Gradient animation for Monad buttons */
+@keyframes gradient-shift {
+  0% { 
+    background-position: 0% 50%; 
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35); /* amber-500 */
+  }
+  50% { 
+    background-position: 100% 50%; 
+    box-shadow: 0 6px 22px rgba(251, 191, 36, 0.45); /* amber-400 */
+  }
+  100% { 
+    background-position: 0% 50%; 
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+  }
+}
+
+/* Enhanced burn background animations */
+@keyframes burnGlow {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    opacity: 0.85;
+    transform: scale(1.01) rotate(0.5deg);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02) rotate(0deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: scale(1.015) rotate(-0.5deg);
+  }
+}
+
+@keyframes burnShimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.2;
+  }
+  70% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes heatWave {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scaleY(1.1) scaleX(0.95);
+    opacity: 0.4;
+  }
+}
+
+/* Burn background utility classes */
+.burn-glow {
+  animation: burnGlow 19.66s ease-in-out infinite;
+}
+
+.ember-float {
+  animation: emberFloat 9.83s ease-out infinite;
+}
+
+.heat-wave {
+  animation: heatWave 5.04s ease-in-out infinite;
+}
+
+/* Enhanced burn page background - Purple-cyan plasma theme */
+.burn-background {
+  background: 
+    /* Основной градиент - фиолетовый к индиго к черному */
+    linear-gradient(135deg, 
+      hsl(260, 100%, 8%) 0%,    /* Глубокий фиолетовый */
+      hsl(280, 80%, 6%) 25%,    /* Темно-пурпурный */
+      hsl(250, 70%, 5%) 50%,    /* Темно-индиго */
+      hsl(240, 60%, 6%) 75%,    /* Темно-синий */
+      hsl(260, 100%, 3%) 100%   /* Очень темный фиолетовый */
+    ),
+    /* Фиолетово-голубые акценты вместо огненных */
+    radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at top right, rgba(99, 102, 241, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(6, 182, 212, 0.2) 0%, transparent 60%);
+  position: relative;
+  overflow: hidden;
+}
+
+.burn-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    /* Динамические фиолетово-голубые пятна вместо огненных */
+    radial-gradient(circle at 15% 85%, rgba(139, 92, 246, 0.15) 0%, transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
+    /* Дополнительные фиолетовые акценты */
+    radial-gradient(circle at 70% 80%, rgba(196, 132, 252, 0.1) 0%, transparent 30%),
+    radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 35%);
+  animation: burnGlow 10.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.burn-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    /* Тонкие световые полосы для глубины - фиолетово-голубые вместо красных */
+    linear-gradient(45deg, transparent 48%, rgba(139, 92, 246, 0.05) 49%, rgba(139, 92, 246, 0.05) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(99, 102, 241, 0.03) 49%, rgba(99, 102, 241, 0.03) 51%, transparent 52%);
+  animation: burnShimmer 15.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Анимации для золотого свечения NFT карточек */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 
+                0 0 40px rgba(251, 191, 36, 0.1),
+                inset 0 0 20px rgba(251, 191, 36, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5), 
+                0 0 60px rgba(251, 191, 36, 0.2),
+                inset 0 0 30px rgba(251, 191, 36, 0.1);
+  }
+}
+
+@keyframes goldShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Дополнительные эффекты для burn карточек */
+.burn-card-grid .group > div::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(251, 191, 36, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.burn-card-grid .group:hover > div::before {
+  left: 100%;
+}
+
+/* Пульсирующее золотое свечение */
+.burn-card-grid .group > div {
+  animation: goldPulse 3s ease-in-out infinite;
+}
+
+/* Улучшенная видимость бейджей и текста */
+.burn-card-grid .group .bg-orange-600\/80,
+.burn-card-grid .group .bg-red-400\/80 {
+  background: rgba(251, 191, 36, 0.9) !important;
+  color: #000 !important;
+  font-weight: bold;
+  text-shadow: none !important;
+  border: 1px solid rgba(245, 158, 11, 0.8);
+}
+
+/* Дополнительные стили для улучшения контраста */
+.burn-card-grid .group h3,
+.burn-card-grid .group .text-lg,
+.burn-card-grid .group .text-xl {
+  color: #fff !important;
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.8), 
+               0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 600 !important;
+}
+
+.burn-card-grid .group .text-sm,
+.burn-card-grid .group .text-xs {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.6), 
+               0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Улучшение видимости кнопок */
+.burn-card-grid .group button {
+  background: linear-gradient(135deg, 
+              rgba(251, 191, 36, 0.9) 0%, 
+              rgba(245, 158, 11, 0.9) 100%) !important;
+  color: #000 !important;
+  border: 2px solid rgba(251, 191, 36, 0.8) !important;
+  font-weight: bold !important;
+  text-shadow: none !important;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4) !important;
+}
+
+.burn-card-grid .group button:hover {
+  background: linear-gradient(135deg, 
+              rgba(251, 191, 36, 1) 0%, 
+              rgba(245, 158, 11, 1) 100%) !important;
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.6) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Улучшение видимости иконок и изображений */
+.burn-card-grid .group img {
+  border: 2px solid rgba(251, 191, 36, 0.3);
+}
+
+/* Улучшенные стили для карточек на новом фоне */
+.burn-background .crypto-card {
+  background: rgba(10, 0, 20, 0.85) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(139, 92, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.burn-background .crypto-card:hover {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(139, 92, 246, 0.25),
+    0 0 60px rgba(251, 146, 60, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Улучшение текста на новом фоне */
+.burn-background h1,
+.burn-background h2,
+.burn-background h3 {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.burn-background p,
+.burn-background span {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+.burn-card-grid .group img:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
+}
+
+/* Кастомная замедленная пульсация для награды */
+@keyframes reward-pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-reward-pulse {
+  animation: reward-pulse-slow 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

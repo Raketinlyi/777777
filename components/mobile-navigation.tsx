@@ -27,12 +27,11 @@ export function MobileNavigation() {
   if (!isMobile) return null;
 
   return (
-    <div className='fixed bottom-0 left-0 right-0 z-40 bg-purple-900/80 backdrop-blur-sm border-t border-purple-700/50'>
-      <nav className='mobile-nav'>
-        <div className='flex justify-around items-center h-16 px-2'>
-          {getNavItems(t).map(item => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+    <nav className='mobile-nav'>
+      <div className='flex justify-around items-center h-16 px-2'>
+        {getNavItems(t).map(item => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
 
             return (
               <Link
@@ -52,7 +51,6 @@ export function MobileNavigation() {
             );
           })}
         </div>
-      </nav>
-    </div>
+    </nav>
   );
 }

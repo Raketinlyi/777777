@@ -1,0 +1,93 @@
+/* Анимация дрожания карточки */
+@keyframes shake {
+  0%, 100% { transform: translateX(0) translateY(0) rotate(0deg); }
+  10% { transform: translateX(-2px) translateY(-1px) rotate(-0.5deg); }
+  20% { transform: translateX(2px) translateY(1px) rotate(0.5deg); }
+  30% { transform: translateX(-1px) translateY(-2px) rotate(-0.3deg); }
+  40% { transform: translateX(1px) translateY(2px) rotate(0.3deg); }
+  50% { transform: translateX(-2px) translateY(0px) rotate(-0.4deg); }
+  60% { transform: translateX(2px) translateY(-1px) rotate(0.4deg); }
+  70% { transform: translateX(-1px) translateY(1px) rotate(-0.2deg); }
+  80% { transform: translateX(1px) translateY(-1px) rotate(0.2deg); }
+  90% { transform: translateX(-1px) translateY(0px) rotate(-0.1deg); }
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out infinite;
+}
+
+/* Эффекты обугливания */
+.char-level-1 {
+  position: relative;
+}
+
+.char-level-1::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 70%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 70% 30%, rgba(101, 67, 33, 0.08) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.char-level-2 {
+  position: relative;
+}
+
+.char-level-2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.2) 0%, transparent 60%),
+              radial-gradient(circle at 80% 20%, rgba(101, 67, 33, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(160, 82, 45, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.char-level-3 {
+  position: relative;
+}
+
+.char-level-3::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 15% 85%, rgba(139, 69, 19, 0.3) 0%, transparent 70%),
+              radial-gradient(circle at 85% 15%, rgba(101, 67, 33, 0.25) 0%, transparent 60%),
+              radial-gradient(circle at 60% 40%, rgba(160, 82, 45, 0.2) 0%, transparent 80%),
+              radial-gradient(circle at 40% 60%, rgba(210, 180, 140, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* Дополнительные эффекты для краев */
+.char-level-3::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(139, 69, 19, 0.1) 0%, 
+    transparent 20%, 
+    transparent 80%, 
+    rgba(101, 67, 33, 0.1) 100%);
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+}

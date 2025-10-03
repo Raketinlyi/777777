@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Clear Cache - CrazyCube</title>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .btn {
+        background: #0ea5e9;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 10px 5px;
+        font-size: 16px;
+      }
+      .btn:hover {
+        background: #0284c7;
+      }
+      .status {
+        margin: 20px 0;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .success {
+        background: #065f46;
+        border: 1px solid #10b981;
+      }
+      .warning {
+        background: #92400e;
+        border: 1px solid #f59e0b;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧹 CrazyCube Cache Cleaner</h1>
+    <p>Clear all browser data to reload the site:</p>
+
+    <button class="btn" onclick="clearAll()">🗑️ Clear ALL</button>
+    <button class="btn" onclick="clearStorage()">📦 LocalStorage</button>
+    <button class="btn" onclick="clearWallet()">👛 Wallet Data</button>
+    <button class="btn" onclick="clearTokens()">🪙 Token Cache</button>
+
+    <div id="status"></div>
+
+    <h3>What will be cleared:</h3>
+    <ul>
+      <li>LocalStorage (balances, settings)</li>
+      <li>SessionStorage (temporary data)</li>
+      <li>Wallet Connection data</li>
+      <li>Token cache and balances</li>
+      <li>NFT data</li>
+      <li>Web3Modal cache</li>
+    </ul>
+
+    <script>
+      function showStatus(message, type = 'success') {
+        const status = document.getElementById('status');
+        // Безопасная установка контента без innerHTML
+        status.textContent = '';
+        const div = document.createElement('div');
+        div.className = `status ${type}`;
+        div.textContent = message; // Используем textContent вместо innerHTML
+        status.appendChild(div);
+        setTimeout(() => {
+          status.textContent = '';
+        }, 3000);
+      }
+
+      function clearStorage() {
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          showStatus('✅ Storage cleared!');
+        } catch (e) {
+          showStatus('❌ Error clearing storage', 'warning');
+        }
+      }
+
+      function clearWallet() {
+        try {
+          // Clear wallet-related data
+          const walletKeys = Object.keys(localStorage).filter(
+            key =>
+              key.includes('wallet') ||
+              key.includes('web3modal') ||
+              key.includes('wagmi') ||
+              key.includes('connector')
+          );
+          walletKeys.forEach(key => localStorage.removeItem(key));
+          showStatus('✅ Wallet data cleared!');
+        } catch (e) {
+          showStatus('❌ Error clearing wallet', 'warning');
+        }
+      }
+
+      function clearTokens() {
+        try {
+          // Clear token and balance data
+          const tokenKeys = Object.keys(localStorage).filter(
+            key =>
+              key.includes('token') ||
+              key.includes('balance') ||
+              key.includes('cra') ||
+              key.includes('nft')
+          );
+          tokenKeys.forEach(key => localStorage.removeItem(key));
+          showStatus('✅ Token cache cleared!');
+        } catch (e) {
+          showStatus('❌ Error clearing tokens', 'warning');
+        }
+      }
+
+      function clearAll() {
+        try {
+          // Clear all storage
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Clear IndexedDB if available
+          if (window.indexedDB) {
+            indexedDB.databases().then(databases => {
+              databases.forEach(db => {
+                indexedDB.deleteDatabase(db.name);
+              });
+            });
+          }
+
+          // Clear Cache API if available
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => {
+                caches.delete(name);
+              });
+            });
+          }
+
+          showStatus('✅ EVERYTHING CLEARED! Reloading in 2 seconds...');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        } catch (e) {
+          showStatus('❌ Error during full cleanup', 'warning');
+        }
+      }
+
+      // Auto-clear on load if requested
+      if (window.location.search.includes('auto=true')) {
+        clearAll();
+      }
+    </script>
+  </body>
+</html>

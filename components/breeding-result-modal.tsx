@@ -155,7 +155,7 @@ export function BreedingResultModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md'
+          className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md overflow-y-auto py-8'
           onClick={onClose}
         >
           <motion.div
@@ -163,21 +163,22 @@ export function BreedingResultModal({
             animate={{ scale: 1, opacity: 1, rotateY: 0 }}
             exit={{ scale: 0.5, opacity: 0, rotateY: 180 }}
             transition={{ type: 'spring', duration: 0.8, bounce: 0.4 }}
-            className='relative max-w-4xl w-full mx-4 p-8 md:p-12'
+            className='relative max-w-3xl w-full mx-4 p-6 md:p-8 my-auto'
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button - крупнее */}
+            {/* Close button - ВСЕГДА НАВЕРХУ */}
             <Button
               onClick={onClose}
               variant='ghost'
               size='icon'
-              className='absolute top-4 right-4 z-10 text-white hover:bg-white/20 rounded-full w-12 h-12 md:w-16 md:h-16'
+              className='sticky top-0 right-0 ml-auto z-50 text-white hover:bg-white/20 rounded-full w-14 h-14 md:w-16 md:h-16 bg-black/80 backdrop-blur-sm border-2 border-white/30 shadow-xl mb-4 flex-shrink-0'
+              aria-label='Close modal'
             >
               <X className='w-8 h-8 md:w-10 md:h-10' />
             </Button>
 
             {/* Auto-close timer */}
-            <div className='absolute top-4 left-4 text-white/60 text-sm'>
+            <div className='absolute top-6 left-6 text-white/60 text-sm bg-black/60 px-2 py-1 rounded'>
               Auto-close in {autoCloseTimer}s
             </div>
 
@@ -219,14 +220,14 @@ export function BreedingResultModal({
                 </div>
               )}
 
-              {/* NFT Image - Крупнее */}
+              {/* NFT Image - УМЕНЬШЕННЫЙ РАЗМЕР */}
               <motion.div
                 initial={{ scale: 0, rotateY: -180 }}
                 animate={{ scale: 1, rotateY: 0 }}
                 transition={{ duration: 0.8, type: 'spring', bounce: 0.4 }}
-                className='relative z-10 mb-6'
+                className='relative z-10 mb-4'
               >
-                <div className={`relative mx-auto w-80 h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] rounded-2xl overflow-hidden border-4 ${
+                <div className={`relative mx-auto w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden border-4 ${
                   hasBonus 
                     ? 'border-yellow-400 shadow-[0_0_60px_rgba(251,191,36,0.8)]'
                     : 'border-cyan-400 shadow-[0_0_60px_rgba(6,182,212,0.8)]'

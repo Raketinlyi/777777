@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { parseEther, formatEther } from 'viem';
 import { getColor, getLabel } from '@/lib/rarity';
+import {
+  computeStarState,
+  getBaseStarsForRarity,
+  getStarsFromIndex,
+  normalizeStars,
+  rarityIndexByLabel,
+} from '@/lib/stars';
 import { useTranslation } from 'react-i18next';
 import { useChainId } from 'wagmi';
 import {
@@ -247,8 +254,37 @@ export const BurnCard = React.memo(function BurnCard({
   // calcFeeDisplay kept for backward compatibility with confirmation dialog
   const calcFeeDisplay = calcFee;
 
-  const initialStars = Math.max(data?.initialStars ?? 0, 0);
-  const currentStars = Math.max(data?.currentStars ?? 0, 0);
+  const rarityKey = typeof nft.rarity === 'string' ? nft.rarity.toLowerCase() : '';
+  const fallbackRarityIndex = rarityIndexByLabel[rarityKey] ?? 0;
+  const fallbackStars = getStarsFromIndex(fallbackRarityIndex);
+  const chainInitialStars = normalizeStars(data?.initialStars);
+  const chainCurrentStars = normalizeStars(data?.currentStars);
+  const chainBonusStars = normalizeStars(data?.bonusStars);
+  const chainRarityStars = normalizeStars(data?.rarity);
+
+  let baseStars = fallbackStars;
+  if (chainRarityStars > 0) {
+    baseStars = getBaseStarsForRarity(chainRarityStars);
+  }
+  if (chainInitialStars > 0) {
+    baseStars = chainInitialStars;
+  }
+
+  let currentStarsRaw = baseStars;
+  if (chainCurrentStars > 0) {
+    currentStarsRaw = chainCurrentStars;
+  } else if (typeof nft.stars === 'number' && nft.stars > 0) {
+    currentStarsRaw = normalizeStars(nft.stars);
+  }
+
+  const bonusStars = chainBonusStars > 0
+    ? chainBonusStars
+    : Math.max(0, currentStarsRaw - baseStars);
+  const starState = computeStarState({
+    baseStars,
+    bonusStars,
+    currentStars: currentStarsRaw,
+  });
 
   const widgets = [] as JSX.Element[];
   // OCTA badge
@@ -272,7 +308,19 @@ export const BurnCard = React.memo(function BurnCard({
         className='bg-black/40 text-yellow-200 text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 border border-yellow-500/30'
       >
         <Star className='w-3 h-3 text-yellow-300 fill-yellow-300' />
-        {currentStars}/{initialStars}
+        <span>
+          {starState.totalActive}/{starState.totalCapacity}
+        </span>
+        {starState.burnedBase > 0 && (
+          <span className='text-red-300 font-semibold'>
+            −{starState.burnedBase}
+          </span>
+        )}
+        {starState.bonusSlots > 0 && (
+          <span className='text-sky-300 font-semibold'>
+            +{starState.activeBonus}/{starState.bonusSlots}
+          </span>
+        )}
       </Badge>
     );
 

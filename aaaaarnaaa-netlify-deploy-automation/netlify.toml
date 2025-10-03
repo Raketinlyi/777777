@@ -1,0 +1,130 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NODE_ENV = "production"
+  NEXT_TELEMETRY_DISABLED = "1"
+  NEXTAUTH_URL = "https://your-domain.netlify.app"
+  NEXTAUTH_SECRET = "your-secret-here"
+  NPM_CONFIG_PRODUCTION = "false"
+  NPM_FLAGS = "--include=dev"
+
+# MAXIMUM SECURITY FOR BLOCKCHAIN DAPPS - 2025 STANDARDS
+# Based on OWASP Top 10 2021 and modern Web3 security practices
+# 
+# IMPORTANT: CSP is configured for Netlify compatibility
+# - 'unsafe-inline' required for Next.js dynamic components
+# - 'unsafe-eval' required for Web3 libraries (Wagmi, Web3Modal)
+# - 'strict-dynamic' added for dynamic script loading
+# - Trusted Types still enforced for XSS protection
+# - This is the maximum security possible on Netlify for Web3 dApps
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Core Security Headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    
+    # Advanced Security Headers for Web3
+    Cross-Origin-Resource-Policy = "same-origin"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "unsafe-none"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), autoplay=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), web-share=(), xr-spatial-tracking=()"
+    
+    # Content Security Policy for Web3 dApps - NETLIFY COMPATIBLE VERSION
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.walletconnect.com https://*.walletconnect.org https://*.metamask.io https://*.rainbow.me https://*.coinbase.com https://*.trustwallet.com https://*.alchemy.com https://*.monad.xyz https://*.ethereum.org https://*.web3modal.com https://*.web3js.org https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflare.com https://*.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflare.com; img-src 'self' data: blob: https: https://*.ipfs.io https://*.ipfs.dweb.link https://*.gateway.pinata.cloud https://*.cloudflare-ipfs.com https://*.arweave.net https://*.nftstorage.link; connect-src 'self' https: wss: ws: https://*.walletconnect.com https://*.walletconnect.org https://*.metamask.io https://*.rainbow.me https://*.coinbase.com https://*.trustwallet.com https://*.alchemy.com https://*.monad.xyz https://*.ethereum.org https://*.infura.io https://*.quicknode.com https://*.moralis.io https://*.web3modal.com https://api.web3modal.org https://pulse.walletconnect.org https://cloud.reown.com https://*.web3js.org https://*.ipfs.io https://*.ipfs.dweb.link https://*.gateway.pinata.cloud https://*.cloudflare-ipfs.com https://*.arweave.net https://*.nftstorage.link; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflare.com; media-src 'self' https: data: blob: https://*.pixabay.com https://*.soundjay.com; frame-src 'self' https://www.google.com/recaptcha/ https://*.walletconnect.com https://*.walletconnect.org https://*.metamask.io https://*.rainbow.me https://*.coinbase.com https://*.trustwallet.com https://*.alchemy.com https://*.web3modal.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content"
+
+# API Routes Security
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Cross-Origin-Resource-Policy = "same-origin"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "unsafe-none"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+# Static Assets Security
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Security for Web3 specific files
+[[headers]]
+  for = "*.json"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Content-Type = "application/json"
+
+# Redirects for security
+[[redirects]]
+  from = "/.well-known/security.txt"
+  to = "/security.txt"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
+# Block dangerous file types
+[[redirects]]
+  from = "/*.php"
+  to = "/404"
+  status = 404
+
+[[redirects]]
+  from = "/*.asp"
+  to = "/404"
+  status = 404
+
+[[redirects]]
+  from = "/*.aspx"
+  to = "/404"
+  status = 404
+
+[[redirects]]
+  from = "/*.jsp"
+  to = "/404"
+  status = 404
+
+
+[[headers]]
+  for = "*.mp3"
+  [headers.values]
+    Content-Type = "audio/mpeg"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+

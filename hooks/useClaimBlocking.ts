@@ -3,7 +3,7 @@ import { useAccount } from 'wagmi';
 
 const CLAIM_BLOCK_KEY = 'crazycube:claimSectionBlocked';
 import { useChainId } from 'wagmi';
-const BLOCK_DURATION = 4 * 60 * 1000; // 4 minutes
+const BLOCK_DURATION = 30 * 1000; // 30 seconds
 
 export const useClaimBlocking = () => {
   const chainIdFromHook = useChainId();
@@ -58,7 +58,7 @@ export const useClaimBlocking = () => {
       
       localStorage.setItem(`${CLAIM_BLOCK_KEY}:${chainId || 'unknown'}`, JSON.stringify(blockData));
       setIsBlocked(true);
-      setTimeLeft(240); // 4 minutes in seconds
+      setTimeLeft(30); // 30 seconds
       } catch (error) {
       }
   };
