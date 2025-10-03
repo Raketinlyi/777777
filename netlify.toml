@@ -8,6 +8,8 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NEXTAUTH_URL = "https://your-domain.netlify.app"
   NEXTAUTH_SECRET = "your-secret-here"
+  NPM_CONFIG_PRODUCTION = "false"
+  NPM_FLAGS = "--include=dev"
 
 # MAXIMUM SECURITY FOR BLOCKCHAIN DAPPS - 2025 STANDARDS
 # Based on OWASP Top 10 2021 and modern Web3 security practices
