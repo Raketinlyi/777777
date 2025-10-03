@@ -1,5 +1,9 @@
 ﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-import { isAddressEqual } from 'viem';
+import {
+  ContractFunctionExecutionError,
+  ContractFunctionZeroDataError,
+  isAddressEqual,
+} from 'viem';
 import { useAccount, usePublicClient } from 'wagmi';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -50,6 +54,29 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const CORE_ADDRESS = process.env.NEXT_PUBLIC_CORE_PROXY as `0x${string}`;
 const READER_ADDRESS = process.env.NEXT_PUBLIC_READER_ADDRESS as `0x${string}`;
 const SUBGRAPH_URL = process.env.NEXT_PUBLIC_SUBGRAPH_URL || '';
+
+let readerUnsupported = false;
+
+const isReaderUnavailableError = (error: unknown): boolean => {
+  if (error instanceof ContractFunctionZeroDataError) return true;
+  if (error instanceof ContractFunctionExecutionError) {
+    const short = error.shortMessage?.toLowerCase() ?? '';
+    if (short.includes('returned no data') || short.includes('viewgravewindow')) {
+      return true;
+    }
+    const causeMessage = (error.cause as Error | undefined)?.message?.toLowerCase() ?? '';
+    if (causeMessage.includes('returned no data') || causeMessage.includes('viewgravewindow')) {
+      return true;
+    }
+  }
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (message.includes('returned no data') || message.includes('viewgravewindow')) {
+      return true;
+    }
+  }
+  return false;
+};
 
 const normalizeCachedReward = (raw: unknown): BurnReward => {
   const record = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
@@ -182,16 +209,26 @@ const discoverTokenIdsViaReader = async (
   publicClient: ReturnType<typeof usePublicClient>,
 ): Promise<string[]> => {
   const ids: string[] = [];
-  if (!publicClient) return ids;
+  if (!publicClient || readerUnsupported) return ids;
   let offset = 0n;
   const MAX = 800n;
   for (let i = 0; i < 2000; i++) {
-    const res = await publicClient.readContract({
-      address: READER_ADDRESS,
-      abi: crazyOctagonReaderAbi as any,
-      functionName: 'viewGraveWindow',
-      args: [offset, MAX],
-    });
+    let res: unknown;
+    try {
+      res = await publicClient.readContract({
+        address: READER_ADDRESS,
+        abi: crazyOctagonReaderAbi as any,
+        functionName: 'viewGraveWindow',
+        args: [offset, MAX],
+      });
+    } catch (error) {
+      if (isReaderUnavailableError(error)) {
+        readerUnsupported = true;
+        console.warn('CrazyOctagon reader: viewGraveWindow unavailable, falling back to subgraph cache');
+        return [];
+      }
+      throw error;
+    }
     const tuple = res as unknown as [readonly bigint[], bigint, bigint, number?];
     const chunk = tuple?.[0] ?? [];
     const cursor = tuple?.[2] ?? 0n;

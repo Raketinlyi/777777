@@ -26,8 +26,6 @@ import DustParticles from '@/components/DustParticles';
 
 import { useAccount, useSwitchChain } from 'wagmi';
 import { usePerformanceContext } from '@/hooks/use-performance-context';
-import { useNetwork } from '@/hooks/use-network';
-import { NetworkSwitchProgress } from '@/components/NetworkSwitchProgress';
 import { monadChain } from '@/config/chains';
 
 type ShelfStyle = {
@@ -495,9 +493,8 @@ export default function HomePage() {
   const chainName = monadChain.name;
   const pairTokenSymbol = monadChain.nativeCurrency.symbol;
 
-  const { isConnected: connected, chainId } = useAccount();
+  const { chainId } = useAccount();
   const { switchChain } = useSwitchChain();
-  const { isSwitching, switchAttempts } = useNetwork();
   
   // Check if we are on Monad Testnet
   const isMonadChain = chainId === monadChain.id;
@@ -976,24 +973,6 @@ export default function HomePage() {
             )}
           </div>
         </motion.div>
-
-        {/* Network Switch Progress - перекашивается! */}
-        {connected && (
-          <motion.div 
-            className='mb-16'
-            animate={shelfAnimate(7, { rotate: shelfTilt * 0.3 })}
-            transition={{ duration: 1.5, type: 'spring', stiffness: 80, damping: 15 }}
-          >
-            <NetworkSwitchProgress
-              isSwitching={isSwitching}
-              switchAttempts={switchAttempts}
-              maxAttempts={5}
-              isMonadChain={isMonadChain}
-              onForceSwitch={forceSwitchToMonadChain}
-            />
-          </motion.div>
-        )}
-
         {/* User NFTs Preview - перекашивается! */}
         <motion.div 
           className='mb-16'

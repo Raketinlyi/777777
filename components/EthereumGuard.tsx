@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS, GAME_CONTRACT_ADDRESS } from '@/config/wagmi';
+import {
+  NFT_CONTRACT_ADDRESS,
+  TOKEN_CONTRACT_ADDRESS,
+  GAME_CONTRACT_ADDRESS,
+} from '@/config/wagmi';
+import { apeChain, monadChain } from '@/config/chains';
 
 /**
  * Hardens window.ethereum by denying unsafe methods and suspicious txs.
@@ -29,10 +34,24 @@ export default function EthereumGuard() {
       process.env.NEXT_PUBLIC_OCTAA_ADDRESS,
     ].filter((x): x is string => !!x && x.length === 42);
 
+    const chainAddresses = [monadChain, apeChain]
+      .map(chain =>
+        Object.values(chain.contracts ?? {})
+          .map(contract => {
+            const address = (contract as { address?: string })?.address;
+            return typeof address === 'string' && address.length === 42
+              ? address.toLowerCase()
+              : null;
+          })
+      )
+      .flat()
+      .filter((addr): addr is string => typeof addr === 'string');
+
     const allowlist = new Set<string>([
       NFT_CONTRACT_ADDRESS?.toLowerCase?.() || '',
       TOKEN_CONTRACT_ADDRESS?.toLowerCase?.() || '',
       GAME_CONTRACT_ADDRESS?.toLowerCase?.() || '',
+      ...chainAddresses,
       ...envAddresses.map(a => a.toLowerCase()),
     ].filter(Boolean));
 
@@ -40,42 +59,36 @@ export default function EthereumGuard() {
     if (!originalRequest) return;
 
     eth.request = async (args: { method: string; params?: unknown[] }) => {
-      try {
-        const method = (args?.method || '').toLowerCase();
-        const params = args?.params || [];
+      const method = (args?.method || '').toLowerCase();
+      const params = args?.params || [];
 
-        // 1) Forbid legacy eth_sign (phishing-prone)
-        if (method === 'eth_sign') {
-          throw new Error('Blocked: legacy eth_sign is not allowed. Use EIP-712 typeddata_sign.');
-        }
-
-        // 2) Inspect raw transactions
-        if (method === 'eth_sendtransaction' && params[0]) {
-          const tx = params[0] as { to?: string; value?: string };
-          const to = (tx.to || '').toLowerCase();
-          const valueHex = tx.value || '0x0';
-          const value = parseInt(valueHex, 16);
-
-          const isAllowlisted = to && allowlist.has(to);
-          const isZeroValue = !value || value === 0;
-
-          // Block txs that are not to our contracts or try to transfer native value
-          if (!isAllowlisted || !isZeroValue) {
-            throw new Error('Blocked suspicious transaction: only zero-value calls to official contracts allowed from this dApp.');
-          }
-        }
-
-        // 3) Restrict chain additions (optional)
-        if (method === 'wallet_addethereumchain') {
-          // Just warn/deny silently to avoid hijacking chain
-          throw new Error('Blocked: adding arbitrary chains from this dApp is disabled.');
-        }
-
-        return await originalRequest(args);
-      } catch (e) {
-        // Re-throw to consumer
-        throw e;
+      // 1) Forbid legacy eth_sign (phishing-prone)
+      if (method === 'eth_sign') {
+        throw new Error('Blocked: legacy eth_sign is not allowed. Use EIP-712 typeddata_sign.');
       }
+
+      // 2) Inspect raw transactions
+      if (method === 'eth_sendtransaction' && params[0]) {
+        const tx = params[0] as { to?: string; value?: string };
+        const to = (tx.to || '').toLowerCase();
+        const valueHex = tx.value || '0x0';
+        const value = parseInt(valueHex, 16);
+
+        const isAllowlisted = to && allowlist.has(to);
+        const isZeroValue = !value || value === 0;
+
+        // Block txs that are not to our contracts or try to transfer native value
+        if (!isAllowlisted || !isZeroValue) {
+          throw new Error('Blocked suspicious transaction: only zero-value calls to official contracts allowed from this dApp.');
+        }
+      }
+
+      // 3) Restrict chain additions (optional)
+      if (method === 'wallet_addethereumchain') {
+        throw new Error('Blocked: adding arbitrary chains from this dApp is disabled.');
+      }
+
+      return originalRequest(args);
     };
   }, []);
 

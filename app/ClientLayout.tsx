@@ -7,12 +7,12 @@ import { BuildErrorDisplay } from '@/components/build-error-display';
 import { SocialSidebar } from '@/components/social-sidebar';
 import { setupGlobalErrorHandling } from '@/utils/logger';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion'; // Added motion import
 // Import i18n
 import '@/lib/i18n';
 // Import Web3 provider
-import { WagmiProvider } from 'wagmi';
+import { WagmiProvider, useAccount } from 'wagmi';
 
 import { config } from '@/config/wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -27,12 +27,49 @@ import { SparkProjectiles } from '@/components/SparkProjectiles';
 import { usePathname } from 'next/navigation';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BurnStateProvider } from '@/hooks/use-burn-state';
+import { useNetwork } from '@/hooks/use-network';
+
+function DefaultNetworkEnforcer({ currentPath }: { currentPath: string }) {
+  const { isConnected } = useAccount();
+  const {
+    isMonadChain,
+    forceSwitchToMonadChain,
+  } = useNetwork();
+
+  const hasAttemptedRef = useRef(false);
+  const isBridgePage = currentPath.startsWith('/bridge');
+
+  useEffect(() => {
+    if (!isConnected) {
+      hasAttemptedRef.current = false;
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (isBridgePage) {
+      hasAttemptedRef.current = false;
+      return;
+    }
+
+    if (isMonadChain) {
+      hasAttemptedRef.current = false;
+      return;
+    }
+
+    if (isConnected && !hasAttemptedRef.current) {
+      hasAttemptedRef.current = true;
+      void forceSwitchToMonadChain();
+    }
+  }, [isBridgePage, isConnected, isMonadChain, forceSwitchToMonadChain]);
+
+  return null;
+}
 
 // Create a client for React Query
 const queryClient = new QueryClient();
 
 // Inner component that uses wallet events - must be inside WagmiProvider
-function WalletEventHandler({ children }: { children: React.ReactNode }) {
+function WalletEventHandler({ children }: Readonly<{ children: React.ReactNode }>) {
   useWalletEvents();
   return <>{children}</>;
 }
@@ -137,7 +174,7 @@ export default function ClientLayout({
     const initTrustedTypes = () => {
       const enabled = process.env.NEXT_PUBLIC_TRUSTED_TYPES_ENABLED === 'true';
       if (!enabled) return;
-      if (window.trustedTypes && window.trustedTypes.createPolicy) {
+  if (window.trustedTypes?.createPolicy) {
         try {
           if (process.env.NODE_ENV === 'development') {
             window.trustedTypes.createPolicy('nextjs#bundler', {
@@ -201,6 +238,7 @@ export default function ClientLayout({
                       <WalletEventHandler>
                         <SimpleToastProvider>
                         <EthereumGuard />
+                        <DefaultNetworkEnforcer currentPath={pathname} />
                         <TooltipProvider delayDuration={120}>
                           <motion.div
                             className='relative flex min-h-screen flex-col'
