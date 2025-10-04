@@ -1,5 +1,25 @@
 const { createPublicClient, http } = require('viem');
-const readerAbi = require('../lib/abi/generated/crazyOctagonReaderAbi.json');
+const readerAbi = [
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getBurnInfo',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+    ],
+    outputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'totalAmount', type: 'uint256' },
+      { name: 'claimAt', type: 'uint256' },
+      { name: 'graveReleaseAt', type: 'uint256' },
+      { name: 'claimed', type: 'bool' },
+      { name: 'waitMinutes', type: 'uint32' },
+      { name: 'playerAmount', type: 'uint256' },
+      { name: 'poolAmount', type: 'uint256' },
+      { name: 'burnedAmount', type: 'uint256' },
+    ],
+  },
+];
 
 // Безопасное получение RPC URL из env переменных
 const getAlchemyRpcUrl = () => {

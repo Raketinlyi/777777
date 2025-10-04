@@ -7,8 +7,10 @@ import {
 import { useAccount, usePublicClient } from 'wagmi';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import crazyOctagonCoreAbi from '@/lib/abi/generated/crazyOctagonCoreAbi.json';
-import crazyOctagonReaderAbi from '@/lib/abi/generated/crazyOctagonReaderAbi.json';
+import {
+  CRAZY_OCTAGON_CORE_ABI as crazyOctagonCoreAbi,
+  CRAZY_OCTAGON_READER_ABI as crazyOctagonReaderAbi,
+} from '@/lib/abi/crazyOctagon';
 import { monadChain } from '@/config/chains';
 import { coreContractConfig } from '@/lib/contracts';
 import { onGlobalRefresh } from '@/lib/refreshBus';

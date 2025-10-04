@@ -1,13 +1,39 @@
 const { createPublicClient, http } = require('viem');
-const fs = require('fs');
-const path = require('path');
 const { MONAD_TESTNET_CONFIG, CONTRACTS } = require('./config.cjs');
 
-// Читаем ABI файл
-const abiPath = path.resolve(__dirname, '../lib/abi/generated/crazyOctagonCoreAbi.json');
-console.log('Loading ABI from:', abiPath);
-
-const crazyOctagonCoreAbi = require(abiPath);
+// Минимальный набор ABI, необходимый для чтения meta/state
+const crazyOctagonCoreAbi = [
+    {
+        type: 'function',
+        stateMutability: 'view',
+        name: 'meta',
+        inputs: [
+            { name: '', type: 'uint256' },
+        ],
+        outputs: [
+            { name: 'rarity', type: 'uint8' },
+            { name: 'initialStars', type: 'uint8' },
+            { name: 'gender', type: 'uint8' },
+            { name: 'isActivated', type: 'bool' },
+        ],
+    },
+    {
+        type: 'function',
+        stateMutability: 'view',
+        name: 'state',
+        inputs: [
+            { name: '', type: 'uint256' },
+        ],
+        outputs: [
+            { name: 'lastPingTime', type: 'uint48' },
+            { name: 'lastBreedTime', type: 'uint48' },
+            { name: 'currentStars', type: 'uint8' },
+            { name: 'bonusStars', type: 'uint8' },
+            { name: 'isInGraveyard', type: 'bool' },
+            { name: 'lockedOcta', type: 'uint256' },
+        ],
+    },
+];
 
 const CORE_PROXY_ADDRESS = CONTRACTS.CORE_PROXY;
 const NFT_ID = 93n; // Use BigInt for tokenId

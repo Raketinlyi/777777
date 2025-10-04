@@ -2,8 +2,7 @@ import 'server-only';
 import { NextRequest } from 'next/server';
 import { createPublicClient, http, isAddress, decodeEventLog } from 'viem';
 import { monadChain } from '@/config/chains';
-import coreAbi from '@/lib/abi/generated/crazyOctagonCoreAbi.json';
-import readerAbi from '@/lib/abi/generated/crazyOctagonReaderAbi.json';
+import { CRAZY_OCTAGON_READER_ABI } from '@/lib/abi/crazyOctagon';
 
 type ClaimItem = {
   tokenId: string;
@@ -25,6 +24,18 @@ const CORE_ADDRESS = monadChain.contracts.gameProxy.address as `0x${string}`;
 const READER_ADDRESS = monadChain.contracts.reader.address as `0x${string}`;
 const CORE_DEPLOY_BLOCK = BigInt(process.env.NEXT_PUBLIC_CORE_DEPLOY_BLOCK || '1');
 
+const burnScheduledEvent = {
+  type: 'event' as const,
+  name: 'BurnScheduled',
+  inputs: [
+    { type: 'uint256', name: 'tokenId', indexed: true },
+    { type: 'address', name: 'owner', indexed: true },
+    { type: 'uint256', name: 'amount', indexed: false },
+    { type: 'uint256', name: 'claimAt', indexed: false },
+    { type: 'uint32', name: 'waitMin', indexed: false },
+  ],
+};
+
 function getRpc() {
   const urls = monadChain.rpcUrls?.default?.http || [];
   return urls[0] || process.env.NEXT_PUBLIC_MONAD_RPC || process.env.MONAD_RPC || '';
@@ -37,7 +48,7 @@ async function enumerateFromReader(client: any): Promise<string[]> {
   for (let safety = 0; safety < 6000; safety++) {
     const res = await client.readContract({
       address: READER_ADDRESS,
-      abi: readerAbi as any,
+      abi: CRAZY_OCTAGON_READER_ABI,
       functionName: 'viewGraveWindow',
       args: [offset, MAX],
     });
@@ -62,24 +73,14 @@ async function enumerateFromLogs(client: any, owner: `0x${string}`): Promise<str
     try {
       const logs = await client.getLogs({
         address: CORE_ADDRESS,
-        event: {
-          type: 'event',
-          name: 'BurnScheduled',
-          inputs: [
-            { type: 'uint256', name: 'tokenId', indexed: true },
-            { type: 'address', name: 'owner', indexed: true },
-            { type: 'uint256', name: 'amount' },
-            { type: 'uint256', name: 'claimAt' },
-            { type: 'uint32', name: 'waitMin' },
-          ],
-        },
+        event: burnScheduledEvent,
         args: { owner },
         fromBlock: from,
         toBlock: to,
       });
       for (const log of logs) {
         try {
-          const parsed = decodeEventLog({ abi: coreAbi as any, data: log.data, topics: log.topics }) as any;
+          const parsed = decodeEventLog({ abi: [burnScheduledEvent], data: log.data, topics: log.topics }) as any;
           const id = parsed?.args?.tokenId as bigint;
           ids.push(String(id));
         } catch {}
@@ -123,7 +124,12 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ addres
   }
 
   // getBurnInfo for all
-  const calls = allIds.map((id) => ({ address: READER_ADDRESS, abi: readerAbi as any, functionName: 'getBurnInfo', args: [BigInt(id)] }));
+  const calls = allIds.map((id) => ({
+    address: READER_ADDRESS,
+    abi: CRAZY_OCTAGON_READER_ABI,
+    functionName: 'getBurnInfo',
+    args: [BigInt(id)],
+  }));
   const results = await client.multicall({ contracts: calls as any, allowFailure: true });
 
   const now = Math.floor(Date.now() / 1000);

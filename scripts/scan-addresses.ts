@@ -45,7 +45,6 @@ const includePatterns = [
   'hooks/**/*.{ts,tsx,js}',
   'lib/**/*.{ts,tsx,js,json,mjs}',
   'scripts/**/*.{ts,tsx,js}',
-  'contracts-core/**/*.{sol,md,json}',
   'контрамонад2в1/**/*.{ts,tsx,js,md,json,sol}',
 ];
 

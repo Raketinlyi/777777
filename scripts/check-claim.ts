@@ -1,15 +1,10 @@
 import 'dotenv/config';
 import { createPublicClient, http } from 'viem';
 import { monadChain } from '../config/chains.ts';
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { CRAZY_OCTAGON_CORE_ABI } from '../lib/abi/crazyOctagon.ts';
 
 const CORE = process.env.NEXT_PUBLIC_CORE_PROXY as `0x${string}`;
 const RPC = process.env.NEXT_PUBLIC_MONAD_RPC || process.env.MONAD_RPC || '';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const coreAbi = JSON.parse(readFileSync(resolve(__dirname, '../lib/abi/generated/crazyOctagonCoreAbi.json'), 'utf-8'));
 
 async function main() {
   const tokenIdArg = process.argv[2];
@@ -31,7 +26,7 @@ async function main() {
   try {
     const { request } = await client.simulateContract({
       address: CORE,
-      abi: coreAbi as any,
+  abi: CRAZY_OCTAGON_CORE_ABI,
       functionName: 'claimBurnRewards',
       args: [tokenId],
       account,

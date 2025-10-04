@@ -1,17 +1,10 @@
 import 'dotenv/config';
 import { createPublicClient, http, formatEther } from 'viem';
 import { defineChain } from 'viem';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-function loadJson(path: string) {
-  const raw = readFileSync(path, 'utf-8').replace(/^\uFEFF/, '');
-  return JSON.parse(raw);
-}
-const coreAbi = loadJson(resolve(__dirname, '../lib/abi/generated/crazyOctagonCoreAbi.json'));
-const readerAbi = loadJson(resolve(__dirname, '../lib/abi/generated/crazyOctagonReaderAbi.json'));
+import {
+  CRAZY_OCTAGON_CORE_ABI,
+  CRAZY_OCTAGON_READER_ABI,
+} from '../lib/abi/crazyOctagon.ts';
 
 const RPC = process.env.NEXT_PUBLIC_MONAD_RPC || process.env.MONAD_RPC || '';
 const CORE = (process.env.NEXT_PUBLIC_CORE_PROXY || process.env.CORE_PROXY) as `0x${string}`;
@@ -44,7 +37,7 @@ async function main() {
   console.log('tokenId:', tokenId.toString());
 
   try {
-    const burns = await client.readContract({ address: CORE, abi: coreAbi as any, functionName: 'burns', args: [tokenId] });
+    const burns = await client.readContract({ address: CORE, abi: CRAZY_OCTAGON_CORE_ABI, functionName: 'burns', args: [tokenId] });
     const [owner, totalAmount, claimAt, graveReleaseAt, claimed, waitMinutes] = burns as unknown as [
       `0x${string}`, bigint, bigint, bigint, boolean, number
     ];
@@ -54,7 +47,7 @@ async function main() {
   }
 
   try {
-    const info = await client.readContract({ address: READER, abi: readerAbi as any, functionName: 'getBurnInfo', args: [tokenId] });
+    const info = await client.readContract({ address: READER, abi: CRAZY_OCTAGON_READER_ABI, functionName: 'getBurnInfo', args: [tokenId] });
     const [owner, totalAmount, claimAt, graveReleaseAt, claimed, waitMinutes, playerAmount, poolAmount, burnedAmount] = info as unknown as [
       `0x${string}`, bigint, bigint, bigint, boolean, number, bigint, bigint, bigint
     ];

@@ -1,10 +1,268 @@
 import type { Abi } from 'viem';
 
-import coreAbiJson from './generated/crazyOctagonCoreAbi.json';
-import readerAbiJson from './generated/crazyOctagonReaderAbi.json';
+export const CRAZY_OCTAGON_CORE_ABI = [
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'breedUnlockAt',
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'burnFeeBps',
+    inputs: [],
+    outputs: [{ internalType: 'uint16', name: '', type: 'uint16' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'nonpayable',
+    name: 'burnNFT',
+    inputs: [
+      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
+      { internalType: 'uint32', name: 'waitMinutes', type: 'uint32' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'burnSplits',
+    inputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
+    outputs: [
+      { internalType: 'uint16', name: 'playerBps', type: 'uint16' },
+      { internalType: 'uint16', name: 'poolBps', type: 'uint16' },
+      { internalType: 'uint16', name: 'burnBps', type: 'uint16' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'burns',
+    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [
+      { internalType: 'address', name: 'owner', type: 'address' },
+      { internalType: 'uint256', name: 'totalAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'claimAt', type: 'uint256' },
+      { internalType: 'uint256', name: 'graveReleaseAt', type: 'uint256' },
+      { internalType: 'bool', name: 'claimed', type: 'bool' },
+      { internalType: 'uint32', name: 'waitMinutes', type: 'uint32' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'nonpayable',
+    name: 'claimBurnRewards',
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'graveyardCooldown',
+    inputs: [],
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'isGraveyardReady',
+    inputs: [],
+    outputs: [{ internalType: 'bool', name: 'ok', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'manualFloorPrice',
+    inputs: [],
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'meta',
+    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [
+      { internalType: 'uint8', name: 'rarity', type: 'uint8' },
+      { internalType: 'uint8', name: 'initialStars', type: 'uint8' },
+      { internalType: 'uint8', name: 'gender', type: 'uint8' },
+      { internalType: 'bool', name: 'isActivated', type: 'bool' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'nft',
+    inputs: [],
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'nftLP',
+    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [
+      { internalType: 'address', name: 'helper', type: 'address' },
+      { internalType: 'address', name: 'pair', type: 'address' },
+      { internalType: 'uint256', name: 'lpAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'octaDeposited', type: 'uint256' },
+      { internalType: 'uint256', name: 'pairDeposited', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'paused',
+    inputs: [],
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'nonpayable',
+    name: 'ping',
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'pingInterval',
+    inputs: [],
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    stateMutability: 'nonpayable',
+    name: 'requestBreed',
+    inputs: [
+      { internalType: 'uint256', name: 'parent1Id', type: 'uint256' },
+      { internalType: 'uint256', name: 'parent2Id', type: 'uint256' },
+      { internalType: 'uint256', name: 'userRand', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'state',
+    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [
+      { internalType: 'uint48', name: 'lastPingTime', type: 'uint48' },
+      { internalType: 'uint48', name: 'lastBreedTime', type: 'uint48' },
+      { internalType: 'uint8', name: 'currentStars', type: 'uint8' },
+      { internalType: 'uint8', name: 'bonusStars', type: 'uint8' },
+      { internalType: 'bool', name: 'isInGraveyard', type: 'bool' },
+      { internalType: 'uint256', name: 'lockedOcta', type: 'uint256' },
+    ],
+  },
+] as const satisfies Abi;
 
-export const CRAZY_OCTAGON_CORE_ABI = coreAbiJson as Abi;
-export const CRAZY_OCTAGON_READER_ABI = readerAbiJson as Abi;
+export const CRAZY_OCTAGON_READER_ABI = [
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getBreedQuote',
+    inputs: [],
+    outputs: [
+      { internalType: 'uint256', name: 'octaCost', type: 'uint256' },
+      { internalType: 'uint256', name: 'craaCost', type: 'uint256' },
+      { internalType: 'uint256', name: 'lpFromOcta', type: 'uint256' },
+      { internalType: 'uint256', name: 'octaToMain', type: 'uint256' },
+      { internalType: 'uint256', name: 'sponsorFee', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getBurnInfo',
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    outputs: [
+      { internalType: 'address', name: 'owner', type: 'address' },
+      { internalType: 'uint256', name: 'totalAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'claimAt', type: 'uint256' },
+      { internalType: 'uint256', name: 'graveReleaseAt', type: 'uint256' },
+      { internalType: 'bool', name: 'claimed', type: 'bool' },
+      { internalType: 'uint32', name: 'waitMinutes', type: 'uint32' },
+      { internalType: 'uint256', name: 'playerAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'poolAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'burnedAmount', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getGlobalStats',
+    inputs: [],
+    outputs: [
+      { internalType: 'uint256', name: 'totalLocked', type: 'uint256' },
+      { internalType: 'uint256', name: 'monthlyPool', type: 'uint256' },
+      { internalType: 'uint256', name: 'claimReserve', type: 'uint256' },
+      { internalType: 'uint256', name: 'sharePerPing_', type: 'uint256' },
+      { internalType: 'uint16', name: 'safetyBps_', type: 'uint16' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getLPInfo',
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    outputs: [
+      { internalType: 'address', name: 'helper', type: 'address' },
+      { internalType: 'address', name: 'pair', type: 'address' },
+      { internalType: 'uint256', name: 'lpAmount', type: 'uint256' },
+      { internalType: 'uint256', name: 'octaDeposited', type: 'uint256' },
+      { internalType: 'uint256', name: 'pairDeposited', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getNFTSummary',
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    outputs: [
+      { internalType: 'address', name: 'owner', type: 'address' },
+      { internalType: 'bool', name: 'exists', type: 'bool' },
+      { internalType: 'bool', name: 'activated', type: 'bool' },
+      { internalType: 'uint8', name: 'rarity', type: 'uint8' },
+      { internalType: 'uint8', name: 'stars', type: 'uint8' },
+      { internalType: 'uint8', name: 'bonusStars', type: 'uint8' },
+      { internalType: 'bool', name: 'inGraveyard', type: 'bool' },
+      { internalType: 'uint48', name: 'lastPingTime', type: 'uint48' },
+      { internalType: 'uint48', name: 'lastBreedTime', type: 'uint48' },
+      { internalType: 'uint256', name: 'lockedOcta', type: 'uint256' },
+      { internalType: 'int16', name: 'dynBonusBps', type: 'int16' },
+      { internalType: 'int16', name: 'specBps', type: 'int16' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'getPingTiming',
+    inputs: [],
+    outputs: [
+      { internalType: 'uint256', name: 'pingInterval_', type: 'uint256' },
+      { internalType: 'uint256', name: 'maxAccumulation_', type: 'uint256' },
+      { internalType: 'uint256', name: 'sweepInterval_', type: 'uint256' },
+      { internalType: 'uint256', name: 'monthDuration_', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'function',
+    stateMutability: 'view',
+    name: 'viewGraveWindow',
+    inputs: [
+      { internalType: 'uint256', name: 'offset', type: 'uint256' },
+      { internalType: 'uint256', name: 'maxCount', type: 'uint256' },
+    ],
+    outputs: [
+      { internalType: 'uint256[]', name: 'ids', type: 'uint256[]' },
+      { internalType: 'uint256', name: 'total', type: 'uint256' },
+      { internalType: 'uint256', name: 'cursor_', type: 'uint256' },
+      { internalType: 'uint16', name: 'chunkSize', type: 'uint16' },
+    ],
+  },
+] as const satisfies Abi;
 
 export const ERC20_ABI = [
   {

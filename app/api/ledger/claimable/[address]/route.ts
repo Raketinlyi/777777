@@ -3,11 +3,22 @@ import { createPublicClient, http, decodeEventLog } from 'viem';
 import { monadChain } from '@/config/chains';
 import { CRAZY_OCTAGON_READER_ABI } from '@/lib/abi/crazyOctagon';
 import { z } from 'zod';
-import crazyOctagonCoreAbi from '@/lib/abi/generated/crazyOctagonCoreAbi.json';
 
 // Use Reader contract for burn data
 const READER_ADDRESS = monadChain.contracts.reader.address;
 const CORE_ADDRESS = monadChain.contracts.gameProxy.address;
+
+const burnScheduledEvent = {
+  type: 'event' as const,
+  name: 'BurnScheduled',
+  inputs: [
+    { type: 'uint256', name: 'tokenId', indexed: true },
+    { type: 'address', name: 'owner', indexed: true },
+    { type: 'uint256', name: 'amount', indexed: false },
+    { type: 'uint256', name: 'claimAt', indexed: false },
+    { type: 'uint32', name: 'waitMin', indexed: false },
+  ],
+};
 
 // Simple in-memory cache to avoid repeated heavy scans
 const CACHE_TTL_MS = Number(process.env.CLAIMABLE_CACHE_TTL_MS || '60000');
@@ -73,24 +84,14 @@ export async function GET(
         try {
           const logs = await client.getLogs({
             address: CORE_ADDRESS,
-            event: {
-              type: 'event',
-              name: 'BurnScheduled',
-              inputs: [
-                { type: 'uint256', name: 'tokenId', indexed: true },
-                { type: 'address', name: 'owner', indexed: true },
-                { type: 'uint256', name: 'amount' },
-                { type: 'uint256', name: 'claimAt' },
-                { type: 'uint32', name: 'waitMin' },
-              ],
-            },
+            event: burnScheduledEvent,
             args: { owner: address as `0x${string}` },
             fromBlock: from,
             toBlock: to,
           });
           for (const log of logs) {
             try {
-              const parsed = decodeEventLog({ abi: crazyOctagonCoreAbi as unknown as any, data: log.data, topics: log.topics }) as any;
+              const parsed = decodeEventLog({ abi: [burnScheduledEvent], data: log.data, topics: log.topics }) as any;
               const id = parsed?.args?.tokenId as bigint;
               tokenIds.push(String(id));
             } catch {
