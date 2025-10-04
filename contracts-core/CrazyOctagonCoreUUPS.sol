@@ -158,6 +158,12 @@ contract CrazyOctagonCoreUUPS is
     // Reservation lock for race-free selection
     mapping(uint256 => address) private graveReservedBy;
 
+    // --- Breed cooldown storage (append-only) ---
+    uint32 public breedCooldownMin;      // minimal cooldown in seconds (>=60)
+    uint32 public breedCooldownDefault;  // default cooldown applied to parents and revived NFT
+    uint32 public breedCooldownMax;      // maximal cooldown in seconds (<=7 days)
+    mapping(uint256 => uint64) public breedUnlockAt; // timestamp until which the token cannot breed
+
     // ───── events
     event Pinged(uint256 indexed tokenId, uint256 reward, uint256 newLocked);
     event BurnScheduled(uint256 indexed tokenId, address indexed owner, uint256 amount, uint256 claimAt, uint32 waitMin);
@@ -224,6 +230,10 @@ contract CrazyOctagonCoreUUPS is
         useFloorOracle     = false; manualFloorPrice = 10_000 ether;
         useCRARateOracle   = false; craPerOctaRate  = 1 ether; // 1 CRAA = 1 OCTA (старт)
         reviveMinGate = 10; reviveMaxGate = 20;
+
+        breedCooldownMin = 60;           // 1 minute
+        breedCooldownDefault = 1 hours;  // 1 hour default for parents & revived NFT
+        breedCooldownMax = 7 days;       // upper cap
     }
 
     // ───── UUPS guard
@@ -324,6 +334,30 @@ contract CrazyOctagonCoreUUPS is
     function setSponsor(address treasury, uint16 bps) external onlyConf { require(treasury!=address(0),"zero"); require(bps<=20000,"<=200%"); sponsorTreasury=treasury; sponsorBps=bps; }
     function setDeadAddress(address a) external onlyConf { require(a!=address(0),"zero"); deadAddress=a; }
     function setManualActivateEnabled(bool on) external onlyConf { manualActivateEnabled=on; }
+
+    function setBreedCooldowns(uint32 minSec, uint32 defaultSec, uint32 maxSec) external onlyConf {
+        require(minSec >= 60, "min<60s");
+        require(maxSec <= 7 days, "max>7d");
+        require(minSec <= defaultSec && defaultSec <= maxSec, "order");
+        breedCooldownMin = minSec;
+        breedCooldownDefault = defaultSec;
+        breedCooldownMax = maxSec;
+    }
+
+    function _requireBreedReady(uint256 tokenId, string memory err) internal view {
+        uint64 unlockAt = breedUnlockAt[tokenId];
+        if (unlockAt == 0) return;
+        require(block.timestamp >= unlockAt, err);
+    }
+
+    function _effectiveBreedCooldown() internal view returns (uint32 cd) {
+        cd = breedCooldownDefault;
+        if (cd == 0) return 0;
+        uint32 minCd = breedCooldownMin;
+        if (minCd != 0 && cd < minCd) cd = minCd;
+        uint32 maxCd = breedCooldownMax;
+        if (maxCd != 0 && cd > maxCd) cd = maxCd;
+    }
 
     // (minute-based convenience setters were removed to reduce bytecode size)
 
@@ -560,6 +594,9 @@ contract CrazyOctagonCoreUUPS is
         require(isGraveyardReady(), "grave empty");
         if (breedCRAABps>0) require(address(craa)!=address(0), "CRAA not set");
 
+        _requireBreedReady(parent1Id, "parent1 cooldown");
+        _requireBreedReady(parent2Id, "parent2 cooldown");
+
         (uint256 octaCost, uint256 craaCost, uint256 lpPart, uint256 octaMain) = getBreedCosts();
         require(octaCost + craaCost > 0, "zero price");
 
@@ -582,6 +619,13 @@ contract CrazyOctagonCoreUUPS is
         state[parent2Id].currentStars -= 1;
         state[parent1Id].lastBreedTime = uint48(block.timestamp);
         state[parent2Id].lastBreedTime = uint48(block.timestamp);
+
+        uint32 cooldown = _effectiveBreedCooldown();
+        if (cooldown > 0) {
+            uint64 unlockAt = uint64(block.timestamp + cooldown);
+            breedUnlockAt[parent1Id] = unlockAt;
+            breedUnlockAt[parent2Id] = unlockAt;
+        }
 
         uint256 revived = _selectFromGraveyardAndRemove(userRand);
         _finalizeBreed(msg.sender, revived);
@@ -645,6 +689,13 @@ contract CrazyOctagonCoreUUPS is
         }
         state[revived].bonusStars = addStars;
         bonusBps[revived] = minPenaltyClampBps; // сразу −50%
+
+        uint32 childCooldown = _effectiveBreedCooldown();
+        if (childCooldown > 0) {
+            breedUnlockAt[revived] = uint64(block.timestamp + childCooldown);
+        } else {
+            breedUnlockAt[revived] = 0;
+        }
 
         if (_lastLP>0) {
             nftLP[revived].helper = address(lpHelper);

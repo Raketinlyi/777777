@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
+import { useNFTGameInfo } from '@/hooks/useNFTGameData';
 import { useTranslation } from 'react-i18next';
 import { createPublicClient, http, formatEther } from 'viem';
 import { monadChain } from '@/config/chains';
@@ -63,9 +64,13 @@ export default function NFTCooldownInspector() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000));
+  const [inspectedTokenId, setInspectedTokenId] = useState<string | undefined>(undefined);
 
   const { getNFTGameData, pingInterval, breedCooldown, isConnected } =
     useCrazyOctagonGame();
+  
+  // Используем хук для получения РЕАЛЬНОГО breedCooldown из контракта (с breedUnlockAt)
+  const { nftInfo: realTimeNftInfo } = useNFTGameInfo(inspectedTokenId);
 
   // Update current time every second for live countdown
   useEffect(() => {
@@ -83,6 +88,9 @@ export default function NFTCooldownInspector() {
       setError(null);
       setNftData(null);
       setLpInfo(null);
+      
+      // Устанавливаем tokenId для хука, чтобы он начал читать breedUnlockAt
+      setInspectedTokenId(tokenId);
 
       // Step 1: Fetch core data from the hook
       const gameData = await getNFTGameData(tokenId);
@@ -119,7 +127,9 @@ export default function NFTCooldownInspector() {
         0,
         pingInterval - (now - gameData.lastPingTime)
       );
-      const breedCooldownLeft = Math.max(
+      
+      // Используем РЕАЛЬНЫЙ breedCooldown из хука (с учётом breedUnlockAt)
+      const breedCooldownLeft = realTimeNftInfo?.breedCooldown ?? Math.max(
         0,
         breedCooldown - (now - gameData.lastBreedTime)
       );
@@ -258,7 +268,9 @@ export default function NFTCooldownInspector() {
         0,
         pingInterval - (now - nftData.lastPingTime)
       );
-      const breedCooldownLeft = Math.max(
+      
+      // Используем РЕАЛЬНЫЙ breedCooldown из хука (с breedUnlockAt)
+      const breedCooldownLeft = realTimeNftInfo?.breedCooldown ?? Math.max(
         0,
         breedCooldown - (now - nftData.lastBreedTime)
       );
@@ -277,7 +289,7 @@ export default function NFTCooldownInspector() {
     }, 3000); // Changed from 1000 to 3000 (3 seconds)
 
     return () => clearInterval(interval);
-  }, [nftData, pingInterval, breedCooldown]);
+  }, [nftData, pingInterval, breedCooldown, realTimeNftInfo]);
 
   return (
     <Card className='w-full p-3 bg-slate-800/50 backdrop-blur-sm border-4 border-yellow-400/80 shadow-2xl shadow-yellow-400/40 ring-2 ring-yellow-300/30'>
@@ -550,9 +562,14 @@ export default function NFTCooldownInspector() {
                       : t('status.waiting', 'Waiting')}
                   </Badge>
                 </div>
-                <p className='text-sm font-mono text-white text-center'>
-                  {formatTime(nftData.breedCooldownLeft)}
+                <p className={`text-sm font-mono text-center ${nftData.canBreed ? 'text-green-300' : 'text-amber-300'}`}>
+                  {nftData.canBreed ? '✅ 0s' : `⏳ ${formatTime(nftData.breedCooldownLeft)}`}
                 </p>
+                {!nftData.canBreed && (
+                  <div className='text-xs text-amber-200 text-center mt-0.5'>
+                    🔒 {t('sections.breed.breedingCooldown', 'Breeding cooldown active')}
+                  </div>
+                )}
               </div>
             </div>
           )}

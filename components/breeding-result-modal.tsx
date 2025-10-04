@@ -27,24 +27,26 @@ const resolveImageSrc = (url?: string) => {
   return '/favicon.ico';
 };
 
-// Rarity names
+// Rarity names (1-based index matching contract)
 const RARITY_NAMES: Record<number, string> = {
-  0: 'Common',
-  1: 'Uncommon',
-  2: 'Rare',
-  3: 'Epic',
-  4: 'Legendary',
-  5: 'Mythic',
+  0: 'Unknown',
+  1: 'Common',
+  2: 'Uncommon',
+  3: 'Rare',
+  4: 'Epic',
+  5: 'Legendary',
+  6: 'Mythic',
 };
 
-// Rarity colors
+// Rarity colors (1-based index matching contract)
 const RARITY_COLORS: Record<number, string> = {
   0: 'from-gray-400 to-gray-600',
-  1: 'from-green-400 to-green-600',
-  2: 'from-blue-400 to-blue-600',
-  3: 'from-purple-400 to-purple-600',
-  4: 'from-orange-400 to-orange-600',
-  5: 'from-pink-400 to-pink-600',
+  1: 'from-gray-400 to-gray-600',
+  2: 'from-green-400 to-green-600',
+  3: 'from-blue-400 to-blue-600',
+  4: 'from-purple-400 to-purple-600',
+  5: 'from-orange-400 to-orange-600',
+  6: 'from-pink-400 to-pink-600',
 };
 
 export function BreedingResultModal({

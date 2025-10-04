@@ -48,6 +48,7 @@ export interface NFTGameInfo {
   canBreed: boolean;
   pingCooldown: number;
   breedCooldown: number;
+  breedUnlockAt?: number; // unix seconds timestamp read from contract (0 if none)
 }
 
 export interface BurnRecordInfo {
@@ -80,6 +81,14 @@ export const useNFTGameInfo = (tokenId: string | undefined) => {
     query: { enabled },
   });
 
+  const { data: nftBreedUnlockAt, refetch: refetchBreedUnlock } = useReadContract({
+    address: GAME_CONTRACT_ADDRESS,
+    abi: GAME_CONTRACT_ABI,
+    functionName: 'breedUnlockAt',
+    args: tokenId ? [BigInt(tokenId)] : undefined,
+    query: { enabled },
+  });
+
   const {
     data: nftMeta,
     isLoading: isLoadingMeta,
@@ -108,7 +117,12 @@ export const useNFTGameInfo = (tokenId: string | undefined) => {
     const lastPing = Number(summary[7] as number | bigint);
     const lastBreed = Number(summary[8] as number | bigint);
     const pingCooldown = Math.max(0, lastPing + pingSec - currentTime);
-    const breedCooldown = Math.max(0, lastBreed + breedSec - currentTime);
+
+    // If contract provides breedUnlockAt timestamp, prefer it
+    const unlockAt = nftBreedUnlockAt ? Number(nftBreedUnlockAt as bigint) : 0;
+    const breedCooldown = unlockAt > 0
+      ? Math.max(0, unlockAt - currentTime)
+      : Math.max(0, lastBreed + breedSec - currentTime);
 
     const isActivated = Boolean(meta[3]);
     const inGraveyard = Boolean(summary[6]);
@@ -133,12 +147,14 @@ export const useNFTGameInfo = (tokenId: string | undefined) => {
         breedCooldown === 0,
       pingCooldown,
       breedCooldown,
+      breedUnlockAt: unlockAt,
     };
   };
 
   const refetch = () => {
     refetchSummary();
     refetchMeta();
+    refetchBreedUnlock();
   };
 
   return {
@@ -235,6 +251,19 @@ export const useMultipleNFTGameInfo = (tokenIds: string[]) => {
     query: { enabled },
   });
 
+  // batch read breedUnlockAt for multiple tokens from GAME CONTRACT (not Reader)
+  const unlockContracts = tokenIds.map(tokenId => ({
+    address: GAME_CONTRACT_ADDRESS,
+    abi: GAME_CONTRACT_ABI,
+    functionName: 'breedUnlockAt',
+    args: [BigInt(tokenId)],
+  }));
+
+  const { data: breedUnlockResults } = useReadContracts({
+    contracts: unlockContracts,
+    query: { enabled },
+  });
+
   const {
     data: nftMetaResults,
     isLoading: isLoadingMeta,
@@ -274,7 +303,15 @@ export const useMultipleNFTGameInfo = (tokenIds: string[]) => {
       const lastPing = Number(summary[7] as number | bigint);
       const lastBreed = Number(summary[8] as number | bigint);
       const pingCooldown = Math.max(0, lastPing + pingSec - currentTime);
-      const breedCooldown = Math.max(0, lastBreed + breedSec - currentTime);
+
+      // Attempt to read breedUnlockAt from batch results (if available)
+      let breedCooldown = 0;
+      if (breedUnlockResults?.[index]?.status === 'success') {
+        const unlockVal = Number(breedUnlockResults[index].result as bigint);
+        breedCooldown = unlockVal > 0 ? Math.max(0, unlockVal - currentTime) : Math.max(0, lastBreed + breedSec - currentTime);
+      } else {
+        breedCooldown = Math.max(0, lastBreed + breedSec - currentTime);
+      }
       const locked = (summary[9] as bigint) ?? 0n;
       const currentStars = Number(summary[4] as number | bigint);
       const isActivated = Boolean(meta[3]);
@@ -300,6 +337,7 @@ export const useMultipleNFTGameInfo = (tokenIds: string[]) => {
           breedCooldown === 0,
         pingCooldown,
         breedCooldown,
+        breedUnlockAt: breedUnlockResults?.[index]?.status === 'success' ? Number(breedUnlockResults[index].result as bigint) : 0,
         ...(Number.isFinite(genderValue) && genderValue > 0
           ? { gender: genderValue }
           : {}),

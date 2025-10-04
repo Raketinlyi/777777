@@ -1,7 +1,19 @@
 import { createPublicClient, http, isAddressEqual, parseAbiItem } from 'viem';
 
-// Конфигурация (как в хуке)
-const RPC_URL = 'https://monad-testnet.g.alchemy.com/v2/XgKXPDCwM8SYsWDPk1yCs';
+// Конфигурация из переменных окружения
+const getAlchemyRpcUrl = () => {
+  // Пробуем найти API ключ в переменных окружения
+  const apiKey = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  
+  if (!apiKey) {
+    console.warn('⚠️  ALCHEMY_API_KEY not set, using public RPC');
+    return 'https://monad-testnet.rpc.caldera.xyz/http';
+  }
+  
+  return `https://monad-testnet.g.alchemy.com/v2/${apiKey}`;
+};
+
+const RPC_URL = process.env.NEXT_PUBLIC_MONAD_RPC || getAlchemyRpcUrl();
 const READER_ADDRESS = '0xF9017a4701E1464690d6b71E2Fb3AF9c4c1acab1';
 const CORE_ADDRESS = '0xb8Fee974031de01411656F908E13De4Ad9c74A9B'; // из .env
 

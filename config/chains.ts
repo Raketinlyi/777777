@@ -162,3 +162,72 @@ export const monadChain = defineChain({
     pairToken: { address: PAIR_TOKEN, blockCreated: 0 },
   },
 });
+
+// ───── ENV‑defined chain (generic EVM) for one‑place switching
+const ENV_CHAIN_ID = Number(
+  process.env.NEXT_PUBLIC_CHAIN_ID ||
+  process.env.CHAIN_ID ||
+  MONAD_CHAIN_ID
+);
+
+const ENV_CHAIN_NAME = process.env.NEXT_PUBLIC_CHAIN_NAME || process.env.CHAIN_NAME || 'EnvChain';
+
+const ENV_RPC_URLS = [
+  ...(process.env.NEXT_PUBLIC_RPC_URL ? [process.env.NEXT_PUBLIC_RPC_URL] : []),
+  ...(process.env.RPC_URL ? [process.env.RPC_URL] : []),
+  ...(process.env.NEXT_PUBLIC_RPC_URL_1 ? [process.env.NEXT_PUBLIC_RPC_URL_1] : []),
+  ...(process.env.NEXT_PUBLIC_RPC_URL_2 ? [process.env.NEXT_PUBLIC_RPC_URL_2] : []),
+  ...(process.env.NEXT_PUBLIC_RPC_URL_3 ? [process.env.NEXT_PUBLIC_RPC_URL_3] : []),
+];
+
+export const envChain = defineChain({
+  id: ENV_CHAIN_ID,
+  name: ENV_CHAIN_NAME,
+  network: 'evm',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Native',
+    symbol: 'NATIVE',
+  },
+  rpcUrls: {
+    default: { http: ENV_RPC_URLS.length ? ENV_RPC_URLS : FALLBACK_RPCS },
+    public: { http: ENV_RPC_URLS.length ? ENV_RPC_URLS : FALLBACK_RPCS },
+  },
+  blockExplorers: {
+    default: { name: 'Explorer', url: process.env.NEXT_PUBLIC_BLOCK_EXPLORER || 'https://explorer.example' },
+  },
+  contracts: {
+    multicall3: { address: MULTICALL3_ADDRESS, blockCreated: 0 },
+    crazyCubeNFT: { address: NFT_COLLECTION, blockCreated: 0 },
+    gameProxy: { address: CORE_PROXY, blockCreated: 0 },
+    crazyToken: { address: OCTA_TOKEN, blockCreated: 0 },
+    octaToken: { address: OCTA_TOKEN, blockCreated: 0 },
+    octaaToken: { address: OCTAA_TOKEN, blockCreated: 0 },
+    reader: { address: READER_CONTRACT, blockCreated: 0 },
+    lpManager: { address: LP_MANAGER, blockCreated: 0 },
+    pairToken: { address: PAIR_TOKEN, blockCreated: 0 },
+  },
+});
+
+// Active chain selector: switch via .env without touching code
+const ACTIVE_SELECTOR = (process.env.NEXT_PUBLIC_ACTIVE_CHAIN || process.env.ACTIVE_CHAIN || 'monad').toLowerCase();
+
+export const activeChain = ACTIVE_SELECTOR === 'env' ? envChain
+  : ACTIVE_SELECTOR === 'ape' ? apeChain
+  : monadChain;
+
+// Optional logging (enable via NEXT_PUBLIC_LOG_CHAIN=true)
+if (process.env.NEXT_PUBLIC_LOG_CHAIN === 'true') {
+  // Minimal, neutral logs without naming specific networks/coins
+  // Note: executed on import; keep output concise
+  // eslint-disable-next-line no-console
+  console.info(`[chain] active=${ACTIVE_SELECTOR} id=${activeChain.id}`);
+  // eslint-disable-next-line no-console
+  console.info('[chain] contracts', {
+    coreProxy: activeChain.contracts?.gameProxy?.address,
+    nft: activeChain.contracts?.crazyCubeNFT?.address,
+    reader: activeChain.contracts && 'reader' in activeChain.contracts ? activeChain.contracts.reader?.address : undefined,
+    lpManager: activeChain.contracts && 'lpManager' in activeChain.contracts ? activeChain.contracts.lpManager?.address : undefined,
+    pairToken: activeChain.contracts && 'pairToken' in activeChain.contracts ? activeChain.contracts.pairToken?.address : undefined,
+  });
+}

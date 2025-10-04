@@ -1,11 +1,12 @@
+// Rarity labels (1-based index matching contract: 1=Common, 2=Uncommon, ..., 6=Mythic)
 export const rarityLabels = [
-  '',
-  'Common',
-  'Uncommon',
-  'Rare',
-  'Epic',
-  'Legendary',
-  'Mythic',
+  'Unknown', // 0 - unused by contract
+  'Common',    // 1
+  'Uncommon',  // 2
+  'Rare',      // 3
+  'Epic',      // 4
+  'Legendary', // 5
+  'Mythic',    // 6
 ] as const;
 
 export const rarityColors = [

@@ -1,8 +1,20 @@
 const { createPublicClient, http } = require('viem');
 const readerAbi = require('../lib/abi/generated/crazyOctagonReaderAbi.json');
 
+// Безопасное получение RPC URL из env переменных
+const getAlchemyRpcUrl = () => {
+  const apiKey = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  
+  if (!apiKey) {
+    console.warn('⚠️  ALCHEMY_API_KEY not set, using public fallback RPC');
+    return 'https://monad-testnet.rpc.caldera.xyz/http';
+  }
+  
+  return `https://monad-testnet.g.alchemy.com/v2/${apiKey}`;
+};
+
 (async () => {
-  const rpc = process.env.NEXT_PUBLIC_MONAD_RPC || process.env.MONAD_RPC || 'https://monad-testnet.g.alchemy.com/v2/XgKXPDCwM8SYsWDPk1yCs';
+  const rpc = process.env.NEXT_PUBLIC_MONAD_RPC || process.env.MONAD_RPC || getAlchemyRpcUrl();
   const reader = process.env.NEXT_PUBLIC_READER_ADDRESS || '0xF9017a4701E1464690d6b71E2Fb3AF9c4c1acab1';
   const client = createPublicClient({ transport: http(rpc) });
   try {

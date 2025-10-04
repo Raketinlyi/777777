@@ -10,6 +10,7 @@ import { Star, Plus, Zap, Dna, Microscope } from 'lucide-react';
 import { getRarityColor, getRarityLabel } from '@/lib/rarity';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { useMobile } from '@/hooks/use-mobile';
@@ -24,6 +25,7 @@ interface BreedCardProps {
   selectedOrder?: 1 | 2;
   disableSelect?: boolean;
   onSelect?: (tokenId: number) => void;
+  onActivate?: (tokenId: number) => void;
   onActionComplete?: () => void;
   isOnCooldown?: boolean;
   cooldownRemaining?: number | undefined;
@@ -46,11 +48,13 @@ export const BreedCard = React.memo(function BreedCard({
   selectedOrder,
   disableSelect,
   onSelect,
+  onActivate,
   isOnCooldown,
   cooldownRemaining,
   gender,
 }: BreedCardProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { isMobile } = useMobile();
   
   // Add scientific lab animations CSS
@@ -188,6 +192,7 @@ export const BreedCard = React.memo(function BreedCard({
   // grey-out if no stars left or has active cooldowns
   const noStars = nftInfo && nftInfo.dynamic.currentStars === 0;
   const hasActiveCooldown = gameInfo ? gameInfo.breedCooldown > 0 : false;
+  const isActivated = nftInfo ? nftInfo.static.isActivated : false;
 
   const formatDuration = (sec: number): string => {
     if (sec <= 0) return '0s';
@@ -449,6 +454,38 @@ export const BreedCard = React.memo(function BreedCard({
               <span className='text-white drop-shadow-lg font-mono'>
                 {formatDuration(gameInfo.breedCooldown)}
               </span>
+            </div>
+          )}
+
+          {/* Not-activated overlay: gray card with centered Activate button */}
+          {!isActivated && (
+            <div className='absolute inset-0 flex items-center justify-center z-40 pointer-events-none'>
+              <div className='absolute inset-0 bg-black/60 rounded-lg' />
+              <div className='relative z-50 text-center pointer-events-auto'>
+                <div className='text-white text-lg font-bold mb-2'>
+                  {t('sections.breed.notActivated', 'Not Activated')}
+                </div>
+                <button
+                  onClick={() => {
+                    // Prefer explicit onActivate handler if provided
+                    if (tokenIdNum === null) return;
+                    if (typeof onActivate === 'function') {
+                      onActivate(tokenIdNum);
+                      return;
+                    }
+                    // Fallback: navigate to Ping page with tokenId query (safe client-side navigation)
+                    try {
+                      router.push(`/ping?tokenId=${tokenIdNum}`);
+                    } catch {
+                      // last-resort fallback: use onSelect if provided
+                      onSelect?.(tokenIdNum);
+                    }
+                  }}
+                  className='px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full font-semibold shadow-lg'
+                >
+                  {t('sections.breed.activate', 'Activate')}
+                </button>
+              </div>
             </div>
           )}
 

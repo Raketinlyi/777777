@@ -128,12 +128,17 @@ export const BurningGraveyardCard = memo(function BurningGraveyardCard({
               />
             )}
 
-            {isReadyForBreed && (
-              <span className='absolute top-1.5 right-1.5 bg-purple-600 text-xs text-white px-1.5 py-0.5 rounded-full flex items-center z-10'>
+            {/* Бейдж готовности к breeding */}
+            {isReadyForBreed ? (
+              <span className='absolute top-1.5 right-1.5 bg-green-600 text-xs text-white px-1.5 py-0.5 rounded-full flex items-center z-10 shadow-lg'>
                 <Timer className='w-2 h-2 mr-0.5' />
                 Ready!
               </span>
-            )}
+            ) : brTime && (brTime > now) ? (
+              <span className='absolute top-1.5 right-1.5 bg-red-600/90 text-[10px] text-white px-1.5 py-0.5 rounded flex items-center z-10 shadow-lg'>
+                🔒 Maturing
+              </span>
+            ) : null}
           </div>
         </CardHeader>
 

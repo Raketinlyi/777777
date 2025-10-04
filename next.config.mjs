@@ -26,12 +26,32 @@ const nextConfig = {
     },
   },
   
-  // Security headers
+  // Security headers with Content Security Policy
   async headers() {
+    // CSP для защиты от XSS и injection атак
+    const ContentSecurityPolicy = `
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      img-src 'self' data: blob: https: https://nftstorage.link https://ipfs.io https://gateway.pinata.cloud https://cloudflare-ipfs.com https://dweb.link https://ipfs.dweb.link;
+      font-src 'self' data: https://fonts.gstatic.com;
+      connect-src 'self' https://monad-testnet.rpc.caldera.xyz https://*.g.alchemy.com https://*.infura.io https://cloudflare-eth.com wss://*.g.alchemy.com;
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+      upgrade-insecure-requests;
+    `.replace(/\s{2,}/g, ' ').trim();
+
     return [
       {
         source: '/(.*)',
         headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: ContentSecurityPolicy,
+          },
           {
             key: 'X-Frame-Options',
             value: 'DENY',
@@ -50,7 +70,11 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(), microphone=(), geolocation=(), payment=()',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
         ],
       },

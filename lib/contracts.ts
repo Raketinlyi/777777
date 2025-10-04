@@ -1,13 +1,13 @@
-import { monadChain } from '@/config/chains';
+import { activeChain } from '@/config/chains';
 import { CRAZY_OCTAGON_CORE_ABI } from '@/lib/abi/crazyOctagon';
 
 export const coreContractConfig = {
-  address: monadChain.contracts.gameProxy.address,
+  address: activeChain.contracts.gameProxy.address,
   abi: CRAZY_OCTAGON_CORE_ABI,
 } as const;
 
 export const nftContractConfig = {
-  address: monadChain.contracts.crazyCubeNFT.address,
+  address: activeChain.contracts.crazyCubeNFT.address,
   // Minimal NFT ABI for ownership queries
   abi: [
     {

@@ -19,8 +19,9 @@ import Image from 'next/image';
 import { BreedingEffect } from '@/components/breeding-effect';
 
 import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
-import { usePublicClient, useAccount, useConnect } from 'wagmi';
+import { usePublicClient, useAccount, useConnect, useChainId } from 'wagmi';
 import { parseEther, formatEther, decodeEventLog, parseAbiItem } from 'viem';
+import { CRAZY_OCTAGON_CORE_ABI } from '@/lib/abi/crazyOctagon';
 
 import { BreedCard } from '@/components/BreedCard';
 // import dynamic from 'next/dynamic';
@@ -59,6 +60,7 @@ const resolveImageSrc = (url?: string) => {
 export default function BreedPage() {
   const { isConnected: connected, address: account } = useAccount();
   const { connect, connectors } = useConnect();
+  const chainId = useChainId(); // 🔒 Chain ID для защиты от wrong network
   const {
     data: allNFTs = [],
     error: allNFTsError,
@@ -248,6 +250,30 @@ export default function BreedPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Реальная проверка готовности кладбища из контракта
+  const [isGraveyardContractReady, setIsGraveyardContractReady] = useState(false);
+  
+  useEffect(() => {
+    const checkGraveyardReady = async () => {
+      if (!publicClient) return;
+      try {
+        const ready = await publicClient.readContract({
+          address: GAME_CONTRACT_ADDRESS,
+          abi: CRAZY_OCTAGON_CORE_ABI,
+          functionName: 'isGraveyardReady',
+        }) as boolean;
+        setIsGraveyardContractReady(ready);
+      } catch (err) {
+        console.error('Failed to check graveyard readiness:', err);
+        setIsGraveyardContractReady(false);
+      }
+    };
+    
+    checkGraveyardReady();
+    const interval = setInterval(checkGraveyardReady, 30000); // Проверяем каждые 30 секунд
+    return () => clearInterval(interval);
+  }, [publicClient, GAME_CONTRACT_ADDRESS]);
   const tr = useCallback(
     (key: string, fallback: string) => (mounted ? t(key, fallback) : fallback),
     [mounted, t]
@@ -554,6 +580,38 @@ export default function BreedPage() {
         variant: 'destructive',
       });
       return;
+    }
+
+    // 🔒 КРИТИЧНО: Проверка chain ID для защиты пользователя от потери средств
+    if (chainId !== 10143) {
+      toast({
+        title: '⚠️ Wrong Network',
+        description: 'Please switch to Monad Testnet (Chain ID: 10143) in your wallet before breeding.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Проверка готовности кладбища ПЕРЕД любыми транзакциями
+    try {
+      if (publicClient) {
+        const graveyardReady = await publicClient.readContract({
+          address: GAME_CONTRACT_ADDRESS,
+          abi: CRAZY_OCTAGON_CORE_ABI,
+          functionName: 'isGraveyardReady',
+        }) as boolean;
+        
+        if (!graveyardReady) {
+          toast({
+            title: '⚰️ Graveyard Not Ready',
+            description: 'No NFTs available for revival. Wait for burned NFTs to become ready or ask someone to burn an NFT.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check graveyard status:', err);
     }
 
     // Pre-checks
@@ -1089,7 +1147,40 @@ export default function BreedPage() {
                   </h3>
                 </div>
 
-                {/* Graveyard status info - more compact */}
+                {/* Graveyard Status - БОЛЬШОЕ заметное уведомление */}
+                {!isGraveyardContractReady && !graveyardLoading && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className='mb-6 mx-auto max-w-md'
+                  >
+                    <div className='relative overflow-hidden rounded-xl border-2 border-red-500/50 bg-gradient-to-br from-red-950/90 via-red-900/80 to-orange-950/90 p-6 shadow-[0_0_30px_rgba(239,68,68,0.4)]'>
+                      {/* Animated background */}
+                      <div className='absolute inset-0 bg-gradient-to-r from-red-500/10 via-orange-500/10 to-red-500/10 animate-pulse' />
+                      
+                      <div className='relative z-10 text-center space-y-3'>
+                        <div className='text-5xl mb-2'>⚰️</div>
+                        <h3 className='text-xl font-bold text-red-200'>
+                          {graveyardTokens?.length === 0 
+                            ? '🚫 GRAVEYARD EMPTY' 
+                            : '⏳ REVIVAL COOLDOWN ACTIVE'}
+                        </h3>
+                        <p className='text-red-300/90 text-sm leading-relaxed'>
+                          {graveyardTokens?.length === 0
+                            ? 'No burned NFTs available for revival. Someone needs to burn an NFT first.'
+                            : 'All NFTs in graveyard are still maturing. Please wait until at least one is ready for revival.'}
+                        </p>
+                        <div className='pt-2 border-t border-red-500/30'>
+                          <p className='text-red-400/80 text-xs font-mono'>
+                            🔒 Breeding temporarily unavailable
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Compact status для успешного состояния */}
                 <div className='mb-3'>
                   {graveyardLoading ? (
                     <p className='text-sm text-pink-200'>
@@ -1099,15 +1190,7 @@ export default function BreedPage() {
                         'Loading graveyard status...'
                       )}
                     </p>
-                  ) : graveyardTokens?.length === 0 ? (
-                    <p className='text-sm text-amber-300'>
-                      ⚰️{' '}
-                      {tr(
-                        'sections.breed.graveyardEmpty',
-                        'No burned cubes in graveyard'
-                      )}
-                    </p>
-                  ) : graveyardIsReady ? (
+                  ) : isGraveyardContractReady && (
                     <p className='text-sm text-green-300'>
                       ✅{' '}
                       {tr(
@@ -1115,17 +1198,6 @@ export default function BreedPage() {
                         'Graveyard is ready for breeding'
                       )}
                     </p>
-                  ) : (
-                    <div className='text-sm text-red-300'>
-                      <p>
-                        ⚠️{' '}
-                        {tr(
-                          'sections.breed.graveyardCooldown',
-                          'Graveyard cooldown active'
-                        )}
-                      </p>
-                      {/* reader-based hook doesn't expose precise ETA */}
-                    </div>
                   )}
                 </div>
 
@@ -1295,7 +1367,7 @@ export default function BreedPage() {
                     <Button
                       onClick={handleBreeding}
                       disabled={
-                        isBreeding || isTxLoading || !canBreedSelectedNFTs() || isApprovingTokens
+                        isBreeding || isTxLoading || !canBreedSelectedNFTs() || isApprovingTokens || !isGraveyardContractReady
                       }
                       className='w-full max-w-xs mx-auto bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed container-adaptive shadow-[0_0_20px_rgba(6,182,212,0.4)]'
                     >
@@ -1330,7 +1402,7 @@ export default function BreedPage() {
                         animate={{ opacity: 1 }}
                         className='mt-3 text-center'
                       >
-                        {!graveyardIsReady ? (
+                        {!isGraveyardContractReady ? (
                           <div className='text-red-400 text-sm'>
                             <p>
                               ⚠️{' '}

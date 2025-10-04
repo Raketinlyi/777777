@@ -1,6 +1,7 @@
 const { createPublicClient, http } = require('viem');
 const fs = require('fs');
 const path = require('path');
+const { MONAD_TESTNET_CONFIG, CONTRACTS } = require('./config.cjs');
 
 // Читаем ABI файл
 const abiPath = path.resolve(__dirname, '../lib/abi/generated/crazyOctagonCoreAbi.json');
@@ -8,30 +9,13 @@ console.log('Loading ABI from:', abiPath);
 
 const crazyOctagonCoreAbi = require(abiPath);
 
-const CORE_PROXY_ADDRESS = '0xb8Fee974031de01411656F908E13De4Ad9c74A9B';
+const CORE_PROXY_ADDRESS = CONTRACTS.CORE_PROXY;
 const NFT_ID = 93n; // Use BigInt for tokenId
 
 // Создаем клиент для Monad Testnet
 const publicClient = createPublicClient({
-  chain: {
-    id: 10143,
-    name: 'Monad Testnet',
-    network: 'monad-testnet',
-    nativeCurrency: {
-      decimals: 18,
-      name: 'Monad',
-      symbol: 'MON',
-    },
-    rpcUrls: {
-      default: {
-        http: ['https://monad-testnet.g.alchemy.com/v2/XgKXPDCwM8SYsWDPk1yCs'],
-      },
-      public: {
-        http: ['https://monad-testnet.g.alchemy.com/v2/XgKXPDCwM8SYsWDPk1yCs'],
-      },
-    },
-  },
-  transport: http('https://monad-testnet.g.alchemy.com/v2/XgKXPDCwM8SYsWDPk1yCs'),
+  chain: MONAD_TESTNET_CONFIG,
+  transport: http(MONAD_TESTNET_CONFIG.rpcUrls.default.http[0]),
 });
 
 async function main() {
