@@ -1,5 +1,4 @@
 import { getAlchemyKey, markKeyAsFailed } from './alchemyKey';
-import { monadChain } from '@/config/chains';
 
 /**
  * Advanced Alchemy fetch helper with smart key rotation:
@@ -8,63 +7,101 @@ import { monadChain } from '@/config/chains';
  * 3) Marks failed keys to avoid reusing them
  * 4) Supports both RPC (v2) and NFT (v3) endpoints on Monad Testnet mainnet
  */
+type AlchemyFetchOptions = {
+  /** Preferred API key to try first (для отдельных потоков типа breeding) */
+  preferredKey?: string;
+  /** Закрепить выбор за preferredKey даже при ретраях */
+  lockToPreferred?: boolean;
+};
+
+type PreferredState = {
+  tried: boolean;
+};
+
+const buildAlchemyUrl = (endpoint: 'rpc' | 'nft', key: string, path: string): string => {
+  const base = endpoint === 'nft'
+    ? `https://monad-testnet.g.alchemy.com/nft/v3/${key}`
+    : `https://monad-testnet.g.alchemy.com/v2/${key}`;
+
+  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+const validateResponse = (response: Response, key: string): void => {
+  if (response.status === 429) {
+    markKeyAsFailed(key);
+    throw new Error(`Rate limited: ${response.status}`);
+  }
+
+  if (response.status >= 500) {
+    markKeyAsFailed(key);
+    throw new Error(`Server error: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+};
+
+const selectAlchemyKey = (
+  preferredKey: string | undefined,
+  state: PreferredState,
+  lockToPreferred: boolean
+): string => {
+  if (preferredKey && (!state.tried || lockToPreferred)) {
+    if (!lockToPreferred) {
+      state.tried = true;
+    }
+    return preferredKey;
+  }
+
+  return getAlchemyKey();
+};
+
 export async function alchemyFetch(
   endpoint: 'rpc' | 'nft',
-  path: string, // the part after /v2/{key} or /nft/v3/{key}
+  path: string,
   init?: RequestInit,
-  maxRetries = 5
+  maxRetries = 5,
+  options: AlchemyFetchOptions = {}
 ): Promise<Response> {
-  let attempt = 0;
   let delayMs = 2000; // start 2s (increased from 1s)
+  const normalizedPath = path.toLowerCase();
+  const breedKeyCandidate =
+    endpoint === 'nft' &&
+    (normalizedPath.includes('getnftsforowner') || normalizedPath.includes('getnftmetadata'))
+      ? process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_BREED || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_5 || undefined
+      : undefined;
 
-  while (attempt <= maxRetries) {
-    // Get a fresh key for each attempt to ensure rotation
-    const key = getAlchemyKey();
-    
-    // Always use key-based URL for proper rotation
-    const base = endpoint === 'nft'
-      ? `https://monad-testnet.g.alchemy.com/nft/v3/${key}`
-      : `https://monad-testnet.g.alchemy.com/v2/${key}`;
-    
-    const url = `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+  const preferredKey = options.preferredKey ?? breedKeyCandidate;
+  const lockToPreferred = options.lockToPreferred ?? false;
+  const preferredState: PreferredState = { tried: false };
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const key = selectAlchemyKey(preferredKey, preferredState, lockToPreferred);
+    const url = buildAlchemyUrl(endpoint, key, path);
 
     try {
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         ...init,
         headers: {
           ...init?.headers,
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
-      
-      if (res.status === 429) {
-        // Rate limited - mark key as failed and retry with next key
-        markKeyAsFailed(key);
-        throw new Error(`Rate limited: ${res.status}`);
+
+      validateResponse(response, key);
+      return response;
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error;
       }
-      
-      if (res.status >= 500) {
-        // Server error - mark key as failed and retry
-        markKeyAsFailed(key);
-        throw new Error(`Server error: ${res.status}`);
-      }
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      
-      return res;
-    } catch (err) {
-      attempt++;
-      if (attempt > maxRetries) throw err;
-      
-      // Exponential backoff with jitter
+
       const jitter = Math.floor(Math.random() * 1000);
       await sleep(delayMs + jitter);
       delayMs = Math.min(delayMs * 2, 64000);
     }
   }
-  // should never reach here
+
   throw new Error('alchemyFetch: exhausted retries');
 }
 

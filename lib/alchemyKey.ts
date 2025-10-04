@@ -28,6 +28,7 @@ const ALCHEMY_KEYS = [
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_3,
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_4,
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_5,
+  process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_BREED,
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY, // optional single-key name
   // Accept optional typo prefix just in case the env was added that way in the dashboard
   // Optional typo-prefixed envs (defensively access via index signature)
@@ -44,6 +45,10 @@ const ALCHEMY_KEYS = [
 const PUBLIC_RPC_ENDPOINTS = [
   process.env.NEXT_PUBLIC_MONAD_RPC,
   process.env.MONAD_RPC,
+  process.env.MONAD_RPC_2,
+  process.env.MONAD_RPC_3,
+  process.env.MONAD_RPC_4,
+  process.env.MONAD_RPC_5,
   process.env.RPC_URL,
   'https://testnet-rpc.monad.xyz',
 ]

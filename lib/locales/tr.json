@@ -769,16 +769,16 @@
   },
   "cubeObservers": {
     "idlePhrases": [
-      "Burada ne yapıyorsun?",
-      "Kim gürültü yapıyor?",
-      "Oh-oh-oh...",
-      "Bakmıyorum!",
-      "Uykumu bölme!"
+      "Sessiz olun! Kuantum kahkaha jeneratörünü kalibre ediyoruz.",
+      "Kafein beherimi yine kim sakladı?",
+      "Veriler %83 sevimli kaos olasılığı gösteriyor.",
+      "Burada romantizm yok, sadece kontrollü deneyler!",
+      "Güvenlik gözlükleri takıldı, hipotezler sahnede!"
     ],
     "successPhrases": [
-      "Yeni küpün için tebrikler!",
-      "Yaşasın, yeni bir küp bebek!",
-      "Hoş geldin, minik!"
+      "Evrika! Laboratuvara yeni bir küp katıldı!",
+      "Hakemli mükemmellik: küp bebek onaylandı.",
+      "Bu keşfi kayda geçin—bilimsel olarak aşırı tatlı!"
     ]
   },
   "shyCubes": {

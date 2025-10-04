@@ -70,21 +70,33 @@ export function ClaimDebug() {
         }
 
         // 2. For each ID, get its burn info
+        type BurnInfoTuple = readonly [
+          `0x${string}`,
+          bigint,
+          bigint,
+          bigint,
+          boolean,
+          number,
+          bigint,
+          bigint,
+          bigint
+        ];
+
         const infoPromises = ids.map(async (id) => {
           const info = (await publicClient.readContract({
             address: READER_ADDR,
             abi: CRAZY_OCTAGON_READER_ABI,
             functionName: 'getBurnInfo',
             args: [BigInt(id)],
-          })) as readonly [string, bigint, number, number, boolean, ...unknown[]];
-          
+          })) as BurnInfoTuple;
+
           const owner = info[0].toLowerCase();
           const connectedAddress = address?.toLowerCase();
 
           return {
             tokenId: id,
             owner: info[0],
-            claimAt: info[2],
+            claimAt: Number(info[2]),
             claimed: info[4],
             isOwnerMatch: owner === connectedAddress,
           };

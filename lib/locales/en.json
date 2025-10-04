@@ -760,16 +760,16 @@
   },
   "cubeObservers": {
     "idlePhrases": [
-      "What are you doing here?",
-      "Who's making noise?",
-      "Oh-oh-oh...",
-      "I'm not looking!",
-      "Don't disturb my sleep!"
+      "Shhh! We're calibrating the quantum giggle generator.",
+      "Who misplaced my caffeine beaker again?",
+      "According to data, there's an 83% chance of adorable chaos.",
+      "No romance here—only controlled experiments!",
+      "Safety goggles on, hypotheses out!"
     ],
     "successPhrases": [
-      "Congrats on your new cube!",
-      "Hooray, a new cube baby!",
-      "Welcome, little one!"
+      "Eureka! Another cube just joined the lab!",
+      "Peer-reviewed perfection: baby cube confirmed.",
+      "Log this discovery—it's scientifically adorable!"
     ]
   },
   "shyCubes": {

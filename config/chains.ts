@@ -81,6 +81,8 @@ const FALLBACK_RPCS = [
   ...(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_1 ? [`https://monad-testnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_1}`] : []),
   ...(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_2 ? [`https://monad-testnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_2}`] : []),
   ...(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_3 ? [`https://monad-testnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_3}`] : []),
+  ...(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_4 ? [`https://monad-testnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_4}`] : []),
+  ...(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_5 ? [`https://monad-testnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY_5}`] : []),
   'https://monad-testnet.rpc.thirdweb.com',
   'https://rpc.monad.xyz',
 ];

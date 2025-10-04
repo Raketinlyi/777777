@@ -295,8 +295,15 @@ export const useMultipleNFTGameInfo = (tokenIds: string[]) => {
         return [];
       }
 
-      const summary = summaryResult.result as readonly unknown[];
-      const meta = metaResult.result as readonly unknown[];
+      const summaryRaw = summaryResult.result;
+      const metaRaw = metaResult.result;
+
+      if (!Array.isArray(summaryRaw) || !Array.isArray(metaRaw)) {
+        return [];
+      }
+
+      const summary = summaryRaw as readonly unknown[];
+      const meta = metaRaw as readonly unknown[];
 
       const pingSec = pingInterval || 86400;
       const breedSec = globalBreedCooldown || 0;
