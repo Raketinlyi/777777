@@ -23,9 +23,13 @@ import {
 import { usePerformanceContext } from '@/hooks/use-performance-context';
 import { useMobile } from '@/hooks/use-mobile';
 import DOMPurify from 'isomorphic-dompurify';
-import { monadChain } from '@/config/chains';
 import { useBurnState } from '@/hooks/use-burn-state';
 import { useNFTsBatchData } from '@/hooks/useContractBatch';
+import {
+  PANCAKESWAP_CRAA_LP_URL,
+  PANCAKESWAP_OCTAA_SWAP_URL,
+  DEXSCREENER_CRAA_URL,
+} from '@/lib/token-links';
 
 const PlasmaAnimation = dynamic(() => import('@/components/plasma-animation'), {
   ssr: false,
@@ -35,17 +39,15 @@ export default function BurnPage() {
   // Все хуки должны быть вызваны до любых условных возвратов
   const { isConnected } = useAccount();
   const { connectors, connect } = useConnect();
-  const { data: nfts = [], isLoading: isLoadingNFTs, refetch } = useAlchemyNftsQuery();
+  const { data: nfts = [], isLoading: isLoadingNFTs } = useAlchemyNftsQuery();
   const [mounted, setMounted] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isRefreshing = false;
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const { t } = useTranslation();
-  const { isLiteMode } = usePerformanceContext();
-  const { isMobile } = useMobile();
-  const { isBurning } = useBurnState();
-  const chainName = monadChain.name;
-  const pairTokenSymbol = monadChain.nativeCurrency.symbol;
+  const { t } = useTranslation(); // Keeping translation hook
+  const { isLiteMode } = usePerformanceContext(); // Keeping performance context hook
+  const { isMobile } = useMobile(); // Keeping mobile hook
+  const { isBurning } = useBurnState(); // Keeping burn state hook
 
   // Батчинг запросов NFT данных - один запрос для всех NFT
   const tokenIds = nfts.map(nft => nft.tokenId.toString());
@@ -84,14 +86,6 @@ export default function BurnPage() {
     }
   };
 
-  const refreshPage = () => {
-    setIsRefreshing(true);
-    refetch();
-    // Visual refresh effect
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
-  };
 
   return (
     <div
@@ -179,18 +173,51 @@ export default function BurnPage() {
                   <p className='text-xs text-purple-300'>
                     <Trans
                       i18nKey='sections.burn.feeBox.guide.sellOCTA'
+                      defaultValue='🔗 Quick DeFi links: <octa>Swap OCTAA on PancakeSwap</octa> • <cra>Swap CRAA on PancakeSwap</cra> • <dex>CRA chart on DexScreener</dex>'
                       components={{
-                        a: (
+                        octa: (
                           <a
-                            href='https://pancakeswap.finance/'
+                            href={PANCAKESWAP_OCTAA_SWAP_URL}
                             target='_blank'
                             rel='noopener noreferrer'
                             className='text-cyan-400 hover:text-cyan-300 underline'
                           />
                         ),
+                        cra: (
+                          <a
+                            href={PANCAKESWAP_CRAA_LP_URL}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-amber-300 hover:text-amber-200 underline'
+                          />
+                        ),
+                        dex: (
+                          <a
+                            href={DEXSCREENER_CRAA_URL}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-purple-300 hover:text-purple-200 underline'
+                          />
+                        ),
                       }}
                     />
                   </p>
+                  {/* CTA block for OCTAA swap */}
+                  <div className='mt-3 p-3 bg-slate-900/70 rounded border border-purple-700/20'>
+                    <p className='text-sm text-purple-200 font-semibold'>
+                      {t('sections.burn.quickLinks.ctaTitle', 'Swap OCTAA on PancakeSwap')}
+                    </p>
+                    <p className='text-xs text-purple-300'>
+                      <a
+                        href={PANCAKESWAP_OCTAA_SWAP_URL}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='underline text-cyan-200 hover:text-cyan-100'
+                      >
+                        {t('sections.burn.quickLinks.octaaSwap', 'Open PancakeSwap — Swap OCTAA')}
+                      </a>
+                    </p>
+                  </div>
                   <p className='text-xs text-purple-300'>
                     <Trans i18nKey='sections.burn.feeBox.guide.fees' />
                   </p>

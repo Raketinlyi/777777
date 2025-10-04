@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { IpfsImage } from '@/components/IpfsImage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -508,12 +508,11 @@ function NFTPingCardComponent({
           <CardHeader className='pb-2'>
             <div className='aspect-square rounded-lg overflow-hidden relative w-full shadow-lg max-w-[140px] mx-auto ring-2 ring-white/20'>
               {nft.image ? (
-                <Image
+                <IpfsImage
                   src={nft.image}
                   alt={`CrazyCube #${tokenIdDec}`}
                   width={140}
                   height={140}
-                  sizes='140px'
                   className='w-full h-full object-cover'
                   priority={index < 6}
                   loading={index < 6 ? 'eager' : 'lazy'}

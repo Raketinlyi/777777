@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 // import Link from 'next/link';
 import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 import { useQueryClient } from '@tanstack/react-query';
+import { IpfsImage } from '@/components/IpfsImage';
 
 // Helper to show duration in human friendly form
 const formatDuration = (seconds: number) => {
@@ -25,19 +26,6 @@ const formatDuration = (seconds: number) => {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   return `${h > 0 ? `${h}h ` : ''}${m}m`;
-};
-
-// Convert ipfs://... to https gateway
-const resolveImageSrc = (url?: string) => {
-  if (!url) return '/favicon.ico';
-  if (url.startsWith('ipfs://')) {
-    const path = url.slice(7);
-    return `https://nftstorage.link/ipfs/${path}`;
-  }
-  if (url.startsWith('https://')) {
-    return url;
-  }
-  return '/favicon.ico';
 };
 
 export function UserNFTsPreview() {
@@ -277,14 +265,10 @@ function NFTCard({ nft, pingInterval, breedCooldown }: NFTCardProps) {
     >
       {/* NFT Image */}
       <div className='relative mb-1.5 aspect-square'>
-  {/* eslint-disable-next-line @next/next/no-img-element */}
-  <img
-          src={resolveImageSrc(nft.image)}
+        <IpfsImage
+          src={nft.image}
           alt={nft.name || `NFT #${nft.tokenId}`}
           className='w-full h-full object-cover rounded-md'
-          onError={e => {
-            e.currentTarget.src = '/favicon.ico';
-          }}
         />
         {/* Rarity Badge */}
         {(() => {

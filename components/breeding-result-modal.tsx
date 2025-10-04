@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
 import { useCrazyOctagonGame } from '@/hooks/useCrazyOctagonGame';
 import { useAlchemyNftsQuery } from '@/hooks/useAlchemyNftsQuery';
+import { IpfsImage } from '@/components/IpfsImage';
 
 interface BreedingResultModalProps {
   isVisible: boolean;
@@ -14,18 +14,6 @@ interface BreedingResultModalProps {
   bonusStars?: number; // 0 = no bonus, 3-5 = bonus stars
   onClose: () => void;
 }
-
-// Convert ipfs:// URLs to HTTPS gateway
-const resolveImageSrc = (url?: string) => {
-  if (!url) return '/favicon.ico';
-  if (url.startsWith('ipfs://')) {
-    return `https://nftstorage.link/ipfs/${url.slice(7)}`;
-  }
-  if (url.startsWith('https://')) {
-    return url;
-  }
-  return '/favicon.ico';
-};
 
 // Rarity names (1-based index matching contract)
 const RARITY_NAMES: Record<number, string> = {
@@ -49,12 +37,14 @@ const RARITY_COLORS: Record<number, string> = {
   6: 'from-pink-400 to-pink-600',
 };
 
+const range = (count: number) => Array.from({ length: Math.max(0, count) }, (_, idx) => idx);
+
 export function BreedingResultModal({
   isVisible,
   newTokenId,
   bonusStars = 0,
   onClose,
-}: BreedingResultModalProps) {
+}: Readonly<BreedingResultModalProps>) {
   const [autoCloseTimer, setAutoCloseTimer] = useState(120); // 2 минуты
   const { getNFTGameData } = useCrazyOctagonGame();
   const { data: allNFTs = [] } = useAlchemyNftsQuery();
@@ -132,6 +122,7 @@ export function BreedingResultModal({
     }
   }, [isVisible]);
 
+  const imageSrc = nftData?.image ?? '/icons/favicon-180x180.png';
   const fallbackBonusStars = bonusStars ?? 0;
   const contractBonusStars = nftData?.bonusStars;
   const displayBonusStars =
@@ -189,9 +180,9 @@ export function BreedingResultModal({
               {/* Animated background effects */}
               {hasBonus && (
                 <div className='absolute inset-0 overflow-hidden pointer-events-none'>
-                  {[...Array(30)].map((_, i) => (
+                  {range(30).map((sparkleId) => (
                     <motion.div
-                      key={i}
+                      key={`bonus-sparkle-${sparkleId}`}
                       initial={{
                         x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
                         y: -20,
@@ -240,13 +231,14 @@ export function BreedingResultModal({
                     </div>
                   ) : (
                     <>
-                      <Image
-                        src={resolveImageSrc(nftData?.image ?? undefined)}
+                      <IpfsImage
+                        src={imageSrc}
                         alt={nftData?.name || `Cube #${newTokenId}`}
                         fill
                         sizes='(max-width: 768px) 320px, (max-width: 1024px) 384px, 448px'
                         className='object-contain'
                         priority
+                        tokenId={newTokenId}
                       />
                       {/* Hologram effect overlay */}
                       <div className='absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent animate-pulse pointer-events-none' />
@@ -254,9 +246,9 @@ export function BreedingResultModal({
                       {/* Bonus sparkle overlay */}
                       {hasBonus && (
                         <div className='absolute inset-0 pointer-events-none'>
-                          {[...Array(12)].map((_, i) => (
+                          {range(12).map((sparkleId) => (
                             <motion.div
-                              key={i}
+                              key={`holo-sparkle-${sparkleId}`}
                               initial={{ scale: 0, opacity: 0 }}
                               animate={{
                                 scale: [0, 1, 0],
@@ -295,15 +287,15 @@ export function BreedingResultModal({
               >
                 <div className='inline-flex flex-wrap items-center justify-center gap-3 rounded-full bg-black/70 px-4 py-2 backdrop-blur-md border border-yellow-400/40 shadow-[0_0_30px_rgba(15,23,42,0.5)]'>
                   {totalStars > 0 ? (
-                    Array.from({ length: totalStars }).map((_, i) => {
-                      const isBonusStar = i >= normalizedBaseStars;
-                      const isFilled = i < normalizedContractStars;
+                    range(totalStars).map((starIndex) => {
+                      const isBonusStar = starIndex >= normalizedBaseStars;
+                      const isFilled = starIndex < normalizedContractStars;
                       const baseClass = isBonusStar
                         ? 'text-pink-300 drop-shadow-[0_0_14px_rgba(244,114,182,0.9)]'
                         : 'text-yellow-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.9)]';
                       return (
                         <Star
-                          key={i}
+                          key={`star-${newTokenId}-${starIndex}`}
                           className={`w-10 h-10 md:w-12 md:h-12 ${
                             isFilled ? baseClass : 'text-slate-600'
                           }`}
@@ -382,13 +374,13 @@ export function BreedingResultModal({
                         }}
                         className='flex items-center gap-1'
                       >
-                        {[...Array(normalizedBonusStars)].map((_, i) => (
+                        {range(normalizedBonusStars).map((bonusIdx) => (
                           <motion.div
-                            key={i}
+                            key={`bonus-ring-${newTokenId}-${bonusIdx}`}
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{
-                              delay: 0.7 + i * 0.1,
+                              delay: 0.7 + bonusIdx * 0.1,
                               type: 'spring',
                               bounce: 0.6,
                             }}
@@ -460,13 +452,13 @@ export function BreedingResultModal({
                     >
                       <span className='text-xl text-white font-semibold'>Stars:</span>
                       <div className='flex items-center gap-1'>
-                        {[...Array(totalStars)].map((_, i) => (
+                        {range(totalStars).map((ringIdx) => (
                           <motion.div
-                            key={i}
+                            key={`ring-${newTokenId}-${ringIdx}`}
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{
-                              delay: 0.8 + i * 0.1,
+                              delay: 0.8 + ringIdx * 0.1,
                               type: 'spring',
                               bounce: 0.6,
                             }}
@@ -505,9 +497,9 @@ export function BreedingResultModal({
               {/* Fireworks effect for bonus */}
               {hasBonus && (
                 <div className='absolute inset-0 pointer-events-none overflow-hidden'>
-                  {[...Array(20)].map((_, i) => (
+                  {range(20).map((fireworkIdx) => (
                     <motion.div
-                      key={`firework-${i}`}
+                      key={`firework-${newTokenId}-${fireworkIdx}`}
                       initial={{
                         x: '50%',
                         y: '50%',

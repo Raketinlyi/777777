@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import securityLogger from '@/utils/security-logger';
+import {
+  evaluateAdminRequest,
+  extractClientIp,
+} from '@/utils/security-admin-auth';
 
 export async function GET(req: NextRequest) {
   try {
     // Get security statistics
     const stats = securityLogger.getSecurityStats();
-    const recentEvents = securityLogger.getRecentEvents(60); // Last hour
     const blockedIPs = securityLogger.getBlockedIPs();
 
     // Only return summary for security reasons
@@ -54,6 +57,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
+    const ip = extractClientIp(req);
+    securityLogger.logAttackAttempt(
+      ip,
+      'security_status_get_failure',
+      { message: error instanceof Error ? error.message : 'unknown' },
+      req.headers.get('user-agent') || undefined
+    );
     return NextResponse.json(
       { error: 'Failed to get security status' },
       { status: 500 }
@@ -62,6 +72,30 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = extractClientIp(req);
+  const auth = evaluateAdminRequest(req);
+
+  if (!auth.authorized) {
+    securityLogger.logAttackAttempt(
+      ip,
+      'unauthorized_security_api_access',
+      {
+        path: req.nextUrl.pathname,
+        failureReason: auth.failureReason,
+      },
+      req.headers.get('user-agent') || undefined
+    );
+
+    return NextResponse.json(
+      {
+        error: auth.tokenConfigured
+          ? 'Unauthorized'
+          : 'Security service unavailable',
+      },
+      { status: auth.tokenConfigured ? 401 : 503 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { action, data } = body;
@@ -78,10 +112,11 @@ export async function POST(req: NextRequest) {
         // Note: This would require additional implementation in securityLogger
         return NextResponse.json({ success: true, message: 'IP unblocked' });
 
-      case 'get_events':
+      case 'get_events': {
         const minutes = data.minutes || 60;
         const events = securityLogger.getRecentEvents(minutes);
         return NextResponse.json({ events });
+      }
 
       case 'cleanup':
         securityLogger.cleanup();
@@ -96,6 +131,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown';
+    securityLogger.logAttackAttempt(
+      ip,
+      'security_status_post_failure',
+      { message },
+      req.headers.get('user-agent') || undefined
+    );
     return NextResponse.json(
       { error: 'Failed to process security action' },
       { status: 500 }

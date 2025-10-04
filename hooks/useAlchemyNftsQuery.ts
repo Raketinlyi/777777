@@ -142,13 +142,13 @@ export function useAlchemyNftsQuery() {
               nftData.image?.cachedUrl ||
               nftData.image?.thumbnailUrl ||
               nftData.image?.pngUrl ||
-              '/favicon.ico';
+              '/icons/favicon-180x180.png';
 
             return {
               id: `${tokenIdDec}`,
               tokenId: tokenIdDec,
               name: metadata?.name || nft.title || `CrazyCube #${tokenIdDec}`,
-              image: resolveIpfsUrl(imageUrl),
+              image: imageUrl,
               attributes: metadata?.attributes || [],
               rewardBalance: 0,
               frozen: false,
@@ -160,7 +160,7 @@ export function useAlchemyNftsQuery() {
           // Try to enrich NFTs that lack images
           const enriched = await Promise.all(
             items.map(async item => {
-              if (item.image && item.image !== '/favicon.ico') return item;
+              if (item.image && item.image !== '/icons/favicon-180x180.png') return item;
 
               try {
                 const metaPath = `/getNFTMetadata?contractAddress=${CRAZYCUBE_ADDR}&tokenId=${item.tokenId}`;
@@ -178,7 +178,7 @@ export function useAlchemyNftsQuery() {
                   item.image = meta.rawMetadata.image;
                 }
 
-                item.image = resolveIpfsUrl(item.image) || item.image;
+                item.image = item.image || '/icons/favicon-180x180.png';
               } catch (e) {}
 
               return item;
@@ -284,7 +284,7 @@ export function useAlchemyNftsQuery() {
                 metadata?.image ||
                 nft.image?.cachedUrl ||
                 nft.image?.pngUrl ||
-                '/favicon.ico';
+                '/icons/favicon-180x180.png';
               return resolveIpfsUrl(img);
             })(),
             attributes: metadata?.attributes || [],

@@ -33,6 +33,11 @@ import { useSocialPrompt } from '@/hooks/use-social-prompt';
 import { SocialPromptModal } from '@/components/SocialPromptModal';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
+import {
+  PANCAKESWAP_CRAA_LP_URL,
+  PANCAKESWAP_OCTAA_SWAP_URL,
+  DEXSCREENER_CRAA_URL,
+} from '@/lib/token-links';
 
 export default function PingPage() {
   const { t } = useTranslation();
@@ -136,12 +141,57 @@ export default function PingPage() {
 
   // Function to render structured game guide content
   const renderGameGuideContent = () => {
+    const quickLinks = (
+      <div className='mt-4 space-y-2 text-sm text-violet-200'>
+        <div className='font-semibold text-violet-300'>
+          {t('wallet.pancakeLinks.title', 'Quick DeFi links')}
+        </div>
+        <ul className='space-y-1'>
+          <li>
+            <a
+              href={PANCAKESWAP_OCTAA_SWAP_URL}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-cyan-300 hover:text-cyan-200 underline'
+            >
+                🟡 {t('wallet.pancakeLinks.octaa', 'Swap OCTAA on PancakeSwap')}
+            </a>
+          </li>
+          <li>
+            <a
+              href={PANCAKESWAP_CRAA_LP_URL}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-amber-300 hover:text-amber-200 underline'
+            >
+              🟠 {t('wallet.pancakeLinks.craa', 'Swap CRAA on PancakeSwap')}
+            </a>
+          </li>
+          <li>
+            <a
+              href={DEXSCREENER_CRAA_URL}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-purple-300 hover:text-purple-100 underline'
+            >
+              📊 {t('wallet.pancakeLinks.dex', 'View CRAA chart (DexScreener)')}
+            </a>
+          </li>
+        </ul>
+      </div>
+    );
+
     try {
       const content = t('wallet.gameGuideContent');
       
       // If content is a string (fallback), return it as is
       if (typeof content === 'string') {
-        return <div className='text-slate-300 whitespace-pre-line text-sm leading-relaxed'>{content}</div>;
+        return (
+          <div className='text-slate-300 whitespace-pre-line text-sm leading-relaxed space-y-4'>
+            <div>{content}</div>
+            {quickLinks}
+          </div>
+        );
       }
       
       // If content is an object, render it structured
@@ -313,6 +363,7 @@ export default function PingPage() {
                 </div>
               </div>
             )}
+            {quickLinks}
           </div>
         );
       }

@@ -20,10 +20,9 @@ export const metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/favicon-180x180.png', sizes: '180x180' },
       { url: '/icons/favicon-16x16.png', sizes: '16x16' },
       { url: '/icons/favicon-32x32.png', sizes: '32x32' },
-      { url: '/icons/favicon-180x180.png', sizes: '180x180' },
       { url: '/icons/favicon-192x192.png', sizes: '192x192' },
     ],
     apple: [

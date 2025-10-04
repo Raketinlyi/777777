@@ -1,5 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiSecurity } from '@/utils/ai-security';
+import securityLogger from '@/utils/security-logger';
+import {
+  evaluateAdminRequest,
+  extractClientIp,
+} from '@/utils/security-admin-auth';
+
+type AiSecurityAction = 'analyze_request' | 'block_ip' | 'get_threat_patterns';
+
+type AiActionPayload = {
+  ip?: string;
+  method?: string;
+  path?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  userAgent?: string;
+  recaptchaToken?: string;
+  reason?: string;
+  duration?: number;
+};
+
+type AiSecurityRequestBody = {
+  action?: string;
+  data?: AiActionPayload;
+};
+
+const handleAiSecurityAction = async (
+  action: AiSecurityAction,
+  data: AiActionPayload | undefined
+) => {
+  const payload = data ?? {};
+  switch (action) {
+    case 'analyze_request':
+      if (payload.ip && payload.method && payload.path) {
+        const analysis = await aiSecurity.analyzeRequest(
+          payload.ip,
+          payload.method,
+          payload.path,
+          payload.headers || {},
+          payload.body || '',
+          payload.userAgent || '',
+          payload.recaptchaToken
+        );
+        return NextResponse.json({ analysis });
+      }
+      break;
+
+    case 'block_ip':
+      if (payload.ip && payload.reason) {
+        aiSecurity.blockIP(payload.ip, payload.reason, payload.duration || 60);
+        return NextResponse.json({
+          success: true,
+          message: 'IP blocked by AI',
+        });
+      }
+      break;
+
+    case 'get_threat_patterns':
+      return NextResponse.json({
+        patterns: aiSecurity.getThreatPatterns
+          ? aiSecurity.getThreatPatterns()
+          : [],
+      });
+
+    default:
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  }
+
+  return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,10 +76,6 @@ export async function GET(req: NextRequest) {
     const stats = aiSecurity.getSecurityStats();
 
     // Get recent security events (last 10)
-    const recentEvents = aiSecurity.getRecentEvents
-      ? aiSecurity.getRecentEvents(10)
-      : [];
-
     const aiStatus = {
       status: 'operational',
       timestamp: new Date().toISOString(),
@@ -50,6 +115,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
+    const ip = extractClientIp(req);
+    securityLogger.logAttackAttempt(
+      ip,
+      'ai_security_get_failure',
+      { message: error instanceof Error ? error.message : 'unknown' },
+      req.headers.get('user-agent') || undefined
+    );
     return NextResponse.json(
       { error: 'Failed to get AI security status' },
       { status: 500 }
@@ -58,48 +130,59 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = extractClientIp(req);
+  const auth = evaluateAdminRequest(req);
+
+  if (!auth.authorized) {
+    securityLogger.logAttackAttempt(
+      ip,
+      'unauthorized_ai_security_access',
+      {
+        path: req.nextUrl.pathname,
+        failureReason: auth.failureReason,
+      },
+      req.headers.get('user-agent') || undefined
+    );
+
+    return NextResponse.json(
+      {
+        error: auth.tokenConfigured
+          ? 'Unauthorized'
+          : 'Security service unavailable',
+      },
+      { status: auth.tokenConfigured ? 401 : 503 }
+    );
+  }
+
   try {
     const body = await req.json();
-    const { action, data } = body;
-
-    switch (action) {
-      case 'analyze_request':
-        if (data.ip && data.method && data.path) {
-          const analysis = await aiSecurity.analyzeRequest(
-            data.ip,
-            data.method,
-            data.path,
-            data.headers || {},
-            data.body || '',
-            data.userAgent || ''
-          );
-          return NextResponse.json({ analysis });
-        }
-        break;
-
-      case 'block_ip':
-        if (data.ip && data.reason) {
-          aiSecurity.blockIP(data.ip, data.reason, data.duration || 60);
-          return NextResponse.json({
-            success: true,
-            message: 'IP blocked by AI',
-          });
-        }
-        break;
-
-      case 'get_threat_patterns':
-        return NextResponse.json({
-          patterns: aiSecurity.getThreatPatterns
-            ? aiSecurity.getThreatPatterns()
-            : [],
-        });
-
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    const { action, data } = body as AiSecurityRequestBody;
+
+    if (!action) {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    }
+
+    if (
+      action !== 'analyze_request' &&
+      action !== 'block_ip' &&
+      action !== 'get_threat_patterns'
+    ) {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    }
+
+    return handleAiSecurityAction(action as AiSecurityAction, data);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown';
+    securityLogger.logAttackAttempt(
+      ip,
+      'ai_security_post_failure',
+      { message },
+      req.headers.get('user-agent') || undefined
+    );
     return NextResponse.json(
       { error: 'Failed to process AI security action' },
       { status: 500 }

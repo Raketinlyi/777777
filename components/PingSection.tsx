@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import {
   useUserNFTs,
-  getNFTImage,
+  getNFTImageRaw,
   getNFTName,
   type AlchemyNFT,
 } from '@/hooks/useUserNFTs';
@@ -23,6 +22,7 @@ import { getRarityColor as rarityColor, getRarityLabel } from '@/lib/rarity';
 import { useTranslation } from 'react-i18next';
 import { useNetwork } from '@/hooks/use-network';
 import DOMPurify from 'isomorphic-dompurify';
+import { IpfsImage } from '@/components/IpfsImage';
 
 interface PingableNFTProps {
   nft: AlchemyNFT;
@@ -56,8 +56,9 @@ const PingableNFT = ({
   };
 
   const canPing = gameInfo?.canPing && !isLoading;
+  const rawImageSrc = getNFTImageRaw(nft);
   const imageSrc =
-    getNFTImage(nft) ||
+    rawImageSrc ||
     'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=';
 
   return (
@@ -77,11 +78,11 @@ const PingableNFT = ({
       >
         <CardContent className='p-4'>
           <div className='relative mb-3 h-40'>
-            <Image
+            <IpfsImage
               src={imageSrc}
               alt={getNFTName(nft)}
-              fill
               className='object-cover rounded-lg'
+              fill
               sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
             />
 

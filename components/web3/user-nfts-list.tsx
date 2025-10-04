@@ -107,7 +107,7 @@ export default function UserNftsList() {
           const data = gameDataList[idx];
           const tokenId = nft.tokenId.toString();
 
-          const imageSrc = nft.image || '/favicon.ico';
+          const imageSrc = nft.image || '/icons/favicon-180x180.png';
           const rarityKey =
             typeof nft.rarity === 'string' ? nft.rarity.toLowerCase() : '';
           const fallbackRarityIndex = rarityIndexByLabel[rarityKey] ?? 0;

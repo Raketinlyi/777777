@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useReadContract, usePublicClient } from 'wagmi';
 import { NFT_CONTRACT_ADDRESS } from '@/config/wagmi';
 import { nftAbi } from '@/config/abis/nftAbi';
@@ -145,7 +145,7 @@ export function useNFTs() {
         id: `${tokenId}`,
         tokenId,
         name: metadata.name,
-        image: resolveIpfsUrl(metadata.image),
+  image: metadata.image,
         attributes: metadata.attributes,
         rewardBalance: 0,
         frozen: false,

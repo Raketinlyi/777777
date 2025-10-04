@@ -23,6 +23,18 @@ import { motion } from 'framer-motion';
 import { createPublicClient, http, formatEther } from 'viem';
 import { safeOpen } from '@/lib/safeOpen';
 import { CompactMusicPlayer } from "@/components/CompactMusicPlayer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  PANCAKESWAP_CRAA_LP_URL,
+  PANCAKESWAP_OCTAA_SWAP_URL,
+  DEXSCREENER_CRAA_URL,
+} from '@/lib/token-links';
 
 function WalletConnectInner() {
   const { isConnected, address } = useAccount();
@@ -115,12 +127,53 @@ const pathname = usePathname();
   const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
   const renderGameGuideContent = () => {
+    const quickLinks = (
+      <div className="mt-4 space-y-2 text-sm text-slate-200">
+        <div className="font-semibold text-indigo-300">
+          {t('wallet.pancakeLinks.title', 'Quick DeFi links')}
+        </div>
+        <ul className="space-y-1">
+          <li>
+            <a
+              href={PANCAKESWAP_OCTAA_SWAP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-300 hover:text-cyan-200 underline"
+            >
+              🟡 {t('wallet.pancakeLinks.octaa', 'Swap OCTAA on PancakeSwap')}
+            </a>
+          </li>
+          <li>
+            <a
+              href={PANCAKESWAP_CRAA_LP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-300 hover:text-amber-200 underline"
+            >
+              🟠 {t('wallet.pancakeLinks.craa', 'Swap CRAA on PancakeSwap')}
+            </a>
+          </li>
+          <li>
+            <a
+              href={DEXSCREENER_CRAA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-300 hover:text-purple-200 underline"
+            >
+              📊 {t('wallet.pancakeLinks.dex', 'View CRAA chart (DexScreener)')}
+            </a>
+          </li>
+        </ul>
+      </div>
+    );
+
     try {
       const content = t("wallet.gameGuideContent");
       if (typeof content === "string") {
         return (
-          <div className="text-slate-300 whitespace-pre-line text-sm leading-relaxed">
-            {content}
+          <div className="text-slate-300 whitespace-pre-line text-sm leading-relaxed space-y-4">
+            <div>{content}</div>
+            {quickLinks}
           </div>
         );
       }
@@ -142,6 +195,7 @@ const pathname = usePathname();
                 </div>
               </div>
             )}
+            {quickLinks}
           </div>
         );
       }
@@ -255,12 +309,36 @@ const pathname = usePathname();
                   </DialogContent>
                 </Dialog>
 
-                <Button
-                  onClick={() => safeOpen('https://pancakeswap.finance/')}
-                  className="h-8 px-3 bg-indigo-400 hover:bg-indigo-300 text-black font-semibold"
-                >
-                  {t('ping.pancakeSwap', '🥞 PancakeSwap')}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="h-8 px-3 bg-indigo-400 hover:bg-indigo-300 text-black font-semibold"
+                    >
+                      {t('ping.pancakeSwap', '🥞 PancakeSwap')}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[220px] bg-slate-900 text-slate-100 border-slate-700">
+                    <DropdownMenuItem
+                      className="cursor-pointer text-sm"
+                      onSelect={() => safeOpen(PANCAKESWAP_OCTAA_SWAP_URL)}
+                    >
+                      🟡 {t('wallet.pancakeLinks.octaa', 'Swap OCTAA on PancakeSwap')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer text-sm"
+                      onSelect={() => safeOpen(PANCAKESWAP_CRAA_LP_URL)}
+                    >
+                      🟠 {t('wallet.pancakeLinks.craa', 'Swap CRAA on PancakeSwap')}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-slate-700" />
+                    <DropdownMenuItem
+                      className="cursor-pointer text-sm"
+                      onSelect={() => safeOpen(DEXSCREENER_CRAA_URL)}
+                    >
+                      📊 {t('wallet.pancakeLinks.dex', 'View CRAA chart (DexScreener)')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {pathname !== "/" && <CompactMusicPlayer />}

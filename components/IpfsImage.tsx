@@ -1,8 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { IPFS_GATEWAYS } from '@/lib/ipfs';
+import {
+  IPFS_GATEWAYS,
+  markGatewayFailed,
+  resolveIpfsUrl,
+  cacheSuccessfulGateway,
+  invalidateCachedGateway,
+} from '@/lib/ipfs';
 
 interface IpfsImageProps {
   src: string;
@@ -12,19 +18,11 @@ interface IpfsImageProps {
   className?: string;
   fallbackSrc?: string;
   tokenId?: string | number;
+  fill?: boolean;
+  sizes?: string;
+  priority?: boolean;
+  loading?: 'lazy' | 'eager';
 }
-
-// Convert ipfs:// URLs to HTTPS gateway
-const resolveImageSrc = (url?: string) => {
-  if (!url) return '/favicon.ico';
-  if (url.startsWith('ipfs://')) {
-    return `https://nftstorage.link/ipfs/${url.slice(7)}`;
-  }
-  if (url.startsWith('https://')) {
-    return url;
-  }
-  return '/favicon.ico';
-};
 
 export function IpfsImage({
   src,
@@ -32,50 +30,67 @@ export function IpfsImage({
   width = 200,
   height = 200,
   className = '',
-  fallbackSrc = '/favicon.ico',
+  fallbackSrc = '/icons/favicon-180x180.png',
   tokenId,
-}: IpfsImageProps) {
-  const [currentSrc, setCurrentSrc] = useState(src);
+  fill = false,
+  sizes,
+  priority = false,
+  loading = 'lazy',
+}: Readonly<IpfsImageProps>) {
+  // Use ref to track if component is mounted and prevent resets
+  const isMountedRef = useRef(false);
+  const lastSrcRef = useRef(src);
+  
+  const [currentSrc, setCurrentSrc] = useState(() => resolveIpfsUrl(src));
   const [gatewayIndex, setGatewayIndex] = useState(0);
   const [hasError, setHasError] = useState(false);
 
-  // Reset when src changes
+  // Only reset when src actually changes (not on every rerender)
   useEffect(() => {
-    setCurrentSrc(src);
-    setGatewayIndex(0);
-    setHasError(false);
+    if (lastSrcRef.current !== src) {
+      lastSrcRef.current = src;
+      setCurrentSrc(resolveIpfsUrl(src));
+      setGatewayIndex(0);
+      setHasError(false);
+      isMountedRef.current = false;
+    }
   }, [src]);
 
-  const handleError = () => {
-    // If original src failed, try IPFS gateways
-    if (
-      src.includes('d35a2j13p9i4c9.cloudfront.net') ||
-      src.includes('cloudflare-ipfs.com')
-    ) {
-      // Extract IPFS hash from known patterns
-      const ipfsMatch =
-        src.match(/ipfs\/([^\/]+)\/(.+)/) ||
-        src.match(/QmdRAv2R2MNWEfT3kpostz13qVrDdD2j62jW2i2sra2aA1\/(.+)/);
-
-      if (ipfsMatch && tokenId) {
-        const fileName = ipfsMatch[1] || `${tokenId}.png`;
-        const ipfsHash = 'QmdRAv2R2MNWEfT3kpostz13qVrDdD2j62jW2i2sra2aA1';
-
-        if (gatewayIndex < IPFS_GATEWAYS.length) {
-          const newSrc = `${IPFS_GATEWAYS[gatewayIndex]}${ipfsHash}/${fileName}`;
-          setCurrentSrc(newSrc);
-          setGatewayIndex(gatewayIndex + 1);
-          return;
-        }
+  const handleLoad = () => {
+    // Cache successful URL for this IPFS hash
+    if (!isMountedRef.current) {
+      const ipfsRegex = /\/ipfs\/([A-Za-z0-9]+)(\/.*)?$/;
+      const match = ipfsRegex.exec(currentSrc);
+      if (match) {
+        const ipfsHash = match[1] + (match[2] || '');
+        cacheSuccessfulGateway(ipfsHash, currentSrc);
       }
+      isMountedRef.current = true;
     }
+  };
 
-    // Try next IPFS gateway if available
-    if (gatewayIndex < IPFS_GATEWAYS.length && src.startsWith('ipfs://')) {
-      const ipfsHash = src.replace('ipfs://', '');
-      const newSrc = `${IPFS_GATEWAYS[gatewayIndex]}${ipfsHash}`;
-      setCurrentSrc(newSrc);
-      setGatewayIndex(gatewayIndex + 1);
+  const handleError = () => {
+    // Extract IPFS hash from current URL
+    const ipfsRegex = /\/ipfs\/([A-Za-z0-9]+)(\/.*)?$/;
+    const match = ipfsRegex.exec(currentSrc);
+    const ipfsPath = match ? match[1] + (match[2] || '') : null;
+
+    if (ipfsPath) {
+      invalidateCachedGateway(ipfsPath);
+    }
+    
+    if (match && gatewayIndex < IPFS_GATEWAYS.length - 1) {
+      const nextIndex = gatewayIndex + 1;
+      const nextGateway = IPFS_GATEWAYS[nextIndex];
+      
+      // Mark current gateway as failed
+      if (IPFS_GATEWAYS[gatewayIndex]) {
+        markGatewayFailed(IPFS_GATEWAYS[gatewayIndex]);
+      }
+      
+      // Try next gateway
+      setCurrentSrc(`${nextGateway}${ipfsPath}`);
+      setGatewayIndex(nextIndex);
       return;
     }
 
@@ -87,19 +102,28 @@ export function IpfsImage({
       return;
     }
 
-    // Final fallback
+    // Final fallback to favicon
     setCurrentSrc(fallbackSrc);
   };
 
+  const imageDimensionProps = fill
+    ? { fill: true as const }
+    : { width, height };
+
+  const resolvedLoading = priority ? undefined : loading ?? 'lazy';
+
   return (
     <Image
-      src={resolveImageSrc(currentSrc)}
+      src={currentSrc}
       alt={alt}
-      width={width}
-      height={height}
       className={className}
+      onLoad={handleLoad}
       onError={handleError}
-      unoptimized // Disable optimization for external URLs
+      sizes={sizes}
+      priority={priority}
+      {...(resolvedLoading ? { loading: resolvedLoading } : {})}
+      unoptimized
+      {...imageDimensionProps}
     />
   );
 }

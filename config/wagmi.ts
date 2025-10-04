@@ -105,7 +105,7 @@ if (typeof window !== 'undefined') {
           name: 'CrazyCube',
           description: 'CrazyCube NFT Game',
           url: window.location.origin,
-          icons: ['https://crazycube.xyz/favicon.ico'],
+          icons: ['/icons/favicon-180x180.png'],
         },
         showQrModal: true,
       }),
@@ -116,7 +116,7 @@ if (typeof window !== 'undefined') {
               dappMetadata: {
                 name: 'CrazyCube',
                 url: window.location.origin,
-                iconUrl: 'https://crazycube.xyz/favicon.ico',
+                iconUrl: '/icons/favicon-180x180.png',
               },
             }),
             injected({ shimDisconnect: true }),

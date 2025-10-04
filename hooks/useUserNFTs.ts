@@ -108,7 +108,7 @@ export const getTokenIdAsDecimal = (nft: any): string => {
 };
 
 // Function to get NFT image
-export const getNFTImage = (nft: AlchemyNFT): string => {
+export const getNFTImageRaw = (nft: AlchemyNFT): string => {
   let imageUrl = '';
 
   // Check media array
@@ -121,7 +121,11 @@ export const getNFTImage = (nft: AlchemyNFT): string => {
     imageUrl = nft.metadata.image;
   }
 
-  return resolveIpfsUrl(imageUrl);
+  return imageUrl;
+};
+
+export const getNFTImage = (nft: AlchemyNFT): string => {
+  return resolveIpfsUrl(getNFTImageRaw(nft));
 };
 
 // Function to get NFT name

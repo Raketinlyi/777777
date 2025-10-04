@@ -23,14 +23,3 @@ npx hardhat run scripts/upgrade_core.js --network mainnetLike   --impl 0xNewImpl
 ```
 
 If you want the script to auto‑deploy the new impl and then upgrade in one shot, use `scripts/upgrade_core_deploy.js`.
-
----
-
-## Frontend: централизованная смена контрактов и сети
-
-См. docs/CONTRACT_SWITCHING_GUIDE.md — пошаговый план, как менять адреса и сеть в одном месте через `.env`, чтобы весь сайт автоматически подхватывал изменения без правок страниц/хуков.
-
-Коротко:
-1) Обновите адреса в .env: `NEXT_PUBLIC_CORE_PROXY`, `NEXT_PUBLIC_NFT_ADDRESS`, `NEXT_PUBLIC_READER_ADDRESS`
-2) Перезапустите dev-сервер
-3) Все хуки/страницы используют единый источник адресов (`lib/contracts.ts` → `config/chains.ts` → `.env`)

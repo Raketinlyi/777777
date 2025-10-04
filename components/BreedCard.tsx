@@ -2,7 +2,7 @@ import { useNFTContractInfo } from '@/hooks/useNFTContractInfo';
 import { useNFTGameInfo } from '@/hooks/useNFTGameData';
 import {
   AlchemyNFT,
-  getNFTImage,
+  getNFTImageRaw,
   getTokenIdAsDecimal,
 } from '@/hooks/useUserNFTs';
 import { UnifiedNftCard } from '@/components/UnifiedNftCard';
@@ -31,15 +31,6 @@ interface BreedCardProps {
   cooldownRemaining?: number | undefined;
   gender?: 1 | 2 | undefined; // 1=male, 2=female
 }
-
-// convert ipfs:// hash to https url via nftstorage gateway
-const resolveImageSrc = (url?: string) => {
-  if (!url) return '/favicon.ico';
-  if (url.startsWith('ipfs://')) {
-    return `https://nftstorage.link/ipfs/${url.slice(7)}`;
-  }
-  return url;
-};
 
 export const BreedCard = React.memo(function BreedCard({
   nft,
@@ -317,11 +308,11 @@ export const BreedCard = React.memo(function BreedCard({
             }}
           />
           <UnifiedNftCard
-            imageSrc={resolveImageSrc(
+            imageSrc={
               'image' in nft && nft.image
                 ? nft.image
-                : getNFTImage(nft as AlchemyNFT)
-            )}
+                : getNFTImageRaw(nft as AlchemyNFT)
+            }
             tokenId={tokenIdDisplay}
             title={
               'name' in nft && nft.name

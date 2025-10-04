@@ -14,7 +14,7 @@ import { TabNavigation } from '@/components/tab-navigation';
 import { WalletConnectNoSSR as WalletConnect } from '@/components/web3/wallet-connect.no-ssr';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSimpleToast } from '@/components/simple-toast';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { BreedingEffect } from '@/components/breeding-effect';
 
@@ -24,6 +24,7 @@ import { parseEther, formatEther, decodeEventLog, parseAbiItem } from 'viem';
 import { CRAZY_OCTAGON_CORE_ABI } from '@/lib/abi/crazyOctagon';
 
 import { BreedCard } from '@/components/BreedCard';
+import { resolveIpfsUrl } from '@/lib/ipfs';
 // import dynamic from 'next/dynamic';
 
 import {
@@ -37,6 +38,11 @@ import { useLiveBredCubes } from '@/hooks/useLiveBredCubes';
 import { BreedingResultModal } from '@/components/breeding-result-modal';
 
 import { useGraveyardTokens } from '@/hooks/useGraveyardTokens';
+import {
+  PANCAKESWAP_CRAA_LP_URL,
+  PANCAKESWAP_OCTAA_SWAP_URL,
+  DEXSCREENER_CRAA_URL,
+} from '@/lib/token-links';
 import { formatSmart } from '@/utils/formatNumber';
 
 // Lazy-load HeartRain only on the client to shave ~30 KB from first load
@@ -44,18 +50,6 @@ import { formatSmart } from '@/utils/formatNumber';
 //   ssr: false,
 //   loading: () => null,
 // });
-
-// Convert ipfs:// URLs to HTTPS gateway
-const resolveImageSrc = (url?: string) => {
-  if (!url) return '/favicon.ico';
-  if (url.startsWith('ipfs://')) {
-    return `https://nftstorage.link/ipfs/${url.slice(7)}`;
-  }
-  if (url.startsWith('https://')) {
-    return url;
-  }
-  return '/favicon.ico';
-};
 
 export default function BreedPage() {
   const { isConnected: connected, address: account } = useAccount();
@@ -1011,11 +1005,72 @@ export default function BreedPage() {
                         )}
                       </p>
                       <p className='text-xs text-cyan-300'>
-                        🧪 New marketplace link will appear here for Monad Testnet.
+                        <Trans
+                          i18nKey='sections.breed.guide.tokenLinks'
+                          defaultValue='🔗 Quick DeFi links: <octa>Swap OCTAA on PancakeSwap</octa> • <cra>Swap CRAA on PancakeSwap</cra> • <dex>CRA chart on DexScreener</dex>'
+                          components={{
+                            octa: (
+                              <a
+                                href={PANCAKESWAP_OCTAA_SWAP_URL}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-cyan-200 hover:text-cyan-100 underline'
+                              />
+                            ),
+                            cra: (
+                              <a
+                                href={PANCAKESWAP_CRAA_LP_URL}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-amber-200 hover:text-amber-100 underline'
+                              />
+                            ),
+                            dex: (
+                              <a
+                                href={DEXSCREENER_CRAA_URL}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-purple-200 hover:text-purple-100 underline'
+                              />
+                            ),
+                          }}
+                        />
                       </p>
                       <p className='text-xs text-cyan-300 font-mono'>
                         {tr('sections.breed.guide.contractAddress', '🔗 CRAA Token Contract: 0xB4832932D819361e0d250c338eBf87f0757ed800')}
                       </p>
+                      <div className='mt-3 grid grid-cols-1 gap-2'>
+                        <div className='p-3 bg-slate-900/70 rounded border border-cyan-400/10'>
+                          <p className='text-sm text-cyan-200 font-semibold'>
+                            {tr('sections.breed.quickLinks.octaaTitle', 'Swap OCTAA on PancakeSwap')}
+                          </p>
+                          <p className='text-xs text-cyan-300'>
+                            <a
+                              href={PANCAKESWAP_OCTAA_SWAP_URL}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='underline text-cyan-200 hover:text-cyan-100'
+                            >
+                              {tr('sections.breed.quickLinks.octaa', 'Open PancakeSwap — Swap OCTAA')}
+                            </a>
+                          </p>
+                        </div>
+                        <div className='p-3 bg-slate-900/70 rounded border border-amber-400/10'>
+                          <p className='text-sm text-amber-200 font-semibold'>
+                            {tr('sections.breed.quickLinks.craaTitle', 'Swap CRAA on PancakeSwap')}
+                          </p>
+                          <p className='text-xs text-amber-300'>
+                            <a
+                              href={PANCAKESWAP_CRAA_LP_URL}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='underline text-amber-200 hover:text-amber-100'
+                            >
+                              {tr('sections.breed.quickLinks.craa', 'Open PancakeSwap — Swap CRAA')}
+                            </a>
+                          </p>
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -1268,7 +1323,7 @@ export default function BreedPage() {
                                     <div className='relative w-full h-full flex items-center justify-center'>
                                       <div className='relative w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 overflow-hidden rounded-md'>
                                         <Image
-                                          src={resolveImageSrc(nft.image)}
+                                          src={resolveIpfsUrl(nft.image)}
                                           alt={`Specimen ${nft.name}`}
                                           fill
                                           sizes='(max-width: 768px) 64px, 80px'

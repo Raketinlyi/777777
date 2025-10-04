@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import React from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { IpfsImage } from '@/components/IpfsImage';
 
 export interface UnifiedNftCardProps {
   imageSrc: string | null;
@@ -18,52 +18,6 @@ export interface UnifiedNftCardProps {
   imageOverlay?: ReactNode;
   imageOverlayClassName?: string;
 }
-
-// Security: Convert ipfs:// URLs to HTTPS gateway with validation
-const resolveImageSrc = (url?: string) => {
-  if (!url || typeof url !== 'string') return '/favicon.ico';
-
-  // Security: Block dangerous protocols
-  const lowerUrl = url.toLowerCase();
-  if (
-    lowerUrl.includes('javascript:') ||
-    lowerUrl.includes('vbscript:') ||
-    lowerUrl.includes('data:text/html') ||
-    lowerUrl.startsWith('file://') ||
-    lowerUrl.startsWith('ftp://')
-  ) {
-    return '/favicon.ico';
-  }
-
-  if (url.startsWith('ipfs://')) {
-    return `https://nftstorage.link/ipfs/${url.slice(7)}`;
-  }
-
-  if (url.startsWith('https://')) {
-    // Security: Validate trusted domains
-    try {
-      const urlObj = new URL(url);
-      const allowedDomains = [
-        'nftstorage.link',
-        'ipfs.io',
-        'gateway.pinata.cloud',
-        'cloudflare-ipfs.com',
-        'dweb.link',
-        'ipfs.dweb.link',
-      ];
-
-      if (!allowedDomains.some(domain => urlObj.hostname.includes(domain))) {
-        return '/favicon.ico';
-      }
-    } catch {
-      return '/favicon.ico';
-    }
-
-    return url;
-  }
-
-  return '/favicon.ico';
-};
 
 export const UnifiedNftCard = React.memo(function UnifiedNftCard({
   imageSrc,
@@ -100,19 +54,12 @@ export const UnifiedNftCard = React.memo(function UnifiedNftCard({
           <div className='relative'>
             <div className='aspect-square bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center overflow-hidden'>
               {imageSrc ? (
-                <Image
-                  src={resolveImageSrc(imageSrc ?? undefined)}
+                <IpfsImage
+                  src={imageSrc}
                   alt={title || `NFT #${tokenId}`}
                   width={240}
                   height={240}
                   className='w-full h-full object-cover'
-                  onError={e => {
-                    // Fallback to favicon if image fails to load
-                    const target = e.target as HTMLImageElement;
-                    if (target.src !== '/favicon.ico') {
-                      target.src = '/favicon.ico';
-                    }
-                  }}
                 />
               ) : (
                 <span className='text-xl font-bold text-white'>#{tokenId}</span>

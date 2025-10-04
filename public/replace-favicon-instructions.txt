@@ -1,0 +1,14 @@
+If you still see the old blue favicon in the browser, follow these steps:
+
+1. In the repository: delete or replace `public/favicon.ico` with the desired icon (e.g. the file in `public/icons/favicon-180x180.png`). Git will track the binary change.
+2. Clear your browser cache or hard-refresh the page (Ctrl+F5 on Windows). Some browsers cache favicons aggressively.
+3. If using PWA / manifest, update `manifest.json` and `app/layout.tsx` to point at the correct icons (already done in this repo).
+4. Restart the dev server: `npx next dev`.
+
+If you're unable to delete the binary from this environment, run locally:
+
+powershell -Command "Remove-Item -Path .\\public\\favicon.ico -Force"
+
+Or replace it with a copy:
+
+powershell -Command "Copy-Item -Path .\\public\\icons\\favicon-180x180.png -Destination .\\public\\favicon.ico -Force"

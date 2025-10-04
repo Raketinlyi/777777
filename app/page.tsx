@@ -425,14 +425,14 @@ const LoadingScreen = ({ progress, title, subtitle }: LoadingScreenProps) => (
     <div className='relative mb-8'>
       <div className='absolute inset-0 w-32 h-32 md:w-40 md:h-40 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 rounded-full bg-purple-500/20 blur-2xl' />
       <div className='w-28 h-28 md:w-36 md:h-36 rounded-full border-2 border-purple-400/30 border-t-purple-400/90 animate-spin' />
-      <div className='absolute inset-0 flex items-center justify-center'>
+        <div className='absolute inset-0 flex items-center justify-center'>
         <Image
-          src='/favicon.ico'
+          src='/icons/favicon-180x180.png'
           alt='CrazyOctagon Logo'
-          width={128}
-          height={128}
+          width={180}
+          height={180}
           className='object-contain drop-shadow-[0_0_12px_rgba(139,92,246,.6)]'
-          sizes='(max-width: 768px) 35vw, 128px'
+          sizes='(max-width: 768px) 45vw, 180px'
         />
       </div>
     </div>
