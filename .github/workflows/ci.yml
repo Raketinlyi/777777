@@ -27,6 +27,17 @@ jobs:
         run: |
           npm audit --omit=dev --audit-level=high || true
 
+      # Snyk security scan (требует SNYK_TOKEN в secrets)
+      # Установите токен: Settings → Secrets → Actions → New secret: SNYK_TOKEN
+      # Получить токен: https://app.snyk.io/account
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true # не блокируем пока, только мониторим
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
       - name: Upload build artifacts (optional)
         if: success()
         uses: actions/upload-artifact@v4
