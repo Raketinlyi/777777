@@ -176,6 +176,15 @@ export function middleware(request: NextRequest) {
 
   response.headers.set('Content-Security-Policy', cspHeader);
   response.headers.set('X-CSP-Nonce', nonce);
+  // Expose nonce to server components via a cookie only for HTML GET requests so layouts can add nonce to inline scripts
+  // Limiting to HTML GET avoids adding cookies on API/static requests (reduces extra work and possible billing concerns)
+  const isGet = request.method === 'GET';
+  const accept = request.headers.get('accept') || '';
+  const wantsHtml = accept.includes('text/html');
+  if (isGet && wantsHtml) {
+    // Secure, SameSite=Strict, HttpOnly so JS can't read it on the client side (server reads it via next/headers on next request)
+    response.headers.append('Set-Cookie', `csp_nonce=${nonce}; Path=/; Secure; SameSite=Strict; HttpOnly`);
+  }
   response.headers.set('X-Request-ID', crypto.randomUUID());
 
   return response;
