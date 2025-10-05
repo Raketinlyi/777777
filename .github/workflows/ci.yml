@@ -1,0 +1,35 @@
+name: CI - build & audit
+
+on:
+  push:
+    branches: [ netlify-deploy-automation ]
+  pull_request:
+    branches: [ netlify-deploy-automation ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run npm audit (report only)
+        run: |
+          npm audit --omit=dev --audit-level=high || true
+
+      - name: Upload build artifacts (optional)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next
